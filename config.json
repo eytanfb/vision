@@ -1,0 +1,22 @@
+{
+  "companies": [
+    {
+      "displayName": "Clerky",
+      "folderPathName": "clerky",
+      "fullPath": "~/Notes/clerky",
+      "subFolders": ["tasks", "standups", "meetings", "projects", "people", "teams", "estimates", "other", "onboarding"]
+    },
+    {
+      "displayName": "Qvest.US",
+      "folderPathName": "qvest_us",
+      "fullPath": "~/Notes/qvest_us",
+      "subFolders": ["tasks", "standups", "meetings", "projects", "people", "teams", "estimates", "other", "onboarding"]
+    },
+    {
+      "displayName": "Lifeplus",
+      "folderPathName": "lifeplus",
+      "fullPath": "~/Notes/lifeplus",
+      "subFolders": ["tasks", "standups", "meetings", "projects", "people", "teams", "estimates", "other", "onboarding"]
+    }
+  ]
+}
