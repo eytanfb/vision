@@ -1,6 +1,8 @@
 package main
 
 import (
+	"company-file-viewer/app"
+	"company-file-viewer/config"
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -8,13 +10,13 @@ import (
 )
 
 func main() {
-	cfg, err := LoadConfig("config.json")
+	cfg, err := config.LoadConfig("config/config.json")
 	if err != nil {
 		panic(err) // Simplified error handling for brevity
 	}
 
 	args := os.Args[1:]
-	initialModel := InitialModel(cfg, args) // Pass cmdline args to the model
+	initialModel := app.InitialModel(cfg, args) // Pass cmdline args to the model
 
 	p := tea.NewProgram(initialModel)
 	if _, err := p.Run(); err != nil {

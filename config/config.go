@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"encoding/json"
@@ -13,7 +13,6 @@ type Company struct {
 	SubFolders     []string `json:"subFolders"`
 }
 
-// Config represents the application's configuration
 type Config struct {
 	Companies  []Company `json:"companies"`
 	Categories []string

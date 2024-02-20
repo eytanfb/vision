@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"fmt"
@@ -7,25 +7,29 @@ import (
 )
 
 func (m Model) View() string {
+	return ViewHandler(m)
+}
+
+func ViewHandler(m Model) string {
 	content := "Something is wrong"
 
-	if m.currentView == "companies" {
-		companyNames := make([]string, len(m.companies))
-		for i, company := range m.companies {
+	if m.CurrentView == "companies" {
+		companyNames := make([]string, len(m.Companies))
+		for i, company := range m.Companies {
 			companyNames[i] = company.DisplayName
 		}
 
-		content = m.RenderList(companyNames, "company")
-	} else if m.currentView == "categories" {
-		content = m.RenderList(m.categories, "category")
-	} else if m.currentView == "details" {
-		content = m.RenderFiles()
+		content = RenderList(m, companyNames, "company")
+	} else if m.CurrentView == "categories" {
+		content = RenderList(m, m.Categories, "category")
+	} else if m.CurrentView == "details" {
+		content = RenderFiles(m)
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Top, m.RenderNavBar(), content)
+	return lipgloss.JoinVertical(lipgloss.Top, RenderNavBar(m), content)
 }
 
-func (m Model) RenderList(items []string, title string) string {
+func RenderList(m Model, items []string, title string) string {
 	var style lipgloss.Style
 	list := ""
 	containerStyle := lipgloss.NewStyle().Width(30)
@@ -34,7 +38,7 @@ func (m Model) RenderList(items []string, title string) string {
 		line := ""
 		style = lipgloss.NewStyle()
 
-		if index == m.cursor {
+		if index == m.Cursor {
 			line += "❯ "
 			style = style.Bold(true)
 		} else {
@@ -50,7 +54,7 @@ func (m Model) RenderList(items []string, title string) string {
 	return view
 }
 
-func (m Model) RenderFiles() string {
+func RenderFiles(m Model) string {
 	var style lipgloss.Style
 	containerStyle := lipgloss.NewStyle()
 	listContainerStyle := lipgloss.NewStyle()
@@ -58,17 +62,17 @@ func (m Model) RenderFiles() string {
 	list := ""
 	itemDetails := ""
 
-	if m.itemDetailsFocus {
+	if m.ItemDetailsFocus {
 		itemDetailsContainerStyle = itemDetailsContainerStyle.Border(lipgloss.RoundedBorder())
 	} else {
 		listContainerStyle = listContainerStyle.Border(lipgloss.RoundedBorder())
 	}
 
-	for index, file := range m.files {
+	for index, file := range m.Files {
 		line := ""
 		style = lipgloss.NewStyle()
 
-		if index == m.cursor {
+		if index == m.Cursor {
 			line += "❯ "
 			style = style.Bold(true)
 			itemDetails = file.Content
@@ -82,29 +86,29 @@ func (m Model) RenderFiles() string {
 
 	listContainer := listContainerStyle.Render(list)
 
-	m.viewport.YPosition = 20
-	m.viewport.SetContent(itemDetails)
+	m.Viewport.YPosition = 20
+	m.Viewport.SetContent(itemDetails)
 
-	itemDetailsContainer := itemDetailsContainerStyle.Render(m.viewport.View())
+	itemDetailsContainer := itemDetailsContainerStyle.Render(m.Viewport.View())
 	container := containerStyle.Render(lipgloss.JoinHorizontal(lipgloss.Left, listContainer, itemDetailsContainer))
 
 	titleStyle := lipgloss.NewStyle().MarginTop(1).MarginBottom(1)
-	title := titleStyle.Render("Select a file (" + fmt.Sprint(len(m.files)) + "):")
+	title := titleStyle.Render("Select a file (" + fmt.Sprint(len(m.Files)) + "):")
 	view := lipgloss.JoinVertical(lipgloss.Top, title, container)
 
 	return view
 }
 
-func (m Model) RenderNavBar() string {
+func RenderNavBar(m Model) string {
 	navbar := ""
 	textStyle := lipgloss.NewStyle().Bold(true)
 	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Background(lipgloss.Color("#000")).Padding(1, 2)
-	if m.currentView == "companies" {
+	if m.CurrentView == "companies" {
 		navbar = textStyle.Render("Company selection")
-	} else if m.currentView == "categories" {
-		navbar = textStyle.Render(m.selectedCompany.DisplayName + " > Category selection")
-	} else if m.currentView == "details" {
-		navbar = textStyle.Render(m.selectedCompany.DisplayName + " > " + m.selectedCategory)
+	} else if m.CurrentView == "categories" {
+		navbar = textStyle.Render(m.SelectedCompany.DisplayName + " > Category selection")
+	} else if m.CurrentView == "details" {
+		navbar = textStyle.Render(m.SelectedCompany.DisplayName + " > " + m.SelectedCategory)
 	}
 
 	return style.Render(navbar)
