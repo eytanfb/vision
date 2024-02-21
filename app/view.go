@@ -6,11 +6,11 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-func (m Model) View() string {
+func (m *Model) View() string {
 	return ViewHandler(m)
 }
 
-func ViewHandler(m Model) string {
+func ViewHandler(m *Model) string {
 	content := "Something is wrong"
 
 	if m.CurrentView == "companies" {
@@ -23,13 +23,17 @@ func ViewHandler(m Model) string {
 	} else if m.CurrentView == "categories" {
 		content = RenderList(m, m.Categories, "category")
 	} else if m.CurrentView == "details" {
-		content = RenderFiles(m)
+		if m.TaskDetailsFocus {
+			content = RenderTasks(m)
+		} else {
+			content = RenderFiles(m)
+		}
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Top, RenderNavBar(m), content)
 }
 
-func RenderList(m Model, items []string, title string) string {
+func RenderList(m *Model, items []string, title string) string {
 	var style lipgloss.Style
 	list := ""
 	containerStyle := lipgloss.NewStyle().Width(40)
@@ -58,7 +62,7 @@ func RenderList(m Model, items []string, title string) string {
 	return view
 }
 
-func RenderFiles(m Model) string {
+func RenderFiles(m *Model) string {
 	if len(m.Files) == 0 {
 		return "No files found"
 	}
@@ -94,7 +98,6 @@ func RenderFiles(m Model) string {
 
 	listContainer := listContainerStyle.Render(list)
 
-	m.Viewport.YPosition = 20
 	m.Viewport.SetContent(itemDetails)
 
 	itemDetailsContainer := itemDetailsContainerStyle.Render(m.Viewport.View())
@@ -107,7 +110,7 @@ func RenderFiles(m Model) string {
 	return view
 }
 
-func RenderNavBar(m Model) string {
+func RenderNavBar(m *Model) string {
 	navbar := ""
 	textStyle := lipgloss.NewStyle().Bold(true)
 	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Background(lipgloss.Color("#000")).Padding(1, 2)
@@ -120,4 +123,54 @@ func RenderNavBar(m Model) string {
 	}
 
 	return style.Render(navbar)
+}
+
+func RenderTasks(m *Model) string {
+	if len(m.Files) == 0 {
+		return "No files found"
+	}
+
+	var style lipgloss.Style
+	containerStyle := lipgloss.NewStyle()
+	listContainerStyle := lipgloss.NewStyle().Width(40).Height(m.Height - 20)
+	itemDetailsContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.Width - 60).Height(m.Height - 20)
+	list := ""
+	tasks := ""
+
+	if m.ItemDetailsFocus {
+		itemDetailsContainerStyle = itemDetailsContainerStyle.Border(lipgloss.RoundedBorder())
+	} else {
+		listContainerStyle = listContainerStyle.Border(lipgloss.RoundedBorder())
+	}
+
+	for index, file := range m.Files {
+		line := ""
+		style = lipgloss.NewStyle()
+
+		if index == m.FilesCursor {
+			line += "❯ "
+			style = style.Bold(true)
+			for _, task := range m.Tasks {
+				tasks += task.String() + "\n"
+			}
+		} else {
+			line += "  "
+		}
+
+		line += file.Name
+		list = lipgloss.JoinVertical(lipgloss.Top, list, style.Render(line))
+	}
+
+	listContainer := listContainerStyle.Render(list)
+
+	m.Viewport.SetContent(tasks)
+
+	itemDetailsContainer := itemDetailsContainerStyle.Render(m.Viewport.View())
+	container := containerStyle.Render(lipgloss.JoinHorizontal(lipgloss.Left, listContainer, itemDetailsContainer))
+
+	titleStyle := lipgloss.NewStyle().MarginTop(1).MarginBottom(1)
+	title := titleStyle.Render("Select a file (" + fmt.Sprint(len(m.Files)) + "):")
+	view := lipgloss.JoinVertical(lipgloss.Top, title, container)
+
+	return view
 }

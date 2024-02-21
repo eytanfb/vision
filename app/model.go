@@ -34,6 +34,18 @@ type Model struct {
 	Height           int
 	Viewport         viewport.Model
 	ItemDetailsFocus bool
+	Ready            bool
+	Tasks            []Task
+	TaskDetailsFocus bool
+}
+
+type Task struct {
+	IsDone        bool
+	Text          string
+	StartDate     string
+	CompletedDate string
+	ScheduledDate string
+	LineNumber    int
 }
 
 type ListItem struct {
@@ -65,6 +77,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 		Files:            []FileInfo{},
 		Cache:            make(map[string][]FileInfo),
 		Viewport:         viewport.Model{},
+		Ready:            false,
 	}
 
 	if len(args) > 0 {
@@ -90,7 +103,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 		}
 	}
 
-	return m
+	return &m
 }
 
 func (m Model) Init() tea.Cmd {
@@ -160,4 +173,14 @@ func convertCompanies(companies []config.Company) []Company {
 		})
 	}
 	return items
+}
+
+func (t Task) String() string {
+	str := ""
+	if t.IsDone {
+		str = "- [x] "
+	} else {
+		str += "- [ ] "
+	}
+	return str + t.Text
 }

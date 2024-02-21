@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 )
@@ -15,7 +14,7 @@ func (j EKeyCommand) Execute(m *Model) error {
 
 	filePath := getCurrentFilePath(m)
 	editor := os.Getenv("EDITOR")
-	fmt.Println(editor)
+
 	if editor == "" {
 		editor = "vim" // Default to vim if $EDITOR is not set
 	}
@@ -36,6 +35,5 @@ func (j EKeyCommand) AllowedStates() []string {
 }
 
 func getCurrentFilePath(m *Model) string {
-	filePath := "/Users/eytananjel/Notes/" + m.SelectedCompany.DisplayName + "/" + m.SelectedCategory + "/" + m.Files[m.FilesCursor].Name
-	return filePath
+	return "/Users/eytananjel/Notes/" + m.SelectedCompany.DisplayName + "/" + m.SelectedCategory + "/" + m.Files[m.FilesCursor].Name
 }

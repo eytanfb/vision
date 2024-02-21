@@ -25,5 +25,5 @@ func (kcf KeyCommandFactory) CreateKeyCommand(key string) KeyCommand {
 	case "s":
 		return SKeyCommand{}
 	}
-	return nil
+	return NilKeyCommand{}
 }

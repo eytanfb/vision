@@ -5,6 +5,9 @@ type HKeyCommand struct{}
 func (j HKeyCommand) Execute(m *Model) error {
 	if m.CurrentView == "details" && m.ItemDetailsFocus {
 		m.ItemDetailsFocus = false
+		if m.TaskDetailsFocus {
+			m.TaskDetailsFocus = false
+		}
 	} else {
 		return EscKeyCommand{}.Execute(m)
 	}

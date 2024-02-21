@@ -1,5 +1,7 @@
 package app
 
+import "vision/utils"
+
 type TKeyCommand struct{}
 
 func (j TKeyCommand) Execute(m *Model) error {
@@ -8,6 +10,17 @@ func (j TKeyCommand) Execute(m *Model) error {
 		m.CurrentView = "details"
 		m.FilesCursor = 0
 		m.Files = m.FetchFiles()
+	} else if m.CurrentView == "details" && m.ItemDetailsFocus {
+		fileTasks := utils.ExtractTasksFromText(m.Files[m.FilesCursor].Content)
+		tasks := []Task{}
+		for _, task := range fileTasks {
+			tasks = append(tasks, Task{
+				IsDone: task.IsDone,
+				Text:   task.Text,
+			})
+		}
+		m.Tasks = tasks
+		m.TaskDetailsFocus = true
 	}
 
 	return nil
