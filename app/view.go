@@ -59,6 +59,10 @@ func RenderList(m Model, items []string, title string) string {
 }
 
 func RenderFiles(m Model) string {
+	if len(m.Files) == 0 {
+		return "No files found"
+	}
+
 	var style lipgloss.Style
 	containerStyle := lipgloss.NewStyle()
 	listContainerStyle := lipgloss.NewStyle().Width(40).Height(m.Height - 20)

@@ -3,8 +3,10 @@ package app
 type HKeyCommand struct{}
 
 func (j HKeyCommand) Execute(m *Model) error {
-	if m.CurrentView == "details" {
+	if m.CurrentView == "details" && m.ItemDetailsFocus {
 		m.ItemDetailsFocus = false
+	} else {
+		return EscKeyCommand{}.Execute(m)
 	}
 
 	return nil
