@@ -1,10 +1,10 @@
 package app
 
 import (
-	"company-file-viewer/config"
 	"os"
 	"path/filepath"
 	"strings"
+	"vision/config"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -25,7 +25,9 @@ type Model struct {
 	CurrentView      string
 	SelectedCompany  Company
 	SelectedCategory string
-	Cursor           int
+	CompaniesCursor  int
+	CategoriesCursor int
+	FilesCursor      int
 	Files            []FileInfo
 	Cache            map[string][]FileInfo
 	Width            int
@@ -55,7 +57,9 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 		Companies:        companies,
 		Categories:       cfg.Categories,
 		CurrentView:      "companies",
-		Cursor:           0,
+		CompaniesCursor:  0,
+		CategoriesCursor: 0,
+		FilesCursor:      0,
 		SelectedCompany:  Company{},
 		SelectedCategory: "",
 		Files:            []FileInfo{},

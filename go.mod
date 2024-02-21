@@ -1,4 +1,4 @@
-module company-file-viewer
+module vision
 
 go 1.21.4
 

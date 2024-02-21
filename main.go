@@ -1,9 +1,9 @@
 package main
 
 import (
-	"company-file-viewer/app"
-	"company-file-viewer/config"
 	"os"
+	"vision/app"
+	"vision/config"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/log"
@@ -18,7 +18,7 @@ func main() {
 	args := os.Args[1:]
 	initialModel := app.InitialModel(cfg, args) // Pass cmdline args to the model
 
-	p := tea.NewProgram(initialModel)
+	p := tea.NewProgram(initialModel, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		log.Error("Oh no!", err)
 		os.Exit(1)

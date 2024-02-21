@@ -32,13 +32,17 @@ func ViewHandler(m Model) string {
 func RenderList(m Model, items []string, title string) string {
 	var style lipgloss.Style
 	list := ""
-	containerStyle := lipgloss.NewStyle().Width(30)
+	containerStyle := lipgloss.NewStyle().Width(40)
+	cursor := m.CompaniesCursor
+	if title == "category" {
+		cursor = m.CategoriesCursor
+	}
 
 	for index, item := range items {
 		line := ""
 		style = lipgloss.NewStyle()
 
-		if index == m.Cursor {
+		if index == cursor {
 			line += "❯ "
 			style = style.Bold(true)
 		} else {
@@ -57,8 +61,8 @@ func RenderList(m Model, items []string, title string) string {
 func RenderFiles(m Model) string {
 	var style lipgloss.Style
 	containerStyle := lipgloss.NewStyle()
-	listContainerStyle := lipgloss.NewStyle()
-	itemDetailsContainerStyle := lipgloss.NewStyle().MarginLeft(2)
+	listContainerStyle := lipgloss.NewStyle().Width(40).Height(m.Height - 20)
+	itemDetailsContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.Width - 60).Height(m.Height - 20)
 	list := ""
 	itemDetails := ""
 
@@ -72,7 +76,7 @@ func RenderFiles(m Model) string {
 		line := ""
 		style = lipgloss.NewStyle()
 
-		if index == m.Cursor {
+		if index == m.FilesCursor {
 			line += "❯ "
 			style = style.Bold(true)
 			itemDetails = file.Content
