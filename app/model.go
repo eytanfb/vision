@@ -3,6 +3,7 @@ package app
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"vision/config"
 
@@ -37,6 +38,7 @@ type Model struct {
 	Ready            bool
 	Tasks            []Task
 	TaskDetailsFocus bool
+	TasksCursor      int
 }
 
 type Task struct {
@@ -176,11 +178,37 @@ func convertCompanies(companies []config.Company) []Company {
 }
 
 func (t Task) String() string {
-	str := ""
+	var stringBuilder strings.Builder
+
 	if t.IsDone {
-		str = "- [x] "
+		stringBuilder.WriteString("- [x] ")
 	} else {
-		str += "- [ ] "
+		stringBuilder.WriteString("- [ ] ")
 	}
-	return str + t.Text
+
+	stringBuilder.WriteString(t.Text)
+
+	if t.StartDate != "" || t.CompletedDate != "" || t.ScheduledDate != "" {
+		stringBuilder.WriteString("\n")
+		if t.ScheduledDate != "" {
+			stringBuilder.WriteString("Scheduled: " + strings.Trim(t.ScheduledDate, " ") + "\n")
+		}
+		if t.StartDate != "" {
+			stringBuilder.WriteString("Start: " + strings.Trim(t.StartDate, " ") + "\n")
+		}
+		if t.CompletedDate != "" {
+			stringBuilder.WriteString("Completed: " + strings.Trim(t.CompletedDate, " ") + "\n")
+		}
+	}
+
+	result := stringBuilder.String()
+	return RemoveDatesFromText(result)
+}
+
+func RemoveDatesFromText(text string) string {
+	datesRegex := regexp.MustCompile(`[✅, ⏳, 🛫]\s+\d{4}-\d{2}-\d{2}`)
+
+	text = datesRegex.ReplaceAllString(text, "")
+
+	return strings.Trim(text, " ")
 }

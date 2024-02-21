@@ -5,7 +5,14 @@ type KKeyCommand struct{}
 func (j KKeyCommand) Execute(m *Model) error {
 	if m.CurrentView == "details" {
 		if m.ItemDetailsFocus {
-			m.Viewport.LineUp(10)
+			if m.TaskDetailsFocus {
+				m.TasksCursor--
+				if m.TasksCursor < 0 {
+					m.TasksCursor = 0
+				}
+			} else {
+				m.Viewport.LineUp(10)
+			}
 		} else {
 			m.FilesCursor--
 			if m.FilesCursor < 0 {

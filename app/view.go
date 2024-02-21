@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -131,11 +132,11 @@ func RenderTasks(m *Model) string {
 	}
 
 	var style lipgloss.Style
+	var tasks strings.Builder
 	containerStyle := lipgloss.NewStyle()
 	listContainerStyle := lipgloss.NewStyle().Width(40).Height(m.Height - 20)
 	itemDetailsContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.Width - 60).Height(m.Height - 20)
 	list := ""
-	tasks := ""
 
 	if m.ItemDetailsFocus {
 		itemDetailsContainerStyle = itemDetailsContainerStyle.Border(lipgloss.RoundedBorder())
@@ -150,8 +151,11 @@ func RenderTasks(m *Model) string {
 		if index == m.FilesCursor {
 			line += "❯ "
 			style = style.Bold(true)
-			for _, task := range m.Tasks {
-				tasks += task.String() + "\n"
+			for index, task := range m.Tasks {
+				if index == m.TasksCursor {
+					tasks.WriteString("❯ ")
+				}
+				tasks.WriteString(task.String() + "\n\n")
 			}
 		} else {
 			line += "  "
@@ -163,7 +167,7 @@ func RenderTasks(m *Model) string {
 
 	listContainer := listContainerStyle.Render(list)
 
-	m.Viewport.SetContent(tasks)
+	m.Viewport.SetContent(tasks.String())
 
 	itemDetailsContainer := itemDetailsContainerStyle.Render(m.Viewport.View())
 	container := containerStyle.Render(lipgloss.JoinHorizontal(lipgloss.Left, listContainer, itemDetailsContainer))

@@ -15,7 +15,14 @@ func (j JKeyCommand) Execute(m *Model) error {
 		}
 	} else if m.CurrentView == "details" {
 		if m.ItemDetailsFocus {
-			m.Viewport.LineDown(10)
+			if m.TaskDetailsFocus {
+				m.TasksCursor++
+				if m.TasksCursor >= len(m.Tasks) {
+					m.TasksCursor = len(m.Tasks) - 1
+				}
+			} else {
+				m.Viewport.LineDown(10)
+			}
 		} else {
 			m.FilesCursor++
 			if m.FilesCursor >= len(m.Files) {
