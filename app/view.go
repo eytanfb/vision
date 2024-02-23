@@ -70,15 +70,15 @@ func RenderFiles(m *Model) string {
 
 	var style lipgloss.Style
 	containerStyle := lipgloss.NewStyle()
-	listContainerStyle := lipgloss.NewStyle().Width(40).Height(m.Height - 20)
-	itemDetailsContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.Width - 60).Height(m.Height - 20)
+	listContainerStyle := lipgloss.NewStyle().Width(40).Height(m.Height - 20).Padding(1)
+	itemDetailsContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.Width - 60).Height(m.Height - 20).Padding(1)
 	list := ""
 	itemDetails := ""
 
 	if m.ItemDetailsFocus {
-		itemDetailsContainerStyle = itemDetailsContainerStyle.Border(lipgloss.RoundedBorder())
+		itemDetailsContainerStyle = itemDetailsContainerStyle.Border(lipgloss.RoundedBorder()).Padding(1)
 	} else {
-		listContainerStyle = listContainerStyle.Border(lipgloss.RoundedBorder())
+		listContainerStyle = listContainerStyle.Border(lipgloss.RoundedBorder()).Padding(1)
 	}
 
 	for index, file := range m.Files {
@@ -114,7 +114,7 @@ func RenderFiles(m *Model) string {
 func RenderNavBar(m *Model) string {
 	navbar := ""
 	textStyle := lipgloss.NewStyle().Bold(true)
-	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Background(lipgloss.Color("#000")).Padding(1, 2)
+	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Background(lipgloss.Color("#000")).Padding(1).MarginBottom(1)
 	if m.CurrentView == "companies" {
 		navbar = textStyle.Render("Company selection")
 	} else if m.CurrentView == "categories" {
@@ -134,14 +134,14 @@ func RenderTasks(m *Model) string {
 	var style lipgloss.Style
 	var tasks strings.Builder
 	containerStyle := lipgloss.NewStyle()
-	listContainerStyle := lipgloss.NewStyle().Width(40).Height(m.Height - 20)
-	itemDetailsContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.Width - 60).Height(m.Height - 20)
+	listContainerStyle := lipgloss.NewStyle().Width(40).Height(m.Height - 20).Padding(1)
+	itemDetailsContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.Width - 60).Height(m.Height - 20).Padding(1)
 	list := ""
 
 	if m.ItemDetailsFocus {
-		itemDetailsContainerStyle = itemDetailsContainerStyle.Border(lipgloss.RoundedBorder())
+		itemDetailsContainerStyle = itemDetailsContainerStyle.Border(lipgloss.RoundedBorder()).Padding(1)
 	} else {
-		listContainerStyle = listContainerStyle.Border(lipgloss.RoundedBorder())
+		listContainerStyle = listContainerStyle.Border(lipgloss.RoundedBorder()).Padding(1)
 	}
 
 	for index, file := range m.Files {

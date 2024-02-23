@@ -22,8 +22,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if err != nil {
 				return m, tea.Quit
 			}
-
-			m.Viewport, cmd = m.Viewport.Update(msg)
 		}
 	case tea.WindowSizeMsg:
 		if !m.Ready {
