@@ -187,6 +187,10 @@ func (t Task) String() string {
 	}
 
 	stringBuilder.WriteString(t.Text)
+	result := stringBuilder.String()
+	resultWithoutDates := RemoveDatesFromText(result)
+	stringBuilder.Reset()
+	stringBuilder.WriteString(resultWithoutDates)
 
 	if t.StartDate != "" || t.CompletedDate != "" || t.ScheduledDate != "" {
 		stringBuilder.WriteString("\n")
@@ -201,8 +205,7 @@ func (t Task) String() string {
 		}
 	}
 
-	result := stringBuilder.String()
-	return RemoveDatesFromText(result)
+	return stringBuilder.String()
 }
 
 func RemoveDatesFromText(text string) string {
