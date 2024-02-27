@@ -12,7 +12,7 @@ func (j EKeyCommand) Execute(m *Model) error {
 		return nil
 	}
 
-	filePath := getCurrentFilePath(m)
+	filePath := m.GetCurrentFilePath()
 	editor := os.Getenv("EDITOR")
 
 	if editor == "" {
@@ -32,8 +32,4 @@ func (j EKeyCommand) HelpText() string {
 
 func (j EKeyCommand) AllowedStates() []string {
 	return []string{}
-}
-
-func getCurrentFilePath(m *Model) string {
-	return "/Users/eytananjel/Notes/" + m.SelectedCompany.DisplayName + "/" + m.SelectedCategory + "/" + m.Files[m.FilesCursor].Name
 }

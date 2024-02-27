@@ -26,8 +26,8 @@ type Model struct {
 	currentView      string
 	SelectedCompany  Company
 	SelectedCategory string
-	CompaniesCursor  int
-	CategoriesCursor int
+	companiesCursor  int
+	categoriesCursor int
 	FilesCursor      int
 	Files            []FileInfo
 	Cache            map[string][]FileInfo
@@ -57,8 +57,8 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 		Companies:        companies,
 		Categories:       cfg.Categories,
 		currentView:      "companies",
-		CompaniesCursor:  0,
-		CategoriesCursor: 0,
+		companiesCursor:  0,
+		categoriesCursor: 0,
 		FilesCursor:      0,
 		SelectedCompany:  Company{},
 		SelectedCategory: "",
@@ -118,11 +118,11 @@ func (m Model) IsItemDetailsFocus() bool {
 }
 
 func (m *Model) GoToNextCompany() {
-	goToNext(&m.CompaniesCursor, len(m.Companies))
+	goToNext(&m.companiesCursor, len(m.Companies))
 }
 
 func (m *Model) GoToNextCategory() {
-	goToNext(&m.CategoriesCursor, len(m.Categories))
+	goToNext(&m.categoriesCursor, len(m.Categories))
 }
 
 func (m *Model) GoToNextTask() {
@@ -134,11 +134,11 @@ func (m *Model) GoToNextFile() {
 }
 
 func (m *Model) GoToPreviousCompany() {
-	goToPrevious(&m.CompaniesCursor)
+	goToPrevious(&m.companiesCursor)
 }
 
 func (m *Model) GoToPreviousCategory() {
-	goToPrevious(&m.CategoriesCursor)
+	goToPrevious(&m.categoriesCursor)
 }
 
 func (m *Model) GoToPreviousTask() {
@@ -187,11 +187,11 @@ func (m *Model) GoToPreviousView() {
 }
 
 func (m *Model) selectCompany() {
-	m.SelectedCompany = m.Companies[m.CompaniesCursor]
+	m.SelectedCompany = m.Companies[m.companiesCursor]
 }
 
 func (m *Model) selectCategory() {
-	m.SelectedCategory = m.Categories[m.CategoriesCursor]
+	m.SelectedCategory = m.Categories[m.categoriesCursor]
 }
 
 func (m *Model) Select() {
@@ -272,9 +272,9 @@ func (m *Model) ShowTasks() {
 
 func (m Model) GetCurrentCursor() int {
 	if m.IsCompanyView() {
-		return m.CompaniesCursor
+		return m.companiesCursor
 	} else if m.IsCategoryView() {
-		return m.CategoriesCursor
+		return m.categoriesCursor
 	} else if m.IsDetailsView() {
 		return m.FilesCursor
 	}
@@ -287,6 +287,10 @@ func (m Model) HasFiles() bool {
 
 func (m Model) GetCurrentCompanyName() string {
 	return m.SelectedCompany.DisplayName
+}
+
+func (m Model) GetCurrentFilePath() string {
+	return "/Users/eytananjel/Notes/" + m.SelectedCompany.DisplayName + "/" + m.SelectedCategory + "/" + m.Files[m.FilesCursor].Name
 }
 
 func (m Model) CompanyNames() []string {
