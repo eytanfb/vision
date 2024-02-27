@@ -14,17 +14,12 @@ func (m *Model) View() string {
 func ViewHandler(m *Model) string {
 	content := "Something is wrong"
 
-	if m.CurrentView == "companies" {
-		companyNames := make([]string, len(m.Companies))
-		for i, company := range m.Companies {
-			companyNames[i] = company.DisplayName
-		}
-
-		content = RenderList(m, companyNames, "company")
-	} else if m.CurrentView == "categories" {
+	if m.IsCompanyView() {
+		content = RenderList(m, m.CompanyNames(), "company")
+	} else if m.IsCategoryView() {
 		content = RenderList(m, m.Categories, "category")
-	} else if m.CurrentView == "details" {
-		if m.TaskDetailsFocus {
+	} else if m.IsDetailsView() {
+		if m.IsTaskDetailsFocus() {
 			content = RenderTasks(m)
 		} else {
 			content = RenderFiles(m)
@@ -35,23 +30,18 @@ func ViewHandler(m *Model) string {
 }
 
 func RenderList(m *Model, items []string, title string) string {
-	var style lipgloss.Style
 	list := ""
-	containerStyle := lipgloss.NewStyle().Width(40)
-	cursor := m.CompaniesCursor
-	if title == "category" {
-		cursor = m.CategoriesCursor
-	}
+	containerStyle := lipgloss.NewStyle().Width(40).Height(m.Height - 20).Padding(1)
+
+	cursor := m.GetCurrentCursor()
 
 	for index, item := range items {
-		line := ""
-		style = lipgloss.NewStyle()
+		line := "  "
+		style := lipgloss.NewStyle()
 
 		if index == cursor {
-			line += "❯ "
+			line = "❯ "
 			style = style.Bold(true)
-		} else {
-			line += "  "
 		}
 
 		line += item + "\n"
@@ -64,21 +54,21 @@ func RenderList(m *Model, items []string, title string) string {
 }
 
 func RenderFiles(m *Model) string {
-	if len(m.Files) == 0 {
+	if !m.HasFiles() {
 		return "No files found"
 	}
 
 	var style lipgloss.Style
 	containerStyle := lipgloss.NewStyle()
-	listContainerStyle := lipgloss.NewStyle().Width(40).Height(m.Height - 20).Padding(1)
-	itemDetailsContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.Width - 60).Height(m.Height - 20).Padding(1)
+	listContainerStyle := lipgloss.NewStyle().Width(40).Height(m.Height - 20).Padding(1).Border(lipgloss.RoundedBorder())
+	itemDetailsContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.Width - 60).Height(m.Height - 20).Padding(1).Border(lipgloss.RoundedBorder())
 	list := ""
 	itemDetails := ""
 
-	if m.ItemDetailsFocus {
-		itemDetailsContainerStyle = itemDetailsContainerStyle.Border(lipgloss.RoundedBorder()).Padding(1)
+	if m.IsItemDetailsFocus() {
+		itemDetailsContainerStyle = itemDetailsContainerStyle.BorderForeground(lipgloss.Color("63"))
 	} else {
-		listContainerStyle = listContainerStyle.Border(lipgloss.RoundedBorder()).Padding(1)
+		listContainerStyle = listContainerStyle.BorderForeground(lipgloss.Color("63"))
 	}
 
 	for index, file := range m.Files {
@@ -114,13 +104,13 @@ func RenderFiles(m *Model) string {
 func RenderNavBar(m *Model) string {
 	navbar := ""
 	textStyle := lipgloss.NewStyle().Bold(true)
-	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Background(lipgloss.Color("#000")).Padding(1).MarginBottom(1)
-	if m.CurrentView == "companies" {
+	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Background(lipgloss.Color("#000")).MarginBottom(1).Width(m.Width).Padding(1)
+	if m.IsCompanyView() {
 		navbar = textStyle.Render("Company selection")
-	} else if m.CurrentView == "categories" {
-		navbar = textStyle.Render(m.SelectedCompany.DisplayName + " > Category selection")
-	} else if m.CurrentView == "details" {
-		navbar = textStyle.Render(m.SelectedCompany.DisplayName + " > " + m.SelectedCategory)
+	} else if m.IsCategoryView() {
+		navbar = textStyle.Render(m.GetCurrentCompanyName() + " > Category selection")
+	} else if m.IsDetailsView() {
+		navbar = textStyle.Render(m.GetCurrentCompanyName() + " > " + m.SelectedCategory)
 	}
 
 	return style.Render(navbar)
@@ -172,9 +162,7 @@ func RenderTasks(m *Model) string {
 	itemDetailsContainer := itemDetailsContainerStyle.Render(m.Viewport.View())
 	container := containerStyle.Render(lipgloss.JoinHorizontal(lipgloss.Left, listContainer, itemDetailsContainer))
 
-	titleStyle := lipgloss.NewStyle().MarginTop(1).MarginBottom(1)
-	title := titleStyle.Render("Select a file (" + fmt.Sprint(len(m.Files)) + "):")
-	view := lipgloss.JoinVertical(lipgloss.Top, title, container)
+	view := lipgloss.JoinVertical(lipgloss.Top, container)
 
 	return view
 }

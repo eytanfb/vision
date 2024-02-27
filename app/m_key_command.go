@@ -1,16 +1,10 @@
 package app
 
-import "fmt"
-
 type MKeyCommand struct{}
 
 func (j MKeyCommand) Execute(m *Model) error {
-	if m.CurrentView == "categories" {
-		fmt.Println("MKeyCommand")
-		m.SelectedCategory = "meetings"
-		m.CurrentView = "details"
-		m.FilesCursor = 0
-		m.Files = m.FetchFiles()
+	if m.IsCategoryView() {
+		m.GoToNextViewWithCategory("meetings")
 	}
 
 	return nil

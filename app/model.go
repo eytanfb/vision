@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"vision/config"
+	"vision/utils"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -13,17 +14,16 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-type Company struct {
-	DisplayName    string   `json:"displayName"`
-	FolderPathName string   `json:"folderPathName"`
-	FullPath       string   `json:"fullPath"`
-	SubFolders     []string `json:"subFolders"`
-}
+const (
+	CompaniesView  = "companies"
+	CategoriesView = "categories"
+	DetailsView    = "details"
+)
 
 type Model struct {
 	Companies        []Company
 	Categories       []string
-	CurrentView      string
+	currentView      string
 	SelectedCompany  Company
 	SelectedCategory string
 	CompaniesCursor  int
@@ -41,20 +41,6 @@ type Model struct {
 	TasksCursor      int
 }
 
-type Task struct {
-	IsDone        bool
-	Text          string
-	StartDate     string
-	CompletedDate string
-	ScheduledDate string
-	LineNumber    int
-}
-
-type ListItem struct {
-	Title    string
-	FullPath string
-}
-
 type FileInfo struct {
 	Name    string
 	Content string
@@ -70,7 +56,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 	m := Model{
 		Companies:        companies,
 		Categories:       cfg.Categories,
-		CurrentView:      "companies",
+		currentView:      "companies",
 		CompaniesCursor:  0,
 		CategoriesCursor: 0,
 		FilesCursor:      0,
@@ -87,7 +73,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 		for _, company := range m.Companies {
 			if strings.ToLower(company.DisplayName) == strings.ToLower(requestedCompany) {
 				m.SelectedCompany = company
-				m.CurrentView = "categories"
+				m.GoToNextView()
 				break
 			}
 		}
@@ -97,9 +83,8 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 		requestedCategory := strings.ToLower(args[1])
 		for _, category := range m.Categories {
 			if strings.ToLower(category) == requestedCategory {
-				m.SelectedCategory = category
-				m.CurrentView = "details"
-				m.Files = m.FetchFiles()
+				m.assignCategory(category)
+				m.GoToNextView()
 				break
 			}
 		}
@@ -110,6 +95,206 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 
 func (m Model) Init() tea.Cmd {
 	return nil
+}
+
+func (m Model) IsCompanyView() bool {
+	return m.currentView == CompaniesView
+}
+
+func (m Model) IsCategoryView() bool {
+	return m.currentView == CategoriesView
+}
+
+func (m Model) IsDetailsView() bool {
+	return m.currentView == DetailsView
+}
+
+func (m Model) IsTaskDetailsFocus() bool {
+	return m.IsDetailsView() && m.TaskDetailsFocus
+}
+
+func (m Model) IsItemDetailsFocus() bool {
+	return m.IsDetailsView() && m.ItemDetailsFocus
+}
+
+func (m *Model) GoToNextCompany() {
+	goToNext(&m.CompaniesCursor, len(m.Companies))
+}
+
+func (m *Model) GoToNextCategory() {
+	goToNext(&m.CategoriesCursor, len(m.Categories))
+}
+
+func (m *Model) GoToNextTask() {
+	goToNext(&m.TasksCursor, len(m.Tasks))
+}
+
+func (m *Model) GoToNextFile() {
+	goToNext(&m.FilesCursor, len(m.Files))
+}
+
+func (m *Model) GoToPreviousCompany() {
+	goToPrevious(&m.CompaniesCursor)
+}
+
+func (m *Model) GoToPreviousCategory() {
+	goToPrevious(&m.CategoriesCursor)
+}
+
+func (m *Model) GoToPreviousTask() {
+	goToPrevious(&m.TasksCursor)
+}
+
+func (m *Model) GoToPreviousFile() {
+	goToPrevious(&m.FilesCursor)
+}
+
+func goToNext(cursor *int, length int) {
+	*cursor++
+	if *cursor >= length {
+		*cursor = length - 1
+	}
+}
+
+func goToPrevious(cursor *int) {
+	*cursor--
+	if *cursor < 0 {
+		*cursor = 0
+	}
+}
+
+func (m *Model) GoToNextView() {
+	if m.IsCompanyView() {
+		m.currentView = CategoriesView
+	} else if m.IsCategoryView() {
+		m.currentView = DetailsView
+		m.FilesCursor = 0
+		m.Files = m.FetchFiles()
+	}
+}
+
+func (m *Model) GoToNextViewWithCategory(category string) {
+	m.assignCategory(category)
+	m.GoToNextView()
+}
+
+func (m *Model) GoToPreviousView() {
+	if m.IsCategoryView() {
+		m.currentView = CompaniesView
+	} else if m.IsDetailsView() {
+		m.currentView = CategoriesView
+	}
+}
+
+func (m *Model) selectCompany() {
+	m.SelectedCompany = m.Companies[m.CompaniesCursor]
+}
+
+func (m *Model) selectCategory() {
+	m.SelectedCategory = m.Categories[m.CategoriesCursor]
+}
+
+func (m *Model) Select() {
+	if m.IsCompanyView() {
+		m.selectCompany()
+	} else if m.IsCategoryView() {
+		m.selectCategory()
+	}
+	m.GoToNextView()
+}
+
+func (m *Model) MoveDown() {
+	if m.IsCompanyView() {
+		m.GoToNextCompany()
+	} else if m.IsCategoryView() {
+		m.GoToNextCategory()
+	} else if m.IsDetailsView() {
+		if m.IsItemDetailsFocus() {
+			if m.IsTaskDetailsFocus() {
+				m.GoToNextTask()
+			} else {
+				m.Viewport.LineDown(10)
+			}
+		} else {
+			m.GoToNextFile()
+		}
+	}
+}
+
+func (m *Model) MoveUp() {
+	if m.IsDetailsView() {
+		if m.IsItemDetailsFocus() {
+			if m.IsTaskDetailsFocus() {
+				m.GoToPreviousTask()
+			} else {
+				m.Viewport.LineUp(10)
+			}
+		} else {
+			m.GoToPreviousFile()
+		}
+	} else if m.IsCategoryView() {
+		m.GoToPreviousCategory()
+	} else if m.IsCompanyView() {
+		m.GoToPreviousCompany()
+	}
+}
+
+func (m *Model) assignCategory(category string) {
+	m.SelectedCategory = category
+}
+
+func (m *Model) LoseDetailsFocus() {
+	m.ItemDetailsFocus = false
+	m.TaskDetailsFocus = false
+}
+
+func (m *Model) GainDetailsFocus() {
+	m.ItemDetailsFocus = true
+}
+
+func (m *Model) ShowTasks() {
+	fileTasks := utils.ExtractTasksFromText(m.Files[m.FilesCursor].Content)
+	tasks := []Task{}
+	for _, task := range fileTasks {
+		tasks = append(tasks, Task{
+			IsDone:        task.IsDone,
+			Text:          task.Text,
+			StartDate:     ExtractStartDateFromText(task.Text),
+			ScheduledDate: ExtractScheduledDateFromText(task.Text),
+			CompletedDate: ExtractCompletedDateFromText(task.Text),
+			LineNumber:    task.LineNumber,
+		})
+	}
+	m.Tasks = tasks
+	m.TaskDetailsFocus = true
+	m.TaskDetailsFocus = true
+}
+
+func (m Model) GetCurrentCursor() int {
+	if m.IsCompanyView() {
+		return m.CompaniesCursor
+	} else if m.IsCategoryView() {
+		return m.CategoriesCursor
+	} else if m.IsDetailsView() {
+		return m.FilesCursor
+	}
+	return 0
+}
+
+func (m Model) HasFiles() bool {
+	return len(m.Files) > 0
+}
+
+func (m Model) GetCurrentCompanyName() string {
+	return m.SelectedCompany.DisplayName
+}
+
+func (m Model) CompanyNames() []string {
+	var names []string
+	for _, company := range m.Companies {
+		names = append(names, company.DisplayName)
+	}
+	return names
 }
 
 func (m Model) FetchFiles() []FileInfo {
@@ -177,41 +362,35 @@ func convertCompanies(companies []config.Company) []Company {
 	return items
 }
 
-func (t Task) String() string {
-	var stringBuilder strings.Builder
-
-	if t.IsDone {
-		stringBuilder.WriteString("- [x] ")
-	} else {
-		stringBuilder.WriteString("- [ ] ")
-	}
-
-	stringBuilder.WriteString(t.Text)
-	result := stringBuilder.String()
-	resultWithoutDates := RemoveDatesFromText(result)
-	stringBuilder.Reset()
-	stringBuilder.WriteString(resultWithoutDates)
-
-	if t.StartDate != "" || t.CompletedDate != "" || t.ScheduledDate != "" {
-		stringBuilder.WriteString("\n")
-		if t.ScheduledDate != "" {
-			stringBuilder.WriteString("Scheduled: " + strings.Trim(t.ScheduledDate, " ") + "\n")
-		}
-		if t.StartDate != "" {
-			stringBuilder.WriteString("Start: " + strings.Trim(t.StartDate, " ") + "\n")
-		}
-		if t.CompletedDate != "" {
-			stringBuilder.WriteString("Completed: " + strings.Trim(t.CompletedDate, " ") + "\n")
-		}
-	}
-
-	return stringBuilder.String()
-}
-
 func RemoveDatesFromText(text string) string {
 	datesRegex := regexp.MustCompile(`[✅, ⏳, 🛫]\s+\d{4}-\d{2}-\d{2}`)
 
 	text = datesRegex.ReplaceAllString(text, "")
 
 	return strings.Trim(text, " ")
+}
+
+func ExtractStartDateFromText(text string) string {
+	startIcon := "🛫 "
+	return ExtractDateFromText(text, startIcon)
+}
+
+func ExtractScheduledDateFromText(text string) string {
+	scheduledIcon := "⏳"
+	return ExtractDateFromText(text, scheduledIcon)
+}
+
+func ExtractCompletedDateFromText(text string) string {
+	completedIcon := "✅ "
+	return ExtractDateFromText(text, completedIcon)
+}
+
+func ExtractDateFromText(text string, icon string) string {
+	index := strings.Index(text, icon)
+	if index == -1 {
+		return ""
+	}
+	// read date from the next 10 characters
+	date := text[index : index+14]
+	return date
 }

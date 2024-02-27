@@ -3,11 +3,8 @@ package app
 type SKeyCommand struct{}
 
 func (j SKeyCommand) Execute(m *Model) error {
-	if m.CurrentView == "categories" {
-		m.SelectedCategory = "standups"
-		m.CurrentView = "details"
-		m.FilesCursor = 0
-		m.Files = m.FetchFiles()
+	if m.IsCategoryView() {
+		m.GoToNextViewWithCategory("standups")
 	}
 
 	return nil

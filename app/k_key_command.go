@@ -3,33 +3,7 @@ package app
 type KKeyCommand struct{}
 
 func (j KKeyCommand) Execute(m *Model) error {
-	if m.CurrentView == "details" {
-		if m.ItemDetailsFocus {
-			if m.TaskDetailsFocus {
-				m.TasksCursor--
-				if m.TasksCursor < 0 {
-					m.TasksCursor = 0
-				}
-			} else {
-				m.Viewport.LineUp(10)
-			}
-		} else {
-			m.FilesCursor--
-			if m.FilesCursor < 0 {
-				m.FilesCursor = 0
-			}
-		}
-	} else if m.CurrentView == "categories" {
-		m.CategoriesCursor--
-		if m.CategoriesCursor < 0 {
-			m.CategoriesCursor = 0
-		}
-	} else if m.CurrentView == "companies" {
-		m.CompaniesCursor--
-		if m.CompaniesCursor < 0 {
-			m.CompaniesCursor = 0
-		}
-	}
+	m.MoveUp()
 
 	return nil
 }

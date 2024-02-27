@@ -3,8 +3,8 @@ package app
 type LKeyCommand struct{}
 
 func (j LKeyCommand) Execute(m *Model) error {
-	if m.CurrentView == "details" {
-		m.ItemDetailsFocus = true
+	if m.IsDetailsView() {
+		m.GainDetailsFocus()
 	} else {
 		return EnterKeyCommand{}.Execute(m)
 	}

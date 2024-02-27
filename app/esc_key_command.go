@@ -3,11 +3,7 @@ package app
 type EscKeyCommand struct{}
 
 func (j EscKeyCommand) Execute(m *Model) error {
-	if m.CurrentView == "categories" {
-		m.CurrentView = "companies"
-	} else if m.CurrentView == "details" {
-		m.CurrentView = "categories"
-	}
+	m.GoToPreviousView()
 
 	return nil
 }

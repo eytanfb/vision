@@ -8,7 +8,7 @@ import (
 type EKeyCommand struct{}
 
 func (j EKeyCommand) Execute(m *Model) error {
-	if m.CurrentView != "details" && !m.ItemDetailsFocus {
+	if !m.IsItemDetailsFocus() {
 		return nil
 	}
 
