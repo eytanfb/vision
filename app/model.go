@@ -1,17 +1,12 @@
 package app
 
 import (
-	"os"
-	"path/filepath"
-	"regexp"
 	"strings"
 	"vision/config"
 	"vision/utils"
 
-	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/log"
 )
 
 const (
@@ -21,76 +16,72 @@ const (
 )
 
 type Model struct {
-	Companies        []Company
-	Categories       []string
-	currentView      string
-	SelectedCompany  Company
-	SelectedCategory string
-	companiesCursor  int
-	categoriesCursor int
-	FilesCursor      int
-	Files            []FileInfo
-	Cache            map[string][]FileInfo
-	Width            int
-	Height           int
+	DirectoryManager DirectoryManager
+	TaskManager      TaskManager
+	FileManager      FileManager
+	ViewManager      ViewManager
 	Viewport         viewport.Model
-	ItemDetailsFocus bool
-	Ready            bool
-	Tasks            []Task
-	TaskDetailsFocus bool
-	TasksCursor      int
-}
-
-type FileInfo struct {
-	Name    string
-	Content string
 }
 
 func InitialModel(cfg *config.Config, args []string) tea.Model {
-	items := []list.Item{} // Placeholder for list items initialization
-	listModel := list.New(items, list.NewDefaultDelegate(), 0, 0)
-	listModel.Title = "Select an Item"
-
-	companies := convertCompanies(cfg.Companies)
+	companies := CompaniesFromConfig(cfg.Companies)
 
 	m := Model{
-		Companies:        companies,
-		Categories:       cfg.Categories,
-		currentView:      "companies",
-		companiesCursor:  0,
-		categoriesCursor: 0,
-		FilesCursor:      0,
-		SelectedCompany:  Company{},
-		SelectedCategory: "",
-		Files:            []FileInfo{},
-		Cache:            make(map[string][]FileInfo),
-		Viewport:         viewport.Model{},
-		Ready:            false,
+		DirectoryManager: DirectoryManager{
+			Companies:        companies,
+			Categories:       cfg.Categories,
+			SelectedCompany:  Company{},
+			SelectedCategory: "",
+			CompaniesCursor:  0,
+			CategoriesCursor: 0,
+		},
+		TaskManager: TaskManager{
+			TaskCollection: TaskCollection{},
+			TasksCursor:    0,
+		},
+		FileManager: FileManager{
+			FilesCursor: 0,
+			Files:       []FileInfo{},
+			Cache:       make(map[string][]FileInfo),
+		},
+		ViewManager: ViewManager{
+			CurrentView:      "companies",
+			Width:            0,
+			Height:           0,
+			Ready:            false,
+			TaskDetailsFocus: false,
+			ItemDetailsFocus: false,
+		},
+		Viewport: viewport.Model{},
 	}
 
+	SetArgs(&m, args)
+
+	return &m
+}
+
+func SetArgs(m *Model, args []string) {
 	if len(args) > 0 {
 		requestedCompany := args[0]
-		for _, company := range m.Companies {
-			if strings.ToLower(company.DisplayName) == strings.ToLower(requestedCompany) {
-				m.SelectedCompany = company
-				m.GoToNextView()
-				break
-			}
+		found := m.DirectoryManager.SelectCompany(requestedCompany)
+
+		if !found {
+			return
 		}
+
+		m.GoToNextView()
 	}
 
 	if len(args) > 1 {
 		requestedCategory := strings.ToLower(args[1])
-		for _, category := range m.Categories {
-			if strings.ToLower(category) == requestedCategory {
-				m.assignCategory(category)
-				m.GoToNextView()
-				break
-			}
-		}
-	}
+		found := m.DirectoryManager.SelectCategory(requestedCategory)
 
-	return &m
+		if !found {
+			return
+		}
+
+		m.GoToNextView()
+	}
 }
 
 func (m Model) Init() tea.Cmd {
@@ -98,55 +89,55 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) IsCompanyView() bool {
-	return m.currentView == CompaniesView
+	return m.ViewManager.IsCompanyView()
 }
 
 func (m Model) IsCategoryView() bool {
-	return m.currentView == CategoriesView
+	return m.ViewManager.IsCategoryView()
 }
 
 func (m Model) IsDetailsView() bool {
-	return m.currentView == DetailsView
+	return m.ViewManager.IsDetailsView()
 }
 
 func (m Model) IsTaskDetailsFocus() bool {
-	return m.IsDetailsView() && m.TaskDetailsFocus
+	return m.ViewManager.IsTaskDetailsFocus()
 }
 
 func (m Model) IsItemDetailsFocus() bool {
-	return m.IsDetailsView() && m.ItemDetailsFocus
+	return m.ViewManager.IsItemDetailsFocus()
 }
 
 func (m *Model) GoToNextCompany() {
-	goToNext(&m.companiesCursor, len(m.Companies))
+	goToNext(&m.DirectoryManager.CompaniesCursor, len(m.DirectoryManager.Companies))
 }
 
 func (m *Model) GoToNextCategory() {
-	goToNext(&m.categoriesCursor, len(m.Categories))
+	goToNext(&m.DirectoryManager.CategoriesCursor, len(m.DirectoryManager.Categories))
 }
 
 func (m *Model) GoToNextTask() {
-	goToNext(&m.TasksCursor, len(m.Tasks))
+	goToNext(&m.TaskManager.TasksCursor, len(m.TaskManager.TaskCollection.Tasks))
 }
 
 func (m *Model) GoToNextFile() {
-	goToNext(&m.FilesCursor, len(m.Files))
+	goToNext(&m.FileManager.FilesCursor, len(m.FileManager.Files))
 }
 
 func (m *Model) GoToPreviousCompany() {
-	goToPrevious(&m.companiesCursor)
+	goToPrevious(&m.DirectoryManager.CompaniesCursor)
 }
 
 func (m *Model) GoToPreviousCategory() {
-	goToPrevious(&m.categoriesCursor)
+	goToPrevious(&m.DirectoryManager.CategoriesCursor)
 }
 
 func (m *Model) GoToPreviousTask() {
-	goToPrevious(&m.TasksCursor)
+	goToPrevious(&m.TaskManager.TasksCursor)
 }
 
 func (m *Model) GoToPreviousFile() {
-	goToPrevious(&m.FilesCursor)
+	goToPrevious(&m.FileManager.FilesCursor)
 }
 
 func goToNext(cursor *int, length int) {
@@ -164,237 +155,70 @@ func goToPrevious(cursor *int) {
 }
 
 func (m *Model) GoToNextView() {
-	if m.IsCompanyView() {
-		m.currentView = CategoriesView
-	} else if m.IsCategoryView() {
-		m.currentView = DetailsView
-		m.FilesCursor = 0
-		m.Files = m.FetchFiles()
-	}
+	m.ViewManager.GoToNextView(&m.FileManager, &m.DirectoryManager)
 }
 
 func (m *Model) GoToNextViewWithCategory(category string) {
-	m.assignCategory(category)
+	m.DirectoryManager.SelectCategory(category)
 	m.GoToNextView()
 }
 
 func (m *Model) GoToPreviousView() {
-	if m.IsCategoryView() {
-		m.currentView = CompaniesView
-	} else if m.IsDetailsView() {
-		m.currentView = CategoriesView
-	}
-}
-
-func (m *Model) selectCompany() {
-	m.SelectedCompany = m.Companies[m.companiesCursor]
-}
-
-func (m *Model) selectCategory() {
-	m.SelectedCategory = m.Categories[m.categoriesCursor]
+	m.ViewManager.GoToPreviousView()
 }
 
 func (m *Model) Select() {
-	if m.IsCompanyView() {
-		m.selectCompany()
-	} else if m.IsCategoryView() {
-		m.selectCategory()
-	}
-	m.GoToNextView()
-}
-
-func (m *Model) MoveDown() {
-	if m.IsCompanyView() {
-		m.GoToNextCompany()
-	} else if m.IsCategoryView() {
-		m.GoToNextCategory()
-	} else if m.IsDetailsView() {
-		if m.IsItemDetailsFocus() {
-			if m.IsTaskDetailsFocus() {
-				m.GoToNextTask()
-			} else {
-				m.Viewport.LineDown(10)
-			}
-		} else {
-			m.GoToNextFile()
-		}
-	}
-}
-
-func (m *Model) MoveUp() {
-	if m.IsDetailsView() {
-		if m.IsItemDetailsFocus() {
-			if m.IsTaskDetailsFocus() {
-				m.GoToPreviousTask()
-			} else {
-				m.Viewport.LineUp(10)
-			}
-		} else {
-			m.GoToPreviousFile()
-		}
-	} else if m.IsCategoryView() {
-		m.GoToPreviousCategory()
-	} else if m.IsCompanyView() {
-		m.GoToPreviousCompany()
-	}
-}
-
-func (m *Model) assignCategory(category string) {
-	m.SelectedCategory = category
+	m.ViewManager.Select(&m.FileManager, &m.DirectoryManager)
 }
 
 func (m *Model) LoseDetailsFocus() {
-	m.ItemDetailsFocus = false
-	m.TaskDetailsFocus = false
+	m.ViewManager.ItemDetailsFocus = false
+	m.ViewManager.TaskDetailsFocus = false
 }
 
 func (m *Model) GainDetailsFocus() {
-	m.ItemDetailsFocus = true
+	m.ViewManager.ItemDetailsFocus = true
 }
 
 func (m *Model) ShowTasks() {
-	fileTasks := utils.ExtractTasksFromText(m.Files[m.FilesCursor].Content)
-	tasks := []Task{}
-	for _, task := range fileTasks {
-		tasks = append(tasks, Task{
-			IsDone:        task.IsDone,
-			Text:          task.Text,
-			StartDate:     ExtractStartDateFromText(task.Text),
-			ScheduledDate: ExtractScheduledDateFromText(task.Text),
-			CompletedDate: ExtractCompletedDateFromText(task.Text),
-			LineNumber:    task.LineNumber,
-		})
-	}
-	m.Tasks = tasks
-	m.TaskDetailsFocus = true
-	m.TaskDetailsFocus = true
+	fileTasks := utils.ExtractTasksFromText(m.FileManager.CurrentFileContent())
+	taskCollection := CreateTaskCollectionFromFileTasks(fileTasks)
+	m.TaskManager.TaskCollection = taskCollection
+	m.ViewManager.TaskDetailsFocus = true
+	m.ViewManager.TaskDetailsFocus = true
 }
 
 func (m Model) GetCurrentCursor() int {
 	if m.IsCompanyView() {
-		return m.companiesCursor
+		return m.DirectoryManager.CompaniesCursor
 	} else if m.IsCategoryView() {
-		return m.categoriesCursor
+		return m.DirectoryManager.CategoriesCursor
 	} else if m.IsDetailsView() {
-		return m.FilesCursor
+		return m.FileManager.FilesCursor
 	}
 	return 0
 }
 
 func (m Model) HasFiles() bool {
-	return len(m.Files) > 0
+	return len(m.FileManager.Files) > 0
 }
 
 func (m Model) GetCurrentCompanyName() string {
-	return m.SelectedCompany.DisplayName
+	return m.DirectoryManager.CurrentCompanyName()
 }
 
 func (m Model) GetCurrentFilePath() string {
-	return "/Users/eytananjel/Notes/" + m.SelectedCompany.DisplayName + "/" + m.SelectedCategory + "/" + m.Files[m.FilesCursor].Name
+	return m.FileManager.GetCurrentFilePath(m.DirectoryManager.CurrentCompanyName(), m.DirectoryManager.SelectedCategory)
 }
 
 func (m Model) CompanyNames() []string {
-	var names []string
-	for _, company := range m.Companies {
-		names = append(names, company.DisplayName)
-	}
-	return names
+	return m.DirectoryManager.CompanyNames()
+}
+
+func (m Model) CategoryNames() []string {
+	return m.DirectoryManager.Categories
 }
 
 func (m Model) FetchFiles() []FileInfo {
-	var files []FileInfo
-	path := "/Users/eytananjel/Notes/" + m.SelectedCompany.FolderPathName + "/" + strings.ToLower(m.SelectedCategory)
-
-	cacheKey := m.SelectedCompany.FolderPathName + ":" + m.SelectedCategory
-	cached, ok := m.Cache[cacheKey]
-
-	if !ok {
-		files = readFilesInDirecory(path)
-		m.Cache[cacheKey] = files
-	} else {
-		log.Info("Read from cache")
-		files = cached
-	}
-
-	return files
-}
-
-func readFilesInDirecory(path string) []FileInfo {
-	var fileInfos []FileInfo
-
-	files, err := os.ReadDir(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-
-		if !strings.HasSuffix(file.Name(), ".md") {
-			continue
-		}
-
-		fullPath := filepath.Join(path, file.Name())
-		content, err := os.ReadFile(fullPath)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		newFileInfo := FileInfo{
-			Name:    file.Name(),
-			Content: string(content),
-		}
-
-		fileInfos = append(fileInfos, newFileInfo)
-	}
-
-	return fileInfos
-}
-
-func convertCompanies(companies []config.Company) []Company {
-	var items []Company
-	for _, company := range companies {
-		items = append(items, Company{
-			DisplayName:    company.DisplayName,
-			FolderPathName: company.FolderPathName,
-			FullPath:       company.FullPath,
-			SubFolders:     company.SubFolders,
-		})
-	}
-	return items
-}
-
-func RemoveDatesFromText(text string) string {
-	datesRegex := regexp.MustCompile(`[✅, ⏳, 🛫]\s+\d{4}-\d{2}-\d{2}`)
-
-	text = datesRegex.ReplaceAllString(text, "")
-
-	return strings.Trim(text, " ")
-}
-
-func ExtractStartDateFromText(text string) string {
-	startIcon := "🛫 "
-	return ExtractDateFromText(text, startIcon)
-}
-
-func ExtractScheduledDateFromText(text string) string {
-	scheduledIcon := "⏳"
-	return ExtractDateFromText(text, scheduledIcon)
-}
-
-func ExtractCompletedDateFromText(text string) string {
-	completedIcon := "✅ "
-	return ExtractDateFromText(text, completedIcon)
-}
-
-func ExtractDateFromText(text string, icon string) string {
-	index := strings.Index(text, icon)
-	if index == -1 {
-		return ""
-	}
-	// read date from the next 10 characters
-	date := text[index : index+14]
-	return date
+	return m.FileManager.FetchFiles(&m.DirectoryManager)
 }

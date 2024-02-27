@@ -17,7 +17,7 @@ func ViewHandler(m *Model) string {
 	if m.IsCompanyView() {
 		content = RenderList(m, m.CompanyNames(), "company")
 	} else if m.IsCategoryView() {
-		content = RenderList(m, m.Categories, "category")
+		content = RenderList(m, m.CategoryNames(), "category")
 	} else if m.IsDetailsView() {
 		if m.IsTaskDetailsFocus() {
 			content = RenderTasks(m)
@@ -31,7 +31,7 @@ func ViewHandler(m *Model) string {
 
 func RenderList(m *Model, items []string, title string) string {
 	list := ""
-	containerStyle := lipgloss.NewStyle().Width(40).Height(m.Height - 20).Padding(1)
+	containerStyle := lipgloss.NewStyle().Width(40).Height(m.ViewManager.Height - 20).Padding(1)
 
 	cursor := m.GetCurrentCursor()
 
@@ -60,8 +60,8 @@ func RenderFiles(m *Model) string {
 
 	var style lipgloss.Style
 	containerStyle := lipgloss.NewStyle()
-	listContainerStyle := lipgloss.NewStyle().Width(40).Height(m.Height - 20).Padding(1).Border(lipgloss.RoundedBorder())
-	itemDetailsContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.Width - 60).Height(m.Height - 20).Padding(1).Border(lipgloss.RoundedBorder())
+	listContainerStyle := lipgloss.NewStyle().Width(40).Height(m.ViewManager.Height - 20).Padding(1).Border(lipgloss.RoundedBorder())
+	itemDetailsContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.Width - 60).Height(m.ViewManager.Height - 20).Padding(1).Border(lipgloss.RoundedBorder())
 	list := ""
 	itemDetails := ""
 
@@ -71,11 +71,11 @@ func RenderFiles(m *Model) string {
 		listContainerStyle = listContainerStyle.BorderForeground(lipgloss.Color("63"))
 	}
 
-	for index, file := range m.Files {
+	for index, file := range m.FileManager.Files {
 		line := ""
 		style = lipgloss.NewStyle()
 
-		if index == m.FilesCursor {
+		if index == m.FileManager.FilesCursor {
 			line += "❯ "
 			style = style.Bold(true)
 			itemDetails = file.Content
@@ -95,7 +95,7 @@ func RenderFiles(m *Model) string {
 	container := containerStyle.Render(lipgloss.JoinHorizontal(lipgloss.Left, listContainer, itemDetailsContainer))
 
 	titleStyle := lipgloss.NewStyle().MarginTop(1).MarginBottom(1)
-	title := titleStyle.Render("Select a file (" + fmt.Sprint(len(m.Files)) + "):")
+	title := titleStyle.Render("Select a file (" + fmt.Sprint(len(m.FileManager.Files)) + "):")
 	view := lipgloss.JoinVertical(lipgloss.Top, title, container)
 
 	return view
@@ -104,45 +104,45 @@ func RenderFiles(m *Model) string {
 func RenderNavBar(m *Model) string {
 	navbar := ""
 	textStyle := lipgloss.NewStyle().Bold(true)
-	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Background(lipgloss.Color("#000")).MarginBottom(1).Width(m.Width).Padding(1)
+	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Background(lipgloss.Color("#000")).MarginBottom(1).Width(m.ViewManager.Width).Padding(1)
 	if m.IsCompanyView() {
 		navbar = textStyle.Render("Company selection")
 	} else if m.IsCategoryView() {
 		navbar = textStyle.Render(m.GetCurrentCompanyName() + " > Category selection")
 	} else if m.IsDetailsView() {
-		navbar = textStyle.Render(m.GetCurrentCompanyName() + " > " + m.SelectedCategory)
+		navbar = textStyle.Render(m.GetCurrentCompanyName() + " > " + m.DirectoryManager.SelectedCategory)
 	}
 
 	return style.Render(navbar)
 }
 
 func RenderTasks(m *Model) string {
-	if len(m.Files) == 0 {
+	if len(m.FileManager.Files) == 0 {
 		return "No files found"
 	}
 
 	var style lipgloss.Style
 	var tasks strings.Builder
 	containerStyle := lipgloss.NewStyle()
-	listContainerStyle := lipgloss.NewStyle().Width(40).Height(m.Height - 20).Padding(1)
-	itemDetailsContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.Width - 60).Height(m.Height - 20).Padding(1)
+	listContainerStyle := lipgloss.NewStyle().Width(40).Height(m.ViewManager.Height - 20).Padding(1)
+	itemDetailsContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.Width - 60).Height(m.ViewManager.Height - 20).Padding(1)
 	list := ""
 
-	if m.ItemDetailsFocus {
+	if m.IsItemDetailsFocus() {
 		itemDetailsContainerStyle = itemDetailsContainerStyle.Border(lipgloss.RoundedBorder()).Padding(1)
 	} else {
 		listContainerStyle = listContainerStyle.Border(lipgloss.RoundedBorder()).Padding(1)
 	}
 
-	for index, file := range m.Files {
+	for index, file := range m.FileManager.Files {
 		line := ""
 		style = lipgloss.NewStyle()
 
-		if index == m.FilesCursor {
+		if index == m.FileManager.FilesCursor {
 			line += "❯ "
 			style = style.Bold(true)
-			for index, task := range m.Tasks {
-				if index == m.TasksCursor {
+			for index, task := range m.TaskManager.TaskCollection.Tasks {
+				if index == m.TaskManager.TasksCursor {
 					tasks.WriteString("❯ ")
 				}
 				tasks.WriteString(task.String() + "\n\n")

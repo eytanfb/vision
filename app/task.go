@@ -1,6 +1,10 @@
 package app
 
-import "strings"
+import (
+	"regexp"
+	"strings"
+	"vision/utils"
+)
 
 type Task struct {
 	IsDone        bool
@@ -22,7 +26,7 @@ func (t Task) String() string {
 
 	stringBuilder.WriteString(t.Text)
 	result := stringBuilder.String()
-	resultWithoutDates := RemoveDatesFromText(result)
+	resultWithoutDates := removeDatesFromText(result)
 	stringBuilder.Reset()
 	stringBuilder.WriteString(resultWithoutDates)
 
@@ -40,4 +44,58 @@ func (t Task) String() string {
 	}
 
 	return stringBuilder.String()
+}
+
+func CreateTaskCollectionFromFileTasks(fileTasks []utils.FileTask) TaskCollection {
+	var tasks []Task
+	for _, fileTask := range fileTasks {
+		task := createTaskFromFileTask(fileTask)
+		tasks = append(tasks, task)
+	}
+
+	return CreateTaskCollection(tasks)
+}
+
+func createTaskFromFileTask(task utils.FileTask) Task {
+	return Task{
+		IsDone:        task.IsDone,
+		Text:          task.Text,
+		StartDate:     extractStartDateFromText(task.Text),
+		ScheduledDate: extractScheduledDateFromText(task.Text),
+		CompletedDate: extractCompletedDateFromText(task.Text),
+		LineNumber:    task.LineNumber,
+	}
+}
+
+func extractStartDateFromText(text string) string {
+	startIcon := "🛫 "
+	return extractDateFromText(text, startIcon)
+}
+
+func extractScheduledDateFromText(text string) string {
+	scheduledIcon := "⏳"
+	return extractDateFromText(text, scheduledIcon)
+}
+
+func extractCompletedDateFromText(text string) string {
+	completedIcon := "✅ "
+	return extractDateFromText(text, completedIcon)
+}
+
+func extractDateFromText(text string, icon string) string {
+	index := strings.Index(text, icon)
+	if index == -1 {
+		return ""
+	}
+	// read date from the next 10 characters
+	date := text[index : index+14]
+	return date
+}
+
+func removeDatesFromText(text string) string {
+	datesRegex := regexp.MustCompile(`[✅, ⏳, 🛫]\s+\d{4}-\d{2}-\d{2}`)
+
+	text = datesRegex.ReplaceAllString(text, "")
+
+	return strings.Trim(text, " ")
 }
