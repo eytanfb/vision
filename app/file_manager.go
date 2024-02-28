@@ -1,9 +1,12 @@
 package app
 
 import (
+	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/log"
 )
@@ -25,7 +28,23 @@ func (fm *FileManager) FetchFiles(dm *DirectoryManager) []FileInfo {
 	cached, ok := fm.Cache[cacheKey]
 
 	if !ok {
-		files = readFilesInDirecory(path)
+		sorting := "default"
+
+		if categoryPath == "tasks" {
+			sorting = "updatedAt"
+		}
+
+		files = readFilesInDirecory(path, sorting)
+		if categoryPath == "standups" {
+			lastStandup := files[len(files)-1]
+			todayInFormat := time.Now().Format("2006-01-02")
+
+			if lastStandup.Name != todayInFormat {
+				fm.CreateStandup(companyFolderPath)
+				files = readFilesInDirecory(path, sorting)
+			}
+		}
+
 		fm.Cache[cacheKey] = files
 	} else {
 		log.Info("Read from cache")
@@ -43,19 +62,57 @@ func (fm FileManager) CurrentFile() FileInfo {
 	return fm.Files[fm.FilesCursor]
 }
 
-func (fm FileManager) currentFileName() string {
-	return fm.CurrentFile().Name
-}
-
 func (fm FileManager) CurrentFileContent() string {
 	return fm.CurrentFile().Content
+}
+
+func (fm FileManager) CreateStandup(company string) {
+	todayInFormat := time.Now().Format("2006-01-02")
+
+	filePath := "/Users/eytananjel/Notes/" + company + "/standups/" + todayInFormat + ".md"
+	templatePath := "/Users/eytananjel/Notes/obsidian/templates/" + company + "_standup.md"
+
+	err := copyFile(templatePath, filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+// If it does exist, it will be overwritten.
+func copyFile(src, dst string) error {
+	// Open the source file for reading
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	// Create the destination file for writing
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	// Copy the contents from source to destination
+	_, err = io.Copy(destFile, sourceFile)
+	if err != nil {
+		return err
+	}
+
+	// Ensure that the written data is flushed to storage
+	return destFile.Sync()
 }
 
 func (fm FileManager) currentFile() FileInfo {
 	return fm.Files[fm.FilesCursor]
 }
 
-func readFilesInDirecory(path string) []FileInfo {
+func (fm FileManager) currentFileName() string {
+	return fm.CurrentFile().Name
+}
+
+func readFilesInDirecory(path string, sortBy string) []FileInfo {
 	var fileInfos []FileInfo
 
 	files, err := os.ReadDir(path)
@@ -78,13 +135,45 @@ func readFilesInDirecory(path string) []FileInfo {
 			log.Fatal(err)
 		}
 
+		fileInfo, err := file.Info()
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		newFileInfo := FileInfo{
-			Name:    file.Name(),
-			Content: string(content),
+			Name:      file.Name(),
+			Content:   string(content),
+			UpdatedAt: fileInfo.ModTime(),
 		}
 
 		fileInfos = append(fileInfos, newFileInfo)
 	}
 
+	if sortBy == "updatedAt" {
+		slices.SortFunc(fileInfos, updatedAtCmp)
+	} else {
+		slices.SortFunc(fileInfos, nameCmp)
+	}
+
 	return fileInfos
+}
+
+func nameCmp(a, b FileInfo) int {
+	if a.Name < b.Name {
+		return 1
+	}
+	if a.Name > b.Name {
+		return -1
+	}
+	return 0
+}
+
+func updatedAtCmp(a, b FileInfo) int {
+	if a.UpdatedAt.Before(b.UpdatedAt) {
+		return 1
+	}
+	if a.UpdatedAt.After(b.UpdatedAt) {
+		return -1
+	}
+	return 0
 }
