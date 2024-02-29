@@ -15,7 +15,6 @@ type FileManager struct {
 	FilesCursor int
 	Files       []FileInfo
 	Cache       map[string][]FileInfo
-	Errors      []string
 }
 
 func (fm *FileManager) FetchFiles(dm *DirectoryManager) []FileInfo {

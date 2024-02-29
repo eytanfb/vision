@@ -8,12 +8,13 @@ import (
 type EKeyCommand struct{}
 
 func (j EKeyCommand) Execute(m *Model) error {
-	if !m.IsItemDetailsFocus() {
+	if !m.IsDetailsView() {
 		return nil
 	}
 
 	filePath := m.GetCurrentFilePath()
-	editor := os.Getenv("EDITOR")
+	//editor := os.Getenv("EDITOR")
+	editor := "vim"
 
 	if editor == "" {
 		editor = "vim" // Default to vim if $EDITOR is not set

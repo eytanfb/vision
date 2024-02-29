@@ -21,6 +21,7 @@ type Model struct {
 	FileManager      FileManager
 	ViewManager      ViewManager
 	Viewport         viewport.Model
+	Errors           []string
 }
 
 func InitialModel(cfg *config.Config, args []string) tea.Model {
