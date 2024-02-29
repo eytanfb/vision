@@ -15,6 +15,7 @@ type FileManager struct {
 	FilesCursor int
 	Files       []FileInfo
 	Cache       map[string][]FileInfo
+	Errors      []string
 }
 
 func (fm *FileManager) FetchFiles(dm *DirectoryManager) []FileInfo {
@@ -36,8 +37,9 @@ func (fm *FileManager) FetchFiles(dm *DirectoryManager) []FileInfo {
 
 		files = readFilesInDirecory(path, sorting)
 		if categoryPath == "standups" {
-			lastStandup := files[len(files)-1]
+			lastStandup := files[0] // The first one is the most recent
 			todayInFormat := time.Now().Format("2006-01-02")
+			todayInFormat += ".md"
 
 			if lastStandup.Name != todayInFormat {
 				fm.CreateStandup(companyFolderPath)
@@ -80,27 +82,23 @@ func (fm FileManager) CreateStandup(company string) {
 
 // If it does exist, it will be overwritten.
 func copyFile(src, dst string) error {
-	// Open the source file for reading
 	sourceFile, err := os.Open(src)
 	if err != nil {
 		return err
 	}
 	defer sourceFile.Close()
 
-	// Create the destination file for writing
 	destFile, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
 	defer destFile.Close()
 
-	// Copy the contents from source to destination
 	_, err = io.Copy(destFile, sourceFile)
 	if err != nil {
 		return err
 	}
 
-	// Ensure that the written data is flushed to storage
 	return destFile.Sync()
 }
 
@@ -126,6 +124,10 @@ func readFilesInDirecory(path string, sortBy string) []FileInfo {
 		}
 
 		if !strings.HasSuffix(file.Name(), ".md") {
+			continue
+		}
+
+		if strings.HasPrefix(file.Name(), "sortspec") {
 			continue
 		}
 

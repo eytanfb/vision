@@ -26,7 +26,16 @@ func ViewHandler(m *Model) string {
 		}
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Top, RenderNavBar(m), content)
+	return lipgloss.JoinVertical(lipgloss.Top, RenderNavBar(m), content, RenderErrors(m.FileManager))
+}
+
+func RenderErrors(fm FileManager) string {
+	var errors strings.Builder
+	for _, err := range fm.Errors {
+		errors.WriteString(err + "\n")
+	}
+
+	return errors.String()
 }
 
 func RenderList(m *Model, items []string, title string) string {
