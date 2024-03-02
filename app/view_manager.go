@@ -37,21 +37,21 @@ func (vm *ViewManager) GoToPreviousView() {
 	}
 }
 
-func (vm *ViewManager) GoToNextView(fm *FileManager, dm *DirectoryManager) {
+func (vm *ViewManager) GoToNextView(fm *FileManager, dm *DirectoryManager, tm *TaskManager) {
 	if vm.IsCompanyView() {
 		vm.CurrentView = CategoriesView
 	} else if vm.IsCategoryView() {
 		vm.CurrentView = DetailsView
 		fm.FilesCursor = 0
-		fm.Files = fm.FetchFiles(dm)
+		fm.Files = fm.FetchFiles(dm, tm)
 	}
 }
 
-func (vm *ViewManager) Select(fm *FileManager, dm *DirectoryManager) {
+func (vm *ViewManager) Select(fm *FileManager, dm *DirectoryManager, tm *TaskManager) {
 	if vm.IsCompanyView() {
 		dm.AssignCompany()
 	} else if vm.IsCategoryView() {
 		dm.AssignCategory()
 	}
-	vm.GoToNextView(fm, dm)
+	vm.GoToNextView(fm, dm, tm)
 }

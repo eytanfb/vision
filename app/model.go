@@ -3,7 +3,6 @@ package app
 import (
 	"strings"
 	"vision/config"
-	"vision/utils"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -37,8 +36,10 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 			CategoriesCursor: 0,
 		},
 		TaskManager: TaskManager{
-			TaskCollection: TaskCollection{},
-			TasksCursor:    0,
+			TaskCollection: TaskCollection{
+				TasksByFile: make(map[string][]Task),
+			},
+			TasksCursor: 0,
 		},
 		FileManager: FileManager{
 			FilesCursor: 0,
@@ -118,7 +119,7 @@ func (m *Model) GoToNextCategory() {
 }
 
 func (m *Model) GoToNextTask() {
-	goToNext(&m.TaskManager.TasksCursor, len(m.TaskManager.TaskCollection.Tasks))
+	goToNext(&m.TaskManager.TasksCursor, m.TaskManager.TaskCollection.Size(m.FileManager.currentFileName()))
 }
 
 func (m *Model) GoToNextFile() {
@@ -156,7 +157,7 @@ func goToPrevious(cursor *int) {
 }
 
 func (m *Model) GoToNextView() {
-	m.ViewManager.GoToNextView(&m.FileManager, &m.DirectoryManager)
+	m.ViewManager.GoToNextView(&m.FileManager, &m.DirectoryManager, &m.TaskManager)
 }
 
 func (m *Model) GoToNextViewWithCategory(category string) {
@@ -169,7 +170,7 @@ func (m *Model) GoToPreviousView() {
 }
 
 func (m *Model) Select() {
-	m.ViewManager.Select(&m.FileManager, &m.DirectoryManager)
+	m.ViewManager.Select(&m.FileManager, &m.DirectoryManager, &m.TaskManager)
 }
 
 func (m *Model) LoseDetailsFocus() {
@@ -182,9 +183,9 @@ func (m *Model) GainDetailsFocus() {
 }
 
 func (m *Model) ShowTasks() {
-	fileTasks := utils.ExtractTasksFromText(m.FileManager.CurrentFileContent())
-	taskCollection := CreateTaskCollectionFromFileTasks(fileTasks)
-	m.TaskManager.TaskCollection = taskCollection
+	//fileTasks := utils.ExtractTasksFromText(m.FileManager.CurrentFileContent())
+	//taskCollection := CreateTaskCollectionFromFileTasks(fileTasks)
+	//m.TaskManager.TaskCollection = taskCollection
 	m.ViewManager.TaskDetailsFocus = true
 	m.ViewManager.TaskDetailsFocus = true
 }
@@ -221,5 +222,5 @@ func (m Model) CategoryNames() []string {
 }
 
 func (m Model) FetchFiles() []FileInfo {
-	return m.FileManager.FetchFiles(&m.DirectoryManager)
+	return m.FileManager.FetchFiles(&m.DirectoryManager, &m.TaskManager)
 }

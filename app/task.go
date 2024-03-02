@@ -3,7 +3,6 @@ package app
 import (
 	"regexp"
 	"strings"
-	"vision/utils"
 )
 
 type Task struct {
@@ -13,6 +12,9 @@ type Task struct {
 	CompletedDate string
 	ScheduledDate string
 	LineNumber    int
+	Completed     bool
+	Started       bool
+	Scheduled     bool
 }
 
 func (t Task) String() string {
@@ -44,27 +46,6 @@ func (t Task) String() string {
 	}
 
 	return stringBuilder.String()
-}
-
-func CreateTaskCollectionFromFileTasks(fileTasks []utils.FileTask) TaskCollection {
-	var tasks []Task
-	for _, fileTask := range fileTasks {
-		task := createTaskFromFileTask(fileTask)
-		tasks = append(tasks, task)
-	}
-
-	return CreateTaskCollection(tasks)
-}
-
-func createTaskFromFileTask(task utils.FileTask) Task {
-	return Task{
-		IsDone:        task.IsDone,
-		Text:          task.Text,
-		StartDate:     extractStartDateFromText(task.Text),
-		ScheduledDate: extractScheduledDateFromText(task.Text),
-		CompletedDate: extractCompletedDateFromText(task.Text),
-		LineNumber:    task.LineNumber,
-	}
 }
 
 func extractStartDateFromText(text string) string {

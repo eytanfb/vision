@@ -17,7 +17,7 @@ type FileManager struct {
 	Cache       map[string][]FileInfo
 }
 
-func (fm *FileManager) FetchFiles(dm *DirectoryManager) []FileInfo {
+func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileInfo {
 	var files []FileInfo
 	companyFolderPath := dm.CurrentFolderPath()
 	categoryPath := strings.ToLower(dm.SelectedCategory)
@@ -43,6 +43,13 @@ func (fm *FileManager) FetchFiles(dm *DirectoryManager) []FileInfo {
 			if lastStandup.Name != todayInFormat {
 				fm.CreateStandup(companyFolderPath)
 				files = readFilesInDirecory(path, sorting)
+			}
+		} else if categoryPath == "tasks" {
+			// extract tasks from file content
+			// load the tasks into m.TaskManager.TaskCollection.Add(filename, tasks)
+			for _, file := range files {
+				tasks := tm.ExtractTasks(file.Content)
+				tm.TaskCollection.Add(file.Name, tasks)
 			}
 		}
 

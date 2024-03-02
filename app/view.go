@@ -93,6 +93,8 @@ func RenderFiles(m *Model) string {
 		}
 
 		line += file.Name
+		completed, total := m.TaskManager.TaskCollection.Progress(file.Name)
+		line += " (" + fmt.Sprint(completed) + "/" + fmt.Sprint(total) + ")"
 		list = lipgloss.JoinVertical(lipgloss.Top, list, style.Render(line))
 	}
 
@@ -150,7 +152,7 @@ func RenderTasks(m *Model) string {
 		if index == m.FileManager.FilesCursor {
 			line += "❯ "
 			style = style.Bold(true)
-			for index, task := range m.TaskManager.TaskCollection.Tasks {
+			for index, task := range m.TaskManager.TaskCollection.GetTasks(file.Name) {
 				if index == m.TaskManager.TasksCursor {
 					tasks.WriteString("❯ ")
 				}
