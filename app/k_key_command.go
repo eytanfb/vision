@@ -26,6 +26,7 @@ func moveUp(m *Model) {
 			}
 		} else {
 			m.GoToPreviousFile()
+			m.Viewport.GotoTop()
 		}
 	} else if m.IsCategoryView() {
 		m.GoToPreviousCategory()

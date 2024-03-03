@@ -40,13 +40,11 @@ func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileI
 			todayInFormat := time.Now().Format("2006-01-02")
 			todayInFormat += ".md"
 
-			if lastStandup.Name != todayInFormat {
+			if lastStandup.Name != todayInFormat && isWorkingDay() {
 				fm.CreateStandup(companyFolderPath)
 				files = readFilesInDirecory(path, sorting)
 			}
 		} else if categoryPath == "tasks" {
-			// extract tasks from file content
-			// load the tasks into m.TaskManager.TaskCollection.Add(filename, tasks)
 			for _, file := range files {
 				tasks := tm.ExtractTasks(file.Content)
 				tm.TaskCollection.Add(file.Name, tasks)
@@ -55,11 +53,14 @@ func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileI
 
 		fm.Cache[cacheKey] = files
 	} else {
-		log.Info("Read from cache")
 		files = cached
 	}
 
 	return files
+}
+
+func isWorkingDay() bool {
+	return time.Now().Weekday() != time.Saturday && time.Now().Weekday() != time.Sunday
 }
 
 func (fm *FileManager) GetCurrentFilePath(companyName string, categoryName string) string {
@@ -152,6 +153,7 @@ func readFilesInDirecory(path string, sortBy string) []FileInfo {
 			Name:      file.Name(),
 			Content:   string(content),
 			UpdatedAt: fileInfo.ModTime(),
+			FullPath:  fullPath,
 		}
 
 		fileInfos = append(fileInfos, newFileInfo)

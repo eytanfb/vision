@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -40,26 +41,30 @@ func RenderErrors(m *Model) string {
 
 func RenderList(m *Model, items []string, title string) string {
 	list := ""
-	containerStyle := lipgloss.NewStyle().Width(40).Height(m.ViewManager.Height - 20).Padding(1)
 
 	cursor := m.GetCurrentCursor()
 
 	for index, item := range items {
-		line := "  "
-		style := lipgloss.NewStyle()
-
-		if index == cursor {
-			line = "❯ "
-			style = style.Bold(true)
-		}
-
-		line += item + "\n"
-		list = lipgloss.JoinVertical(lipgloss.Top, list, style.Render(line))
+		list = lipgloss.JoinVertical(lipgloss.Top, list, createListItem(item, index, cursor))
 	}
 
-	view := containerStyle.Render(lipgloss.JoinVertical(lipgloss.Top, "Select a "+title+":\n", list))
+	view := sidebarStyle(m.ViewManager.Height).Render(lipgloss.JoinVertical(lipgloss.Top, list))
 
 	return view
+}
+
+func createListItem(item string, index int, cursor int) string {
+	line := "  "
+	style := lipgloss.NewStyle()
+
+	if index == cursor {
+		line = "❯ "
+		style = style.Bold(true)
+	}
+
+	line += item + "\n"
+
+	return style.Render(line)
 }
 
 func RenderFiles(m *Model) string {
@@ -69,8 +74,8 @@ func RenderFiles(m *Model) string {
 
 	var style lipgloss.Style
 	containerStyle := lipgloss.NewStyle()
-	listContainerStyle := lipgloss.NewStyle().Width(40).Height(m.ViewManager.Height - 20).Padding(1).Border(lipgloss.RoundedBorder())
-	itemDetailsContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.Width - 60).Height(m.ViewManager.Height - 20).Padding(1).Border(lipgloss.RoundedBorder())
+	listContainerStyle := sidebarStyle(m.ViewManager.Height)
+	itemDetailsContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.Width - 60).Height(m.ViewManager.Height - 20).Padding(1).Border(lipgloss.NormalBorder())
 	list := ""
 	itemDetails := ""
 
@@ -93,21 +98,29 @@ func RenderFiles(m *Model) string {
 		}
 
 		line += file.Name
-		completed, total := m.TaskManager.TaskCollection.Progress(file.Name)
-		line += " (" + fmt.Sprint(completed) + "/" + fmt.Sprint(total) + ")"
+		if m.DirectoryManager.SelectedCategory == "tasks" {
+			completed, total := m.TaskManager.TaskCollection.Progress(file.Name)
+			text := fmt.Sprint(completed) + "/" + fmt.Sprint(total)
+			var completedText string
+			if completed == total {
+				completedText = lipgloss.NewStyle().Background(lipgloss.Color("#AAC0AF")).Render(text)
+			} else {
+				completedText = lipgloss.NewStyle().Render(text)
+			}
+			line += " " + completedText
+		}
 		list = lipgloss.JoinVertical(lipgloss.Top, list, style.Render(line))
 	}
 
 	listContainer := listContainerStyle.Render(list)
 
-	m.Viewport.SetContent(itemDetails)
+	markdown := renderMarkdown(m.ViewManager.Width, itemDetails)
+	m.Viewport.SetContent(markdown)
 
 	itemDetailsContainer := itemDetailsContainerStyle.Render(m.Viewport.View())
 	container := containerStyle.Render(lipgloss.JoinHorizontal(lipgloss.Left, listContainer, itemDetailsContainer))
 
-	titleStyle := lipgloss.NewStyle().MarginTop(1).MarginBottom(1)
-	title := titleStyle.Render("Select a file (" + fmt.Sprint(len(m.FileManager.Files)) + "):")
-	view := lipgloss.JoinVertical(lipgloss.Top, title, container)
+	view := lipgloss.JoinVertical(lipgloss.Top, container)
 
 	return view
 }
@@ -115,7 +128,7 @@ func RenderFiles(m *Model) string {
 func RenderNavBar(m *Model) string {
 	navbar := ""
 	textStyle := lipgloss.NewStyle().Bold(true)
-	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Background(lipgloss.Color("#000")).MarginBottom(1).Width(m.ViewManager.Width).Padding(1)
+	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).MarginBottom(1).Width(m.ViewManager.Width - 5).Padding(1).Border(lipgloss.NormalBorder())
 	if m.IsCompanyView() {
 		navbar = textStyle.Render("Company selection")
 	} else if m.IsCategoryView() {
@@ -127,6 +140,10 @@ func RenderNavBar(m *Model) string {
 	return style.Render(navbar)
 }
 
+func RenderSidebar(m *Model) string {
+	return ""
+}
+
 func RenderTasks(m *Model) string {
 	if len(m.FileManager.Files) == 0 {
 		return "No files found"
@@ -135,8 +152,8 @@ func RenderTasks(m *Model) string {
 	var style lipgloss.Style
 	var tasks strings.Builder
 	containerStyle := lipgloss.NewStyle()
-	listContainerStyle := lipgloss.NewStyle().Width(40).Height(m.ViewManager.Height - 20).Padding(1)
-	itemDetailsContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.Width - 60).Height(m.ViewManager.Height - 20).Padding(1)
+	listContainerStyle := sidebarStyle(m.ViewManager.Height)
+	itemDetailsContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.Width - 60).Height(m.ViewManager.Height - 5).Padding(1)
 	list := ""
 
 	if m.IsItemDetailsFocus() {
@@ -168,7 +185,9 @@ func RenderTasks(m *Model) string {
 
 	listContainer := listContainerStyle.Render(list)
 
-	m.Viewport.SetContent(tasks.String())
+	markdown := renderMarkdown(m.ViewManager.Width, tasks.String())
+	fmt.Println(markdown)
+	m.Viewport.SetContent(markdown)
 
 	itemDetailsContainer := itemDetailsContainerStyle.Render(m.Viewport.View())
 	container := containerStyle.Render(lipgloss.JoinHorizontal(lipgloss.Left, listContainer, itemDetailsContainer))
@@ -176,4 +195,29 @@ func RenderTasks(m *Model) string {
 	view := lipgloss.JoinVertical(lipgloss.Top, container)
 
 	return view
+}
+
+func sidebarStyle(windowHeight int) lipgloss.Style {
+	return lipgloss.NewStyle().Width(40).Height(windowHeight - 10).Padding(1).Border(lipgloss.NormalBorder())
+}
+
+func renderMarkdown(width int, content string) string {
+	background := "light"
+
+	if lipgloss.HasDarkBackground() {
+		background = "dark"
+	}
+
+	r, _ := glamour.NewTermRenderer(
+		glamour.WithWordWrap(width-40),
+		glamour.WithStandardStyle(background),
+		glamour.WithStylesFromJSONFile("/Users/eytananjel/Code/vision/dark_modified.json"),
+	)
+
+	out, err := r.Render(content)
+	if err != nil {
+		return ""
+	}
+
+	return out
 }

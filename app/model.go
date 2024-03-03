@@ -57,6 +57,9 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 		Viewport: viewport.Model{},
 	}
 
+	//r, _ := glamour.NewTermRenderer()
+	//m.TermRenderer = r
+
 	SetArgs(&m, args)
 
 	return &m

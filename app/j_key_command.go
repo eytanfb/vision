@@ -30,6 +30,7 @@ func moveDown(m *Model) {
 			}
 		} else {
 			m.GoToNextFile()
+			m.Viewport.GotoTop()
 		}
 	}
 }

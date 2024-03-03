@@ -25,12 +25,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		if !m.ViewManager.Ready {
-			m.Viewport = viewport.New(msg.Width-60, msg.Height-20)
-			m.Viewport.YPosition = 20
+			m.Viewport = viewport.New(msg.Width-60, msg.Height-28)
 			m.ViewManager.Ready = true
 		} else {
 			m.Viewport.Width = msg.Width - 60
-			m.Viewport.Height = msg.Height - 20
+			m.Viewport.Height = msg.Height - 28
 		}
 		m.ViewManager.Width = msg.Width
 		m.ViewManager.Height = msg.Height
