@@ -15,9 +15,7 @@ func (m *Model) View() string {
 func ViewHandler(m *Model) string {
 	content := "Something is wrong"
 
-	if m.IsCompanyView() {
-		content = RenderList(m, m.CompanyNames(), "company")
-	} else if m.IsCategoryView() {
+	if m.IsCategoryView() {
 		content = RenderList(m, m.CategoryNames(), "category")
 	} else if m.IsDetailsView() {
 		if m.IsTaskDetailsFocus() {
@@ -37,6 +35,21 @@ func RenderErrors(m *Model) string {
 	}
 
 	return errors.String()
+}
+
+func RenderCompanies(m *Model, companies []string) string {
+	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Width(m.ViewManager.Width - 5).Align(lipgloss.Center)
+	result := ""
+
+	for index, company := range companies {
+		textStyle := lipgloss.NewStyle().MarginLeft(2).MarginRight(2)
+		if index == m.DirectoryManager.CompaniesCursor {
+			textStyle = textStyle.Bold(true).Background(lipgloss.Color("63"))
+		}
+		result = lipgloss.JoinHorizontal(lipgloss.Left, result, textStyle.Render("["+company+"]"))
+	}
+
+	return style.Render(result)
 }
 
 func RenderList(m *Model, items []string, title string) string {
@@ -126,18 +139,20 @@ func RenderFiles(m *Model) string {
 }
 
 func RenderNavBar(m *Model) string {
-	navbar := ""
 	textStyle := lipgloss.NewStyle().Bold(true)
-	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).MarginBottom(1).Width(m.ViewManager.Width - 5).Padding(1).Border(lipgloss.NormalBorder())
-	if m.IsCompanyView() {
-		navbar = textStyle.Render("Company selection")
-	} else if m.IsCategoryView() {
-		navbar = textStyle.Render(m.GetCurrentCompanyName() + " > Category selection")
+	container := lipgloss.NewStyle().Width(m.ViewManager.Width - 5).Padding(1).Border(lipgloss.NormalBorder())
+	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Width(m.ViewManager.Width - 5).Align(lipgloss.Center)
+	navbar := textStyle.Render("Vision")
+
+	if m.IsCategoryView() {
+		navbar = textStyle.Render(m.GetCurrentCompanyName())
 	} else if m.IsDetailsView() {
 		navbar = textStyle.Render(m.GetCurrentCompanyName() + " > " + m.DirectoryManager.SelectedCategory)
 	}
 
-	return style.Render(navbar)
+	view := container.Render(lipgloss.JoinVertical(lipgloss.Top, style.Render(navbar), RenderCompanies(m, m.CompanyNames())))
+
+	return view
 }
 
 func RenderSidebar(m *Model) string {

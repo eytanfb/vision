@@ -26,11 +26,18 @@ type Model struct {
 func InitialModel(cfg *config.Config, args []string) tea.Model {
 	companies := CompaniesFromConfig(cfg.Companies)
 
+	var clerky Company
+	for _, company := range companies {
+		if strings.ToLower(company.DisplayName) == "clerky" {
+			clerky = company
+		}
+	}
+
 	m := Model{
 		DirectoryManager: DirectoryManager{
 			Companies:        companies,
 			Categories:       cfg.Categories,
-			SelectedCompany:  Company{},
+			SelectedCompany:  clerky,
 			SelectedCategory: "",
 			CompaniesCursor:  0,
 			CategoriesCursor: 0,
@@ -47,7 +54,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 			Cache:       make(map[string][]FileInfo),
 		},
 		ViewManager: ViewManager{
-			CurrentView:      "companies",
+			CurrentView:      CategoriesView,
 			Width:            0,
 			Height:           0,
 			Ready:            false,
@@ -114,7 +121,12 @@ func (m Model) IsItemDetailsFocus() bool {
 }
 
 func (m *Model) GoToNextCompany() {
-	goToNext(&m.DirectoryManager.CompaniesCursor, len(m.DirectoryManager.Companies))
+	if m.DirectoryManager.CompaniesCursor == len(m.DirectoryManager.Companies)-1 {
+		m.DirectoryManager.CompaniesCursor = 0
+	} else {
+		m.DirectoryManager.CompaniesCursor++
+	}
+	m.DirectoryManager.SelectedCompany = m.DirectoryManager.Companies[m.DirectoryManager.CompaniesCursor]
 }
 
 func (m *Model) GoToNextCategory() {
@@ -143,6 +155,10 @@ func (m *Model) GoToPreviousTask() {
 
 func (m *Model) GoToPreviousFile() {
 	goToPrevious(&m.FileManager.FilesCursor)
+}
+
+func (m *Model) GotoCategoryView() {
+	m.ViewManager.CurrentView = CategoriesView
 }
 
 func goToNext(cursor *int, length int) {

@@ -30,9 +30,7 @@ func (vm ViewManager) IsItemDetailsFocus() bool {
 }
 
 func (vm *ViewManager) GoToPreviousView() {
-	if vm.IsCategoryView() {
-		vm.CurrentView = CompaniesView
-	} else if vm.IsDetailsView() {
+	if vm.IsDetailsView() {
 		vm.CurrentView = CategoriesView
 	}
 }
