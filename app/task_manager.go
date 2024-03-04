@@ -1,6 +1,9 @@
 package app
 
-import "vision/utils"
+import (
+	"fmt"
+	"vision/utils"
+)
 
 type TaskManager struct {
 	TaskCollection TaskCollection
@@ -18,6 +21,14 @@ func (tm *TaskManager) ExtractTasks(content string) []Task {
 	}
 
 	return tasks
+}
+
+func (tm *TaskManager) Summary(companyName string) string {
+	startedTasks := tm.TaskCollection.GetStartedTasks()
+	completedTasks := tm.TaskCollection.GetCompletedTasks()
+	scheduledTasks := tm.TaskCollection.GetScheduledTasks()
+
+	return fmt.Sprintf("You have %d tasks started, %d tasks completed, and %d tasks scheduled.", len(startedTasks), len(completedTasks), len(scheduledTasks))
 }
 
 func createTaskFromFileTask(task utils.FileTask) Task {

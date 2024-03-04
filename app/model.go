@@ -51,7 +51,8 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 		FileManager: FileManager{
 			FilesCursor: 0,
 			Files:       []FileInfo{},
-			Cache:       make(map[string][]FileInfo),
+			FileCache:   make(map[string][]FileInfo),
+			TaskCache:   make(map[string][]Task),
 		},
 		ViewManager: ViewManager{
 			CurrentView:      CategoriesView,
@@ -64,10 +65,8 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 		Viewport: viewport.Model{},
 	}
 
-	//r, _ := glamour.NewTermRenderer()
-	//m.TermRenderer = r
-
 	SetArgs(&m, args)
+	m.FetchFiles()
 
 	return &m
 }
@@ -127,6 +126,9 @@ func (m *Model) GoToNextCompany() {
 		m.DirectoryManager.CompaniesCursor++
 	}
 	m.DirectoryManager.SelectedCompany = m.DirectoryManager.Companies[m.DirectoryManager.CompaniesCursor]
+	m.FileManager.ResetCache()
+	m.TaskManager.TaskCollection.Flush()
+	m.FetchFiles()
 }
 
 func (m *Model) GoToNextCategory() {

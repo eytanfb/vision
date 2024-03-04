@@ -14,7 +14,8 @@ import (
 type FileManager struct {
 	FilesCursor int
 	Files       []FileInfo
-	Cache       map[string][]FileInfo
+	FileCache   map[string][]FileInfo
+	TaskCache   map[string][]Task
 }
 
 func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileInfo {
@@ -25,7 +26,7 @@ func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileI
 	path := "/Users/eytananjel/Notes/" + companyFolderPath + "/" + categoryPath
 
 	cacheKey := companyFolderPath + ":" + categoryPath
-	cached, ok := fm.Cache[cacheKey]
+	cached, ok := fm.FileCache[cacheKey]
 
 	if !ok {
 		sorting := "default"
@@ -44,23 +45,39 @@ func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileI
 				fm.CreateStandup(companyFolderPath)
 				files = readFilesInDirecory(path, sorting)
 			}
-		} else if categoryPath == "tasks" {
-			for _, file := range files {
-				tasks := tm.ExtractTasks(file.Content)
-				tm.TaskCollection.Add(file.Name, tasks)
-			}
 		}
 
-		fm.Cache[cacheKey] = files
+		fm.FileCache[cacheKey] = files
 	} else {
 		files = cached
 	}
 
+	fm.FetchTasks(dm, tm)
+
 	return files
 }
 
-func isWorkingDay() bool {
-	return time.Now().Weekday() != time.Saturday && time.Now().Weekday() != time.Sunday
+func (fm *FileManager) FetchTasks(dm *DirectoryManager, tm *TaskManager) []Task {
+	companyFolderPath := dm.CurrentFolderPath()
+
+	path := "/Users/eytananjel/Notes/" + companyFolderPath + "/tasks"
+	cacheKey := companyFolderPath + ":tasks"
+
+	cached, ok := fm.TaskCache[cacheKey]
+
+	if !ok {
+		files := readFilesInDirecory(path, "updatedAt")
+		for _, file := range files {
+			tasks := tm.ExtractTasks(file.Content)
+			tm.TaskCollection.Add(file.Name, tasks)
+		}
+
+		tasks := tm.TaskCollection.GetAll()
+		fm.TaskCache[cacheKey] = tasks
+		return tasks
+	}
+
+	return cached
 }
 
 func (fm *FileManager) GetCurrentFilePath(companyName string, categoryName string) string {
@@ -85,6 +102,10 @@ func (fm FileManager) CreateStandup(company string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func (fm *FileManager) ResetCache() {
+	fm.FileCache = make(map[string][]FileInfo)
 }
 
 // If it does exist, it will be overwritten.
@@ -186,4 +207,8 @@ func updatedAtCmp(a, b FileInfo) int {
 		return -1
 	}
 	return 0
+}
+
+func isWorkingDay() bool {
+	return time.Now().Weekday() != time.Saturday && time.Now().Weekday() != time.Sunday
 }

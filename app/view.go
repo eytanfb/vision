@@ -63,7 +63,10 @@ func RenderList(m *Model, items []string, title string) string {
 
 	view := sidebarStyle(m.ViewManager.Height).Render(lipgloss.JoinVertical(lipgloss.Top, list))
 
-	return view
+	summaryStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.Width - 60).Height(m.ViewManager.Height - 20).Padding(1).Border(lipgloss.NormalBorder())
+	summary := summaryStyle.Render(m.TaskManager.Summary(m.GetCurrentCompanyName()))
+
+	return lipgloss.JoinHorizontal(lipgloss.Left, view, summary)
 }
 
 func createListItem(item string, index int, cursor int) string {
