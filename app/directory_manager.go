@@ -32,9 +32,10 @@ func (dm *DirectoryManager) AssignCategory() {
 }
 
 func (dm *DirectoryManager) SelectCompany(companyName string) bool {
-	for _, company := range dm.Companies {
+	for index, company := range dm.Companies {
 		if strings.ToLower(company.DisplayName) == companyName {
 			dm.SelectedCompany = company
+			dm.CompaniesCursor = index
 			return true
 		}
 	}

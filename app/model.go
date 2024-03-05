@@ -121,6 +121,13 @@ func (m Model) IsItemDetailsFocus() bool {
 	return m.ViewManager.IsItemDetailsFocus()
 }
 
+func (m *Model) GoToCompany(companyName string) {
+	m.DirectoryManager.SelectCompany(companyName)
+	m.FileManager.ResetCache()
+	m.TaskManager.TaskCollection.Flush()
+	m.FetchFiles()
+}
+
 func (m *Model) GoToNextCompany() {
 	if m.DirectoryManager.CompaniesCursor == len(m.DirectoryManager.Companies)-1 {
 		m.DirectoryManager.CompaniesCursor = 0

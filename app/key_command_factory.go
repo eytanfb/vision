@@ -30,6 +30,12 @@ func (kcf KeyCommandFactory) CreateKeyCommand(key string) KeyCommand {
 		return NKeyCommand{}
 	case "f":
 		return FKeyCommand{}
+	case "C":
+		return UppercaseCKeyCommand{}
+	case "Q":
+		return UppercaseQKeyCommand{}
+	case "L":
+		return UppercaseLKeyCommand{}
 	}
 	return NilKeyCommand{}
 }
