@@ -217,12 +217,16 @@ func DaysAgoFromString(date string) string {
 	if err != nil {
 		return ""
 	}
+
 	today := time.Now()
 	days := today.Sub(parsedDate).Hours() / 24
 	daysString := "days"
-	if days < 2 {
+	if days < 1 {
+		return "today"
+	} else if days < 2 {
 		daysString = "day"
 	}
+
 	return fmt.Sprintf("%.0f %s ago", days, daysString)
 }
 
