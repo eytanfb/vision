@@ -1,5 +1,7 @@
 package app
 
+import "github.com/charmbracelet/log"
+
 type TaskCollection struct {
 	TasksByFile map[string][]Task
 }
@@ -32,6 +34,7 @@ func (tc *TaskCollection) Progress(filename string) (int, int) {
 }
 
 func (tc *TaskCollection) GetStartedTasks() []Task {
+	log.Info("Getting started tasks")
 	tasks := tc.allTasks()
 	var startedTasks []Task
 	for _, task := range tasks {
@@ -43,6 +46,7 @@ func (tc *TaskCollection) GetStartedTasks() []Task {
 }
 
 func (tc *TaskCollection) GetCompletedTasks() []Task {
+	log.Info("Getting completed tasks")
 	tasks := tc.allTasks()
 	var completedTasks []Task
 	for _, task := range tasks {
@@ -54,6 +58,7 @@ func (tc *TaskCollection) GetCompletedTasks() []Task {
 }
 
 func (tc *TaskCollection) GetScheduledTasks() []Task {
+	log.Info("Getting scheduled tasks")
 	tasks := tc.allTasks()
 	var scheduledTasks []Task
 
@@ -67,10 +72,12 @@ func (tc *TaskCollection) GetScheduledTasks() []Task {
 }
 
 func (tc *TaskCollection) allTasks() []Task {
+	log.Info("Getting all tasks")
 	var allTasks []Task
 	for _, tasks := range tc.TasksByFile {
 		allTasks = append(allTasks, tasks...)
 	}
+	log.Info("All tasks count: ", len(allTasks))
 	return allTasks
 }
 

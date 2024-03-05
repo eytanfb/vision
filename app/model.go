@@ -52,7 +52,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 			FilesCursor: 0,
 			Files:       []FileInfo{},
 			FileCache:   make(map[string][]FileInfo),
-			TaskCache:   make(map[string][]Task),
+			TaskCache:   make(map[string]map[string][]Task),
 		},
 		ViewManager: ViewManager{
 			CurrentView:      CategoriesView,
@@ -61,6 +61,10 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 			Ready:            false,
 			TaskDetailsFocus: false,
 			ItemDetailsFocus: false,
+			SidebarWidth:     40,
+			SidebarHeight:    40,
+			NavbarWidth:      40,
+			DetailsViewWidth: 40,
 		},
 		Viewport: viewport.Model{},
 	}
@@ -79,8 +83,6 @@ func SetArgs(m *Model, args []string) {
 		if !found {
 			return
 		}
-
-		m.GoToNextView()
 	}
 
 	if len(args) > 1 {

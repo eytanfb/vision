@@ -24,15 +24,16 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	case tea.WindowSizeMsg:
+		m.ViewManager.SetWidth(msg.Width)
+		m.ViewManager.SetHeight(msg.Height)
+
 		if !m.ViewManager.Ready {
-			m.Viewport = viewport.New(msg.Width-60, msg.Height-28)
+			m.Viewport = viewport.New(msg.Width-m.ViewManager.SidebarWidth, msg.Height-28)
 			m.ViewManager.Ready = true
 		} else {
-			m.Viewport.Width = msg.Width - 60
+			m.Viewport.Width = msg.Width - m.ViewManager.SidebarWidth
 			m.Viewport.Height = msg.Height - 28
 		}
-		m.ViewManager.Width = msg.Width
-		m.ViewManager.Height = msg.Height
 	}
 
 	cmds = append(cmds, cmd)

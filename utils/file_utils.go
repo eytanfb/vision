@@ -14,7 +14,7 @@ func ExtractTasksFromText(text string) []FileTask {
 	lines := strings.Split(text, "\n")
 	tasks := []FileTask{}
 
-	for _, line := range lines {
+	for index, line := range lines {
 		if strings.HasPrefix(line, "- [ ]") || strings.HasPrefix(line, "- [x]") {
 			text := strings.TrimPrefix(line, "- [ ]")
 			text = strings.TrimPrefix(text, "- [x]")
@@ -22,7 +22,7 @@ func ExtractTasksFromText(text string) []FileTask {
 			task := FileTask{
 				IsDone:     strings.HasPrefix(line, "- [x]"),
 				Text:       text,
-				LineNumber: len(tasks),
+				LineNumber: index + 1,
 			}
 			tasks = append(tasks, task)
 		}

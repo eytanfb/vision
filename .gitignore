@@ -1,4 +1,5 @@
 vision
 vision.zip
 .DS_Store
-
+*.log
+tmp

@@ -17,9 +17,7 @@ func (j JKeyCommand) AllowedStates() []string {
 }
 
 func moveDown(m *Model) {
-	if m.IsCompanyView() {
-		m.GoToNextCompany()
-	} else if m.IsCategoryView() {
+	if m.IsCategoryView() {
 		m.GoToNextCategory()
 	} else if m.IsDetailsView() {
 		if m.IsItemDetailsFocus() {

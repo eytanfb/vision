@@ -15,6 +15,7 @@ type Task struct {
 	Completed     bool
 	Started       bool
 	Scheduled     bool
+	FileName      string
 }
 
 func (t Task) String() string {
@@ -45,6 +46,16 @@ func (t Task) String() string {
 		}
 	}
 
+	return stringBuilder.String()
+}
+
+func (t Task) textWithoutDates() string {
+	return removeDatesFromText(t.Text)
+}
+
+func (t Task) Summary() string {
+	var stringBuilder strings.Builder
+	stringBuilder.WriteString(t.textWithoutDates() + " (" + t.FileName + ")")
 	return stringBuilder.String()
 }
 

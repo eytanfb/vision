@@ -1,8 +1,9 @@
 package app
 
 import (
-	"fmt"
 	"vision/utils"
+
+	"github.com/charmbracelet/log"
 )
 
 type TaskManager struct {
@@ -10,28 +11,40 @@ type TaskManager struct {
 	TasksCursor    int
 }
 
-func (tm *TaskManager) ExtractTasks(content string) []Task {
+type TaskCollectionSummary struct {
+	StartedTasks     []Task
+	CompletedTasks   []Task
+	ScheduledTasks   []Task
+	UnscheduledTasks []Task
+}
+
+func (tm *TaskManager) ExtractTasks(name string, content string) []Task {
 	var tasks []Task
 
 	fileTasks := utils.ExtractTasksFromText(content)
 
 	for _, fileTask := range fileTasks {
-		task := createTaskFromFileTask(fileTask)
+		task := createTaskFromFileTask(name, fileTask)
 		tasks = append(tasks, task)
 	}
 
 	return tasks
 }
 
-func (tm *TaskManager) Summary(companyName string) string {
+func (tm *TaskManager) Summary(companyName string) TaskCollectionSummary {
+	log.Info("Summary for " + companyName)
 	startedTasks := tm.TaskCollection.GetStartedTasks()
 	completedTasks := tm.TaskCollection.GetCompletedTasks()
 	scheduledTasks := tm.TaskCollection.GetScheduledTasks()
 
-	return fmt.Sprintf("You have %d tasks started, %d tasks completed, and %d tasks scheduled.", len(startedTasks), len(completedTasks), len(scheduledTasks))
+	return TaskCollectionSummary{
+		StartedTasks:   startedTasks,
+		CompletedTasks: completedTasks,
+		ScheduledTasks: scheduledTasks,
+	}
 }
 
-func createTaskFromFileTask(task utils.FileTask) Task {
+func createTaskFromFileTask(name string, task utils.FileTask) Task {
 	completedDate := extractCompletedDateFromText(task.Text)
 	startDate := extractStartDateFromText(task.Text)
 	scheduledDate := extractScheduledDateFromText(task.Text)
@@ -49,5 +62,6 @@ func createTaskFromFileTask(task utils.FileTask) Task {
 		Completed:     completed,
 		Started:       started,
 		Scheduled:     scheduled,
+		FileName:      name,
 	}
 }

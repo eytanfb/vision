@@ -1,12 +1,30 @@
 package app
 
 type ViewManager struct {
-	CurrentView      string
-	Width            int
-	Height           int
-	Ready            bool
-	TaskDetailsFocus bool
-	ItemDetailsFocus bool
+	CurrentView       string
+	Width             int
+	Height            int
+	Ready             bool
+	TaskDetailsFocus  bool
+	ItemDetailsFocus  bool
+	HideSidebar       bool
+	NavbarWidth       int
+	SidebarWidth      int
+	SidebarHeight     int
+	DetailsViewWidth  int
+	DetailsViewHeight int
+}
+
+func (vm *ViewManager) SetWidth(width int) {
+	vm.Width = width
+	vm.DetailsViewWidth = width - vm.SidebarWidth - 9
+	vm.NavbarWidth = width - 5
+}
+
+func (vm *ViewManager) SetHeight(height int) {
+	vm.Height = height
+	vm.SidebarHeight = height - 10
+	vm.DetailsViewHeight = height - 10
 }
 
 func (vm ViewManager) IsCompanyView() bool {
@@ -52,4 +70,13 @@ func (vm *ViewManager) Select(fm *FileManager, dm *DirectoryManager, tm *TaskMan
 		dm.AssignCategory()
 	}
 	vm.GoToNextView(fm, dm, tm)
+}
+
+func (vm *ViewManager) ToggleHideSidebar() {
+	vm.HideSidebar = !vm.HideSidebar
+	if vm.HideSidebar {
+		vm.DetailsViewWidth += vm.SidebarWidth
+	} else {
+		vm.DetailsViewWidth -= vm.SidebarWidth
+	}
 }

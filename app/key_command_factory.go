@@ -28,6 +28,8 @@ func (kcf KeyCommandFactory) CreateKeyCommand(key string) KeyCommand {
 		return OKeyCommand{}
 	case "n":
 		return NKeyCommand{}
+	case "f":
+		return FKeyCommand{}
 	}
 	return NilKeyCommand{}
 }

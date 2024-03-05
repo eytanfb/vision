@@ -15,41 +15,34 @@ type FileManager struct {
 	FilesCursor int
 	Files       []FileInfo
 	FileCache   map[string][]FileInfo
-	TaskCache   map[string][]Task
+	TaskCache   map[string]map[string][]Task
 }
 
 func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileInfo {
+	log.Info("Fetching files")
 	var files []FileInfo
 	companyFolderPath := dm.CurrentFolderPath()
 	categoryPath := strings.ToLower(dm.SelectedCategory)
 
 	path := "/Users/eytananjel/Notes/" + companyFolderPath + "/" + categoryPath
+	log.Info("Path: " + path)
 
-	cacheKey := companyFolderPath + ":" + categoryPath
-	cached, ok := fm.FileCache[cacheKey]
+	sorting := "default"
 
-	if !ok {
-		sorting := "default"
+	if categoryPath == "tasks" {
+		sorting = "updatedAt"
+	}
 
-		if categoryPath == "tasks" {
-			sorting = "updatedAt"
+	files = readFilesInDirecory(path, sorting)
+	if categoryPath == "standups" {
+		lastStandup := files[0] // The first one is the most recent
+		todayInFormat := time.Now().Format("2006-01-02")
+		todayInFormat += ".md"
+
+		if lastStandup.Name != todayInFormat && isWorkingDay() {
+			fm.CreateStandup(companyFolderPath)
+			files = readFilesInDirecory(path, sorting)
 		}
-
-		files = readFilesInDirecory(path, sorting)
-		if categoryPath == "standups" {
-			lastStandup := files[0] // The first one is the most recent
-			todayInFormat := time.Now().Format("2006-01-02")
-			todayInFormat += ".md"
-
-			if lastStandup.Name != todayInFormat && isWorkingDay() {
-				fm.CreateStandup(companyFolderPath)
-				files = readFilesInDirecory(path, sorting)
-			}
-		}
-
-		fm.FileCache[cacheKey] = files
-	} else {
-		files = cached
 	}
 
 	fm.FetchTasks(dm, tm)
@@ -58,26 +51,21 @@ func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileI
 }
 
 func (fm *FileManager) FetchTasks(dm *DirectoryManager, tm *TaskManager) []Task {
+	var tasks []Task
+	log.Info("Fetching tasks")
 	companyFolderPath := dm.CurrentFolderPath()
 
 	path := "/Users/eytananjel/Notes/" + companyFolderPath + "/tasks"
-	cacheKey := companyFolderPath + ":tasks"
+	log.Info("Path: " + path)
 
-	cached, ok := fm.TaskCache[cacheKey]
-
-	if !ok {
-		files := readFilesInDirecory(path, "updatedAt")
-		for _, file := range files {
-			tasks := tm.ExtractTasks(file.Content)
-			tm.TaskCollection.Add(file.Name, tasks)
-		}
-
-		tasks := tm.TaskCollection.GetAll()
-		fm.TaskCache[cacheKey] = tasks
-		return tasks
+	files := readFilesInDirecory(path, "updatedAt")
+	for _, file := range files {
+		tasks := tm.ExtractTasks(file.Name, file.Content)
+		tm.TaskCollection.Add(file.Name, tasks)
 	}
 
-	return cached
+	tasks = tm.TaskCollection.GetAll()
+	return tasks
 }
 
 func (fm *FileManager) GetCurrentFilePath(companyName string, categoryName string) string {
