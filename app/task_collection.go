@@ -1,6 +1,8 @@
 package app
 
-import "github.com/charmbracelet/log"
+import (
+	"github.com/charmbracelet/log"
+)
 
 type TaskCollection struct {
 	TasksByFile map[string][]Task
@@ -31,6 +33,16 @@ func (tc *TaskCollection) Progress(filename string) (int, int) {
 		}
 	}
 	return completed, len(tasks)
+}
+
+func (tc *TaskCollection) IsInactive(filename string) bool {
+	tasks := tc.TasksByFile[filename]
+	for _, task := range tasks {
+		if !task.IsInactive() {
+			return false
+		}
+	}
+	return true
 }
 
 func (tc *TaskCollection) GetStartedTasks() []Task {

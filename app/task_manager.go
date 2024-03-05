@@ -31,17 +31,10 @@ func (tm *TaskManager) ExtractTasks(name string, content string) []Task {
 	return tasks
 }
 
-func (tm *TaskManager) Summary(companyName string) TaskCollectionSummary {
+func (tm *TaskManager) Summary(companyName string) map[string][]Task {
 	log.Info("Summary for " + companyName)
-	startedTasks := tm.TaskCollection.GetStartedTasks()
-	completedTasks := tm.TaskCollection.GetCompletedTasks()
-	scheduledTasks := tm.TaskCollection.GetScheduledTasks()
 
-	return TaskCollectionSummary{
-		StartedTasks:   startedTasks,
-		CompletedTasks: completedTasks,
-		ScheduledTasks: scheduledTasks,
-	}
+	return tm.TaskCollection.TasksByFile
 }
 
 func createTaskFromFileTask(name string, task utils.FileTask) Task {

@@ -3,12 +3,10 @@
 ## Ideas
 
 - [ ] Be able to create a task with a name
-- [ ] Be able to see all tasks across multiple companies
-    - [ ] Focus tasks on a single company
 - [ ] Weekly retrospective
 - [ ] Upcoming week view
 - [ ] Add icons for tasks
-- [ ] Sort files by progress completion
+- [x] Sort files by progress completion
 - [x] Make the view like gobang
 - [x] Create standup automatically on launch for the day if it doesn't exist
 - [x] Show progress for tasks on sidebar (e.g. 3/5, 4/4)
@@ -63,4 +61,3 @@
 - [ ] Consider implementing customizable dashboard elements to better reflect varying daily focuses.
 - [ ] Evaluate the integration of a feedback mechanism for direct client communication within the hub.
 - [ ] Explore the possibility of adding personal wellness or break reminders to maintain balance during work.
->>>>>>> 6b251b3e92cfdf3e00a87a1e95da4f3f69ec8d17

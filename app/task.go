@@ -3,6 +3,7 @@ package app
 import (
 	"regexp"
 	"strings"
+	"time"
 )
 
 type Task struct {
@@ -49,14 +50,47 @@ func (t Task) String() string {
 	return stringBuilder.String()
 }
 
-func (t Task) textWithoutDates() string {
-	return removeDatesFromText(t.Text)
+func (t Task) Summary() string {
+	return t.textWithoutDates()
 }
 
-func (t Task) Summary() string {
-	var stringBuilder strings.Builder
-	stringBuilder.WriteString(t.textWithoutDates() + " (" + t.FileName + ")")
-	return stringBuilder.String()
+func (t Task) IsOverdue() bool {
+	today := time.Now()
+	isOverdue := false
+
+	if t.Scheduled {
+		parsedScheduleDate, err := time.Parse("2006-01-02", t.ScheduledDate)
+		if err != nil {
+			isOverdue = false
+		}
+		scheduledDays := today.Sub(parsedScheduleDate).Hours() / 24
+		if scheduledDays > 14 {
+			isOverdue = true
+		}
+	}
+
+	if t.Started {
+		isOverdue = false
+		parsedStartDate, err := time.Parse("2006-01-02", t.StartDate)
+		if err != nil {
+			return false
+		}
+
+		startedDays := today.Sub(parsedStartDate).Hours() / 24
+		if startedDays > 14 {
+			isOverdue = true
+		}
+	}
+
+	return isOverdue
+}
+
+func (t Task) IsInactive() bool {
+	return (!t.Started && !t.Scheduled) || t.Completed
+}
+
+func (t Task) textWithoutDates() string {
+	return removeDatesFromText(t.Text)
 }
 
 func extractStartDateFromText(text string) string {
@@ -79,8 +113,17 @@ func extractDateFromText(text string, icon string) string {
 	if index == -1 {
 		return ""
 	}
-	// read date from the next 10 characters
-	date := text[index : index+14]
+	var date string
+	for i := index + len(icon); i < len(text); i++ {
+		if text[i] == ' ' {
+			if len(date) > 0 {
+				break
+			}
+			continue
+		}
+		date += string(text[i])
+	}
+
 	return date
 }
 
