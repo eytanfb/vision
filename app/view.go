@@ -113,13 +113,15 @@ func TaskSummaryToView(m *Model) string {
 		tasksView := ""
 		incompleteTaskCount := 0
 		for _, task := range tasks {
-			if task.Completed {
+			if task.Completed && !task.IsCompletedToday() {
 				continue
 			}
 			incompleteTaskCount++
 			tasks := ""
 			text := task.Summary()
-			if task.Started {
+			if task.Completed {
+				text += " ✅ " + DaysAgoFromString(task.CompletedDate)
+			} else if task.Started {
 				text += " 🛫 " + DaysAgoFromString(task.StartDate)
 				if !strings.Contains(progressText, "🛫") {
 					progressText = strings.Replace(progressText, " ⏳", "", -1)

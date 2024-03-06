@@ -103,6 +103,19 @@ func (t Task) IsInactive() bool {
 	return (!t.Started && !t.Scheduled) || t.Completed
 }
 
+func (t Task) IsCompletedToday() bool {
+	if t.CompletedDate == "" {
+		return false
+	}
+
+	parsedCompletedDate, err := time.Parse("2006-01-02", t.CompletedDate)
+	if err != nil {
+		return false
+	}
+
+	return parsedCompletedDate.Day() == time.Now().Day()
+}
+
 func (t Task) textWithoutDates() string {
 	return removeDatesFromText(t.Text)
 }
