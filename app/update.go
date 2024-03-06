@@ -28,11 +28,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.ViewManager.SetHeight(msg.Height)
 
 		if !m.ViewManager.Ready {
-			m.Viewport = viewport.New(msg.Width-m.ViewManager.SidebarWidth, msg.Height-28)
+			m.Viewport = viewport.New(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight)
 			m.ViewManager.Ready = true
 		} else {
-			m.Viewport.Width = msg.Width - m.ViewManager.SidebarWidth
-			m.Viewport.Height = msg.Height - 28
+			m.Viewport.Width = m.ViewManager.DetailsViewWidth
+			m.Viewport.Height = m.ViewManager.DetailsViewHeight
 		}
 	}
 

@@ -93,4 +93,17 @@ func TestTask_IsInactive(t *testing.T) {
 			t.Error("Expected task to be inactive")
 		}
 	})
+
+	t.Run("when task is scheduled for future", func(t *testing.T) {
+		task := Task{
+			Scheduled:     true,
+			Started:       false,
+			Completed:     false,
+			ScheduledDate: time.Now().AddDate(0, 0, 1).Format("2006-01-02"),
+		}
+
+		if !task.IsInactive() {
+			t.Error("Expected task to be inactive")
+		}
+	})
 }

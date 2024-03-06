@@ -36,6 +36,12 @@ func (kcf KeyCommandFactory) CreateKeyCommand(key string) KeyCommand {
 		return UppercaseQKeyCommand{}
 	case "L":
 		return UppercaseLKeyCommand{}
+	case "1":
+		return OneKeyCommand{}
+	case "2":
+		return TwoKeyCommand{}
+	case "3":
+		return ThreeKeyCommand{}
 	}
 	return NilKeyCommand{}
 }

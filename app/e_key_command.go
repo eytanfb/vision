@@ -12,7 +12,7 @@ func (j EKeyCommand) Execute(m *Model) error {
 		return nil
 	}
 
-	filePath := m.GetCurrentFilePath()
+	filePath := m.FileManager.SelectedFile.FullPath
 	//editor := os.Getenv("EDITOR")
 	editor := "vim"
 

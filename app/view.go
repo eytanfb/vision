@@ -46,7 +46,7 @@ func RenderCompanies(m *Model, companies []string) string {
 	for index, company := range companies {
 		textStyle := lipgloss.NewStyle().MarginLeft(2).MarginRight(2)
 		if index == m.DirectoryManager.CompaniesCursor {
-			textStyle = textStyle.Bold(true).Background(lipgloss.Color("63"))
+			textStyle = textStyle.Bold(true).Foreground(lipgloss.Color("#C0DFA1"))
 		}
 		result = lipgloss.JoinHorizontal(lipgloss.Left, result, textStyle.Render("["+company+"]"))
 	}
@@ -65,7 +65,7 @@ func RenderList(m *Model, items []string, title string) string {
 
 	view := sidebarStyle(m.ViewManager.SidebarWidth, m.ViewManager.SidebarHeight).Render(lipgloss.JoinVertical(lipgloss.Top, list))
 
-	summaryStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.DetailsViewWidth).Height(m.ViewManager.DetailsViewHeight).Padding(1).Border(lipgloss.NormalBorder())
+	summaryStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.DetailsViewWidth).Height(m.ViewManager.SummaryViewHeight).Padding(1).Border(lipgloss.NormalBorder())
 	summaryView := TaskSummaryToView(m)
 	summary := summaryStyle.Render(summaryView)
 
@@ -108,7 +108,7 @@ func TaskSummaryToView(m *Model) string {
 		roundedUpPercentage := int(percentage*10) * 10
 
 		titleContainer := lipgloss.NewStyle().Width(width).MarginTop(1)
-		taskTitle := category
+		taskTitle := category[0 : len(category)-len(".md")]
 		progressText := progressBar(completedTasks, totalTasks) + " " + fmt.Sprintf("%d%%", roundedUpPercentage)
 		tasksView := ""
 		incompleteTaskCount := 0
@@ -287,12 +287,13 @@ func RenderFiles(m *Model) string {
 		if index == m.FileManager.FilesCursor {
 			line += "❯ "
 			style = style.Bold(true)
-			itemDetails = file.Name + "\n" + file.Content
+			itemDetails = file.FileNameWithoutExtension() + "\n" + file.Content
+			m.FileManager.SelectedFile = file
 		} else {
 			line += "  "
 		}
 
-		line += file.Name
+		line += file.FileNameWithoutExtension()
 		if m.DirectoryManager.SelectedCategory == "tasks" {
 			isInactive := m.TaskManager.TaskCollection.IsInactive(file.Name)
 
@@ -396,7 +397,8 @@ func RenderTasks(m *Model) string {
 
 	listContainer := listContainerStyle.Render(list)
 
-	markdown := renderMarkdown(m.ViewManager.Width, tasks.String())
+	markdown := renderMarkdown(m.ViewManager.DetailsViewWidth, tasks.String())
+	m.Errors = append(m.Errors, fmt.Sprintf("%d", m.ViewManager.DetailsViewHeight))
 	m.Viewport.SetContent(markdown)
 
 	itemDetailsContainer := itemDetailsContainerStyle.Render(m.Viewport.View())
@@ -421,13 +423,7 @@ func renderMarkdown(width int, content string) string {
 		background = "dark"
 	}
 
-	r, _ := glamour.NewTermRenderer(
-		glamour.WithWordWrap(width-40),
-		glamour.WithStandardStyle(background),
-		glamour.WithStylesFromJSONFile("/Users/eytananjel/Code/vision/dark_modified.json"),
-	)
-
-	out, err := r.Render(content)
+	out, err := glamour.Render(content, background)
 	if err != nil {
 		return ""
 	}

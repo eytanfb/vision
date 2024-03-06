@@ -14,7 +14,7 @@ func (j OKeyCommand) Execute(m *Model) error {
 		return nil
 	}
 
-	filePath := m.GetCurrentFilePath()
+	filePath := m.FileManager.SelectedFile.FullPath
 	//obsidian: //open?vault=Disk-X&file={file$}
 	obsidianPath := constructObsidianURL(filePath, "/Users/eytananjel/Notes")
 

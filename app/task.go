@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -86,6 +87,19 @@ func (t Task) IsOverdue() bool {
 }
 
 func (t Task) IsInactive() bool {
+	// create date from t.ScheduledDate
+	// if it is in the future, then it is not inactive
+	if t.ScheduledDate != "" {
+		scheduledDate, err := time.Parse("2006-01-02", t.ScheduledDate)
+		if err != nil {
+			fmt.Println("Error parsing scheduled date", t.ScheduledDate)
+			return false
+		}
+		if scheduledDate.After(time.Now()) {
+			return true
+		}
+	}
+
 	return (!t.Started && !t.Scheduled) || t.Completed
 }
 

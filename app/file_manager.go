@@ -12,10 +12,11 @@ import (
 )
 
 type FileManager struct {
-	FilesCursor int
-	Files       []FileInfo
-	FileCache   map[string][]FileInfo
-	TaskCache   map[string]map[string][]Task
+	FilesCursor  int
+	Files        []FileInfo
+	FileCache    map[string][]FileInfo
+	TaskCache    map[string]map[string][]Task
+	SelectedFile FileInfo
 }
 
 func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileInfo {

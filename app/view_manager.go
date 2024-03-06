@@ -13,6 +13,7 @@ type ViewManager struct {
 	SidebarHeight     int
 	DetailsViewWidth  int
 	DetailsViewHeight int
+	SummaryViewHeight int
 }
 
 func (vm *ViewManager) SetWidth(width int) {
@@ -24,7 +25,8 @@ func (vm *ViewManager) SetWidth(width int) {
 func (vm *ViewManager) SetHeight(height int) {
 	vm.Height = height
 	vm.SidebarHeight = height - 10
-	vm.DetailsViewHeight = height - 10
+	vm.SummaryViewHeight = height - 10
+	vm.DetailsViewHeight = height - 20
 }
 
 func (vm ViewManager) IsCompanyView() bool {
