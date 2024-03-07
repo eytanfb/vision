@@ -21,7 +21,6 @@ const (
 	CompaniesView  = "companies"
 	CategoriesView = "categories"
 	DetailsView    = "details"
-	AddTaskView    = "add_task"
 )
 
 func (vm *ViewManager) SetWidth(width int) {

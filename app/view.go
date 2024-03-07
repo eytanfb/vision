@@ -10,6 +10,11 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+var (
+	companyTextStyle     = lipgloss.NewStyle().MarginLeft(2).MarginRight(2)
+	selectedCompanyStyle = lipgloss.NewStyle().MarginLeft(2).MarginRight(2).Foreground(lipgloss.Color("#C0DFA1")).Bold(true)
+)
+
 func (m *Model) View() string {
 	return ViewHandler(m)
 }
@@ -45,22 +50,20 @@ func RenderAddTask(m *Model) string {
 }
 
 func RenderCompanies(m *Model, companies []string) string {
-	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Width(m.ViewManager.Width - 5).Align(lipgloss.Center)
 	result := ""
 
 	for index, company := range companies {
-		textStyle := lipgloss.NewStyle().MarginLeft(2).MarginRight(2)
+		textStyle := companyTextStyle
 		if index == m.DirectoryManager.CompaniesCursor {
-			textStyle = textStyle.Bold(true).Foreground(lipgloss.Color("#C0DFA1"))
+			textStyle = selectedCompanyStyle
 		}
 		result = lipgloss.JoinHorizontal(lipgloss.Left, result, textStyle.Render("["+company+"]"))
 	}
 
-	return style.Render(result)
+	return companiesContainerStyle(m.ViewManager.Width - 5).Render(result)
 }
 
 func RenderList(m *Model, items []string, title string) string {
-	summaryStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.DetailsViewWidth).Height(m.ViewManager.SummaryViewHeight).Padding(1).Border(lipgloss.NormalBorder())
 	summaryView := ""
 	list := ""
 
@@ -77,7 +80,7 @@ func RenderList(m *Model, items []string, title string) string {
 	} else {
 		summaryView = TaskSummaryToView(m)
 	}
-	summary := summaryStyle.Render(summaryView)
+	summary := summaryContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.SummaryViewHeight).Render(summaryView)
 
 	if m.ViewManager.HideSidebar {
 		view = ""
@@ -99,7 +102,7 @@ func TaskSummaryToView(m *Model) string {
 	width := m.ViewManager.DetailsViewWidth
 
 	containerStyle := lipgloss.NewStyle().Width(width).Padding(1)
-	titleStyle := lipgloss.NewStyle().Align(lipgloss.Left).Width(width - 40).Bold(true).Foreground(lipgloss.Color("63"))
+	titleStyle := summaryTitleStyle(width)
 	startedTextStyle := lipgloss.NewStyle()
 
 	view := ""
@@ -124,6 +127,7 @@ func TaskSummaryToView(m *Model) string {
 		incompleteTaskCount := 0
 		for _, task := range tasks {
 			if task.Completed && !task.IsCompletedToday() {
+				progressText = strings.Replace(progressText, " 🛫", "", -1)
 				continue
 			}
 			incompleteTaskCount++
@@ -244,12 +248,11 @@ func DaysAgoFromString(date string) string {
 }
 
 func createListItem(item string, index int, cursor int) string {
-	line := "  "
+	line := ""
 	style := lipgloss.NewStyle()
 
 	if index == cursor {
-		line = "❯ "
-		style = style.Bold(true)
+		style = style.Bold(true).Foreground(lipgloss.Color("#73A580"))
 	}
 
 	line += item + "\n"
@@ -294,12 +297,11 @@ func RenderFiles(m *Model) string {
 	completedList := ""
 	incompleteList := ""
 	for index, file := range sortedFiles {
-		line := "  "
+		line := ""
 		style = lipgloss.NewStyle()
 
 		if index == m.FileManager.FilesCursor {
-			line += "❯ "
-			style = style.Bold(true)
+			style = style.Bold(true).Foreground(lipgloss.Color("#73A580"))
 			itemDetails = file.FileNameWithoutExtension() + "\n" + file.Content
 			m.FileManager.SelectedFile = file
 		}
@@ -309,7 +311,9 @@ func RenderFiles(m *Model) string {
 			isInactive := m.TaskManager.TaskCollection.IsInactive(file.Name)
 
 			if isInactive {
-				style = style.Copy().Foreground(lipgloss.Color("#A0A0A0"))
+				if index != m.FileManager.FilesCursor {
+					style = style.Copy().Foreground(lipgloss.Color("#A0A0A0"))
+				}
 				incompleteList = lipgloss.JoinVertical(lipgloss.Top, incompleteList, style.Render(line))
 			} else {
 				completed, total := m.TaskManager.TaskCollection.Progress(file.Name)
@@ -391,20 +395,15 @@ func RenderTasks(m *Model) string {
 	}
 
 	for index, file := range m.FileManager.Files {
-		line := ""
+		line := "  "
 		style = lipgloss.NewStyle()
 
 		if index == m.FileManager.FilesCursor {
 			line += "❯ "
 			style = style.Bold(true)
 			for index, task := range m.TaskManager.TaskCollection.GetTasks(file.Name) {
-				if index == m.TaskManager.TasksCursor {
-					tasks.WriteString("❯ ")
-				}
-				tasks.WriteString(task.String() + "\n\n")
+				tasks.WriteString(writeTaskString(task, index, m.TaskManager.TasksCursor))
 			}
-		} else {
-			line += "  "
 		}
 
 		line += file.Name
@@ -428,6 +427,15 @@ func RenderTasks(m *Model) string {
 	return view
 }
 
+func writeTaskString(task Task, index int, cursor int) string {
+	viewCursor := "  "
+	if index == cursor {
+		viewCursor = "❯ "
+	}
+
+	return viewCursor + task.String() + "\n\n"
+}
+
 func sidebarStyle(width, height int) lipgloss.Style {
 	return lipgloss.NewStyle().Width(width).Height(height).Padding(1).Border(lipgloss.NormalBorder())
 }
@@ -445,4 +453,21 @@ func renderMarkdown(width int, content string) string {
 	}
 
 	return out
+}
+
+func companiesContainerStyle(width int) lipgloss.Style {
+	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Width(width).Align(lipgloss.Center)
+	return style
+}
+
+func summaryContainerStyle(width, height int) lipgloss.Style {
+	summaryStyle := lipgloss.NewStyle().MarginLeft(2).Width(width).Height(height).Padding(1).Border(lipgloss.NormalBorder())
+
+	return summaryStyle
+}
+
+func summaryTitleStyle(width int) lipgloss.Style {
+	summaryStyle := lipgloss.NewStyle().Align(lipgloss.Left).Width(width - 40).Bold(true).Foreground(lipgloss.Color("63"))
+
+	return summaryStyle
 }
