@@ -294,20 +294,14 @@ func RenderFiles(m *Model) string {
 	completedList := ""
 	incompleteList := ""
 	for index, file := range sortedFiles {
-		line := ""
+		line := "  "
 		style = lipgloss.NewStyle()
 
 		if index == m.FileManager.FilesCursor {
 			line += "❯ "
 			style = style.Bold(true)
-			if m.IsAddTaskView() {
-				itemDetails = m.NewTaskInput.View()
-			} else {
-				itemDetails = file.FileNameWithoutExtension() + "\n" + file.Content
-			}
+			itemDetails = file.FileNameWithoutExtension() + "\n" + file.Content
 			m.FileManager.SelectedFile = file
-		} else {
-			line += "  "
 		}
 
 		line += file.FileNameWithoutExtension()
@@ -338,10 +332,15 @@ func RenderFiles(m *Model) string {
 
 	listContainer := listContainerStyle.Render(list)
 
-	markdown := renderMarkdown(m.ViewManager.Width, itemDetails)
-	m.Viewport.SetContent(markdown)
+	if m.IsAddTaskView() {
+		itemDetails = m.NewTaskInput.View()
+	} else {
+		markdown := renderMarkdown(m.ViewManager.Width, itemDetails)
+		m.Viewport.SetContent(markdown)
+		itemDetails = m.Viewport.View()
+	}
 
-	itemDetailsContainer := itemDetailsContainerStyle.Render(m.Viewport.View())
+	itemDetailsContainer := itemDetailsContainerStyle.Render(itemDetails)
 	if m.ViewManager.HideSidebar {
 		listContainer = ""
 	}

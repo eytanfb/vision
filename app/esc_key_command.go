@@ -6,6 +6,7 @@ func (j EscKeyCommand) Execute(m *Model) error {
 	if m.IsAddTaskView() {
 		m.ViewManager.IsAddTaskView = false
 		m.NewTaskInput.Blur()
+		return nil
 	}
 	m.GoToPreviousView()
 

@@ -93,6 +93,16 @@ func (fm FileManager) CreateStandup(company string) {
 	}
 }
 
+func (fm FileManager) CreateTask(company string, taskName string) {
+	filePath := "/Users/eytananjel/Notes/" + company + "/tasks/" + taskName + ".md"
+	templatePath := "/Users/eytananjel/Notes/obsidian/templates/" + company + "_task.md"
+
+	err := copyFile(templatePath, filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func (fm *FileManager) ResetCache() {
 	fm.FileCache = make(map[string][]FileInfo)
 }
