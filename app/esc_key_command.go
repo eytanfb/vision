@@ -3,6 +3,10 @@ package app
 type EscKeyCommand struct{}
 
 func (j EscKeyCommand) Execute(m *Model) error {
+	if m.IsAddTaskView() {
+		m.ViewManager.IsAddTaskView = false
+		m.NewTaskInput.Blur()
+	}
 	m.GoToPreviousView()
 
 	return nil

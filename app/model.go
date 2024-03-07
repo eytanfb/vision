@@ -4,14 +4,9 @@ import (
 	"strings"
 	"vision/config"
 
+	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-)
-
-const (
-	CompaniesView  = "companies"
-	CategoriesView = "categories"
-	DetailsView    = "details"
 )
 
 type Model struct {
@@ -20,6 +15,7 @@ type Model struct {
 	FileManager      FileManager
 	ViewManager      ViewManager
 	Viewport         viewport.Model
+	NewTaskInput     textinput.Model
 	Errors           []string
 }
 
@@ -32,6 +28,8 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 			clerky = company
 		}
 	}
+
+	textInput := textinput.New()
 
 	m := Model{
 		DirectoryManager: DirectoryManager{
@@ -65,8 +63,10 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 			SidebarHeight:    40,
 			NavbarWidth:      40,
 			DetailsViewWidth: 40,
+			IsAddTaskView:    false,
 		},
-		Viewport: viewport.Model{},
+		Viewport:     viewport.Model{},
+		NewTaskInput: textInput,
 	}
 
 	SetArgs(&m, args)
@@ -111,6 +111,10 @@ func (m Model) IsCategoryView() bool {
 
 func (m Model) IsDetailsView() bool {
 	return m.ViewManager.IsDetailsView()
+}
+
+func (m Model) IsAddTaskView() bool {
+	return m.ViewManager.IsAddTaskView
 }
 
 func (m Model) IsTaskDetailsFocus() bool {

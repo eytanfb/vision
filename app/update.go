@@ -14,6 +14,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		key := msg.String()
 		if key == "ctrl+c" || key == "q" {
 			return m, tea.Quit
+		} else if m.IsAddTaskView() {
+			if key == "esc" {
+				KeyCommandFactory{}.CreateKeyCommand("esc").Execute(m)
+			}
+			m.NewTaskInput, cmd = m.NewTaskInput.Update(msg)
 		} else {
 			keyCommandFactory := KeyCommandFactory{}
 			keyCommand := keyCommandFactory.CreateKeyCommand(key)

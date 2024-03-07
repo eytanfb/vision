@@ -39,6 +39,11 @@ func RenderErrors(m *Model) string {
 	return errors.String()
 }
 
+func RenderAddTask(m *Model) string {
+	containerStyle := lipgloss.NewStyle().Width(m.ViewManager.DetailsViewWidth).Height(m.ViewManager.DetailsViewHeight).Padding(1).Border(lipgloss.NormalBorder())
+	return containerStyle.Render(m.NewTaskInput.View())
+}
+
 func RenderCompanies(m *Model, companies []string) string {
 	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Width(m.ViewManager.Width - 5).Align(lipgloss.Center)
 	result := ""
@@ -55,6 +60,8 @@ func RenderCompanies(m *Model, companies []string) string {
 }
 
 func RenderList(m *Model, items []string, title string) string {
+	summaryStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.DetailsViewWidth).Height(m.ViewManager.SummaryViewHeight).Padding(1).Border(lipgloss.NormalBorder())
+	summaryView := ""
 	list := ""
 
 	cursor := m.GetCurrentCursor()
@@ -65,8 +72,11 @@ func RenderList(m *Model, items []string, title string) string {
 
 	view := sidebarStyle(m.ViewManager.SidebarWidth, m.ViewManager.SidebarHeight).Render(lipgloss.JoinVertical(lipgloss.Top, list))
 
-	summaryStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.DetailsViewWidth).Height(m.ViewManager.SummaryViewHeight).Padding(1).Border(lipgloss.NormalBorder())
-	summaryView := TaskSummaryToView(m)
+	if m.IsAddTaskView() {
+		summaryView = m.NewTaskInput.View()
+	} else {
+		summaryView = TaskSummaryToView(m)
+	}
 	summary := summaryStyle.Render(summaryView)
 
 	if m.ViewManager.HideSidebar {
@@ -290,7 +300,11 @@ func RenderFiles(m *Model) string {
 		if index == m.FileManager.FilesCursor {
 			line += "❯ "
 			style = style.Bold(true)
-			itemDetails = file.FileNameWithoutExtension() + "\n" + file.Content
+			if m.IsAddTaskView() {
+				itemDetails = m.NewTaskInput.View()
+			} else {
+				itemDetails = file.FileNameWithoutExtension() + "\n" + file.Content
+			}
 			m.FileManager.SelectedFile = file
 		} else {
 			line += "  "

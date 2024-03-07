@@ -14,7 +14,15 @@ type ViewManager struct {
 	DetailsViewWidth  int
 	DetailsViewHeight int
 	SummaryViewHeight int
+	IsAddTaskView     bool
 }
+
+const (
+	CompaniesView  = "companies"
+	CategoriesView = "categories"
+	DetailsView    = "details"
+	AddTaskView    = "add_task"
+)
 
 func (vm *ViewManager) SetWidth(width int) {
 	vm.Width = width
