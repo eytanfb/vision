@@ -120,6 +120,7 @@ func TaskSummaryToView(m *Model) string {
 			tasks := ""
 			text := task.Summary()
 			if task.Completed {
+				incompleteTaskCount--
 				text += " ✅ " + DaysAgoFromString(task.CompletedDate)
 			} else if task.Started {
 				text += " 🛫 " + DaysAgoFromString(task.StartDate)
