@@ -9,13 +9,15 @@ import (
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/reflow/wordwrap"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 var (
 	companyTextStyle     = lipgloss.NewStyle().MarginLeft(2).MarginRight(2)
 	selectedCompanyStyle = lipgloss.NewStyle().MarginLeft(2).MarginRight(2).Foreground(lipgloss.Color("#C0DFA1")).Bold(true)
+	startedTextStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#035E7B"))
+	completedTextStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#1C3A13"))
+	scheduledTextStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#F2D0A4"))
+	overdueTextStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#EC4E20"))
 )
 
 func (m *Model) View() string {
@@ -113,98 +115,10 @@ func TaskSummaryToView(m *Model, period string) string {
 
 	width := m.ViewManager.DetailsViewWidth
 
-	containerStyle := lipgloss.NewStyle().Width(width).Padding(1)
-	titleStyle := summaryTitleStyle(width)
-	scheduledTextStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#F2D0A4"))
-	startedTextStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#0AAFC7"))
-	completedTextStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#4CD137"))
-	overdueTextStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#EC4E20"))
-	progressTextStyle := startedTextStyle
+	view := BuildSummaryView(m, keys, tasksByFile, width)
 
-	view := ""
-	for _, key := range keys {
-		category := key
-		tasks := tasksByFile[key]
-		completedTasks, totalTasks := m.TaskManager.TaskCollection.Progress(category)
-		percentage := float64(completedTasks) / float64(totalTasks)
-		roundedUpPercentage := int(percentage*10) * 10
-
-		titleContainer := lipgloss.NewStyle().Width(width).MarginTop(1)
-		taskTitle := category[0 : len(category)-len(".md")]
-		progressText := progressBar(completedTasks, totalTasks) + " " + fmt.Sprintf("%d%%", roundedUpPercentage)
-		tasksView := ""
-		incompleteTaskCount := 0
-		for _, task := range tasks {
-			textStyle := startedTextStyle
-
-			if task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) {
-				incompleteTaskCount++
-				continue
-			}
-			incompleteTaskCount++
-			tasks := ""
-			text := task.Summary()
-			status := task.StatusAtDate(m.TaskManager.DailySummaryDate)
-			if m.ViewManager.IsWeeklyView {
-				status = task.WeeklyStatusAtDate(m.TaskManager.WeeklySummaryEndDate)
-			}
-			if status == completed {
-				incompleteTaskCount--
-				text += " ✅ " + daysAgoFromString(task.CompletedDate)
-				textStyle = completedTextStyle
-				progressTextStyle = completedTextStyle
-			} else if status == started {
-				text += " 🛫 " + daysAgoFromString(task.StartDate)
-				if !strings.Contains(progressText, "🛫") {
-					progressText = strings.Replace(progressText, " ⏳", "", -1)
-					progressText = "🛫 " + progressText
-					progressTextStyle = startedTextStyle
-				}
-			} else if status == scheduled {
-				text += " ⏳ " + daysAgoFromString(task.ScheduledDate)
-				textStyle = scheduledTextStyle
-				if !strings.Contains(progressText, "⏳") && !strings.Contains(progressText, "🚨") && !strings.Contains(progressText, "🛫") {
-					progressText = "⏳ " + progressText
-					progressTextStyle = scheduledTextStyle
-				}
-			}
-			if task.IsOverdue() {
-				text += " 🚨"
-				textStyle = overdueTextStyle
-				if !strings.Contains(progressText, "🚨") {
-					progressText = strings.Replace(progressText, " ⏳", "", -1)
-					progressText = strings.Replace(progressText, " 🛫", "", -1)
-					progressText = "🚨 " + progressText
-					progressTextStyle = overdueTextStyle
-				}
-			}
-
-			tasks = textStyle.Render(text)
-			tasksView = lipgloss.JoinVertical(lipgloss.Top, tasksView, tasks)
-		}
-
-		progressTextStyle = titleStyle
-		rightAlignedProgressText := progressTextStyle.Copy().Width(30).Align(lipgloss.Right).Render(progressText)
-		if !m.ViewManager.IsWeeklyView {
-			taskTitle += " (" + fmt.Sprintf("%d", incompleteTaskCount) + " tasks remaining)"
-		}
-		taskTitleView := lipgloss.JoinHorizontal(lipgloss.Left, titleStyle.Render(taskTitle))
-		if !m.ViewManager.IsWeeklyView {
-			taskTitleView = lipgloss.JoinHorizontal(lipgloss.Left, taskTitleView, rightAlignedProgressText)
-		}
-		tasksView = lipgloss.JoinVertical(lipgloss.Top, titleContainer.Render(taskTitleView), tasksView)
-		view = lipgloss.JoinVertical(lipgloss.Top, view, tasksView)
-	}
-
-	containerTitleStyle := lipgloss.NewStyle().Width(width).Padding(1)
-	titleString := cases.Title(language.Und, cases.NoLower).String(period) + " Tasks for "
-	if period == "weekly" {
-		titleString += fmt.Sprintf("%s - %s", m.TaskManager.WeeklySummaryStartDate, m.TaskManager.WeeklySummaryEndDate)
-	} else {
-		titleString += m.TaskManager.DailySummaryDate
-	}
-	containerTitle := containerTitleStyle.Render(titleString)
-	renderedView := containerStyle.Render(view)
+	containerTitle := taskSummaryContainerStyle(width).Render("Daily Tasks for " + time.Now().Format("2006-01-02"))
+	renderedView := taskSummaryContainerStyle(width).Render(view)
 
 	return lipgloss.JoinVertical(lipgloss.Top, containerTitle, renderedView)
 }
@@ -510,4 +424,22 @@ func summaryTitleStyle(width int) lipgloss.Style {
 	summaryStyle := lipgloss.NewStyle().Align(lipgloss.Left).Width(width - 40).Bold(true).Foreground(lipgloss.Color("#C17AD3"))
 
 	return summaryStyle
+}
+
+func taskSummaryContainerStyle(width int) lipgloss.Style {
+	return lipgloss.NewStyle().Width(width).Padding(1)
+}
+
+func taskSummaryContainerTitleStyle(width int) lipgloss.Style {
+	return lipgloss.NewStyle().Align(lipgloss.Center).Width(width).Padding(1)
+}
+
+func taskTitleContainer(width int) lipgloss.Style {
+	return lipgloss.NewStyle().Width(width).MarginTop(1)
+}
+
+func addIconToProgressText(progressText, icon string) string {
+	progressText = strings.Replace(progressText, " ⏳", "", -1)
+	progressText = strings.Replace(progressText, " 🛫", "", -1)
+	return progressText + " " + icon
 }
