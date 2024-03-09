@@ -2,10 +2,10 @@
 
 ## Ideas
 
-- [ ] Be able to create a task with a name
 - [ ] Weekly retrospective
 - [ ] Upcoming week view
-- [ ] Add icons for tasks
+- [x] Add icons for tasks
+- [x] Be able to create a task with a name
 - [x] Sort files by progress completion
 - [x] Make the view like gobang
 - [x] Create standup automatically on launch for the day if it doesn't exist
@@ -25,16 +25,6 @@
 ## Task and Project Management
 - [ ] Add a “quick task add” feature that allows fast entry of tasks, automatically assigned based on the current focus.
 - [ ] Implement functionality for setting and managing recurring tasks.
-
-## Personalized Workflow Adaptations
-- [ ] Integrate end-of-day summaries to aid reflection and preparation for the next day’s priorities.
-
-## Meeting Preparation and Follow-up
-- [ ] Develop a section for post-meeting notes that can be associated with relevant clients and projects.
-
-## Sidebar Enhancements
-- [ ] Ensure real-time update mechanisms for task progress on the sidebar.
-- [ ] Streamline task creation directly from the sidebar, focusing on ease and speed.
 
 ## Visual Task Differentiation
 - [ ] Maintain and enhance visual task differentiation strategies for better organization.

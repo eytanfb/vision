@@ -103,7 +103,13 @@ func TaskSummaryToView(m *Model) string {
 
 	containerStyle := lipgloss.NewStyle().Width(width).Padding(1)
 	titleStyle := summaryTitleStyle(width)
-	startedTextStyle := lipgloss.NewStyle()
+	startedTextStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#035E7B"))
+	completedTextStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#1C3A13"))
+	scheduledTextStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#F2D0A4"))
+	overdueTextStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#EC4E20"))
+	progressTextStyle := startedTextStyle
+
+	textStyle := startedTextStyle
 
 	view := ""
 	for _, key := range keys {
@@ -136,32 +142,39 @@ func TaskSummaryToView(m *Model) string {
 			if task.Completed {
 				incompleteTaskCount--
 				text += " ✅ " + DaysAgoFromString(task.CompletedDate)
+				textStyle = completedTextStyle
+				progressTextStyle = completedTextStyle
 			} else if task.Started {
 				text += " 🛫 " + DaysAgoFromString(task.StartDate)
 				if !strings.Contains(progressText, "🛫") {
 					progressText = strings.Replace(progressText, " ⏳", "", -1)
 					progressText += " 🛫"
+					progressTextStyle = startedTextStyle
 				}
 			} else if task.Scheduled {
 				text += " ⏳ " + DaysAgoFromString(task.ScheduledDate)
+				textStyle = scheduledTextStyle
 				if !strings.Contains(progressText, "⏳") && !strings.Contains(progressText, "🚨") && !strings.Contains(progressText, "🛫") {
 					progressText += " ⏳"
+					progressTextStyle = scheduledTextStyle
 				}
 			}
 			if task.IsOverdue() {
 				text += " 🚨"
+				textStyle = overdueTextStyle
 				if !strings.Contains(progressText, "🚨") {
 					progressText = strings.Replace(progressText, " ⏳", "", -1)
 					progressText = strings.Replace(progressText, " 🛫", "", -1)
 					progressText += " 🚨"
+					progressTextStyle = overdueTextStyle
 				}
 			}
 
-			tasks = startedTextStyle.Render(text)
+			tasks = textStyle.Render(text)
 			tasksView = lipgloss.JoinVertical(lipgloss.Top, tasksView, tasks)
 		}
 
-		rightAlignedProgressText := titleStyle.Copy().Width(30).Align(lipgloss.Right).Render(progressText)
+		rightAlignedProgressText := progressTextStyle.Copy().Width(30).Align(lipgloss.Right).Render(progressText)
 		taskTitle += " (" + fmt.Sprintf("%d", incompleteTaskCount) + " tasks remaining)"
 		taskTitleView := lipgloss.JoinHorizontal(lipgloss.Left, titleStyle.Render(taskTitle), rightAlignedProgressText)
 		tasksView = lipgloss.JoinVertical(lipgloss.Top, titleContainer.Render(taskTitleView), tasksView)
