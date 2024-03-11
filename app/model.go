@@ -64,6 +64,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 			NavbarWidth:      40,
 			DetailsViewWidth: 40,
 			IsAddTaskView:    false,
+			ShowCompanies:    false,
 		},
 		Viewport:     viewport.Model{},
 		NewTaskInput: textInput,

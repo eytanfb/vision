@@ -15,6 +15,7 @@ type ViewManager struct {
 	DetailsViewHeight int
 	SummaryViewHeight int
 	IsAddTaskView     bool
+	ShowCompanies     bool
 }
 
 const (

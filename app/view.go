@@ -56,8 +56,8 @@ func RenderCompanies(m *Model, companies []string) string {
 		textStyle := companyTextStyle
 		if index == m.DirectoryManager.CompaniesCursor {
 			textStyle = selectedCompanyStyle
+			result = lipgloss.JoinHorizontal(lipgloss.Left, result, textStyle.Render("["+company+"]"))
 		}
-		result = lipgloss.JoinHorizontal(lipgloss.Left, result, textStyle.Render("["+company+"]"))
 	}
 
 	return companiesContainerStyle(m.ViewManager.Width - 5).Render(result)
@@ -380,7 +380,12 @@ func RenderNavBar(m *Model) string {
 		navbar = textStyle.Render(m.GetCurrentCompanyName() + " > " + m.DirectoryManager.SelectedCategory)
 	}
 
-	view := container.Render(lipgloss.JoinVertical(lipgloss.Top, style.Render(navbar), RenderCompanies(m, m.CompanyNames())))
+	navbarView := lipgloss.JoinVertical(lipgloss.Top, style.Render(navbar))
+
+	if m.ViewManager.ShowCompanies {
+		navbarView = lipgloss.JoinHorizontal(lipgloss.Left, navbar, RenderCompanies(m, m.CategoryNames()))
+	}
+	view := container.Render(navbarView)
 
 	return view
 }
