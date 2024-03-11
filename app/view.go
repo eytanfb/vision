@@ -8,7 +8,6 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/muesli/reflow/wordwrap"
 )
 
 var (
@@ -132,54 +131,18 @@ func RenderFiles(m *Model) string {
 		return "No files found"
 	}
 
-	containerStyle := lipgloss.NewStyle()
-	listContainerStyle := sidebarStyle(m.ViewManager.SidebarWidth, m.ViewManager.SidebarHeight)
-	itemDetailsContainerStyle := itemDetailsContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight)
-	list := ""
-	itemDetails := ""
+	listContainerStyle := listContainerStyle(m.ViewManager.SidebarWidth, m.ViewManager.SidebarHeight, m.IsItemDetailsFocus())
+	itemDetailsContainerStyle := itemDetailsContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight, m.IsItemDetailsFocus())
 
-	if m.IsItemDetailsFocus() {
-		itemDetailsContainerStyle = itemDetailsContainerStyle.BorderForeground(lipgloss.Color("63"))
-	} else {
-		listContainerStyle = listContainerStyle.Copy().BorderForeground(lipgloss.Color("63"))
-	}
-
-	completedList := ""
-	incompleteList := ""
-	for index, file := range sortedFiles(m) {
-		line := ""
-		style := lipgloss.NewStyle()
-
-		if index == m.FileManager.FilesCursor {
-			style = style.Bold(true).Foreground(lipgloss.Color("#CB48B7"))
-			itemDetails = file.FileNameWithoutExtension() + "\n" + file.Content
-			m.FileManager.SelectedFile = file
-		}
-
-		line += file.FileNameWithoutExtension()
-		if m.DirectoryManager.SelectedCategory == "tasks" {
-			list, incompleteList, completedList = buildTasksView(m, line, index, list, file, style, incompleteList, completedList)
-		} else {
-			list = joinVertical(list, style.Render(line))
-		}
-	}
-
+	list, itemDetails := buildFilesView(m)
 	listContainer := listContainerStyle.Render(list)
-
-	if m.IsAddTaskView() {
-		itemDetails = m.NewTaskInput.View()
-	} else {
-		markdown := renderMarkdown(wordwrap.String(itemDetails, m.ViewManager.DetailsViewWidth))
-		m.Viewport.SetContent(markdown)
-		itemDetails = m.Viewport.View()
-	}
 
 	itemDetailsContainer := itemDetailsContainerStyle.Render(itemDetails)
 	if m.ViewManager.HideSidebar {
 		listContainer = ""
 	}
 
-	container := containerStyle.Render(joinHorizontal(listContainer, itemDetailsContainer))
+	container := lipgloss.NewStyle().Render(joinHorizontal(listContainer, itemDetailsContainer))
 
 	return joinVertical(container)
 }
@@ -350,8 +313,12 @@ func joinHorizontal(items ...string) string {
 	return lipgloss.JoinHorizontal(lipgloss.Left, items...)
 }
 
-func itemDetailsContainerStyle(width, height int) lipgloss.Style {
-	return contentContainerStyle(width, height)
+func itemDetailsContainerStyle(width, height int, isItemDetailsFocus bool) lipgloss.Style {
+	style := contentContainerStyle(width, height)
+	if isItemDetailsFocus {
+		style = style.Copy().BorderForeground(lipgloss.Color("63"))
+	}
+	return style
 }
 
 func addTaskContainerStyle(width, height int) lipgloss.Style {
@@ -433,4 +400,47 @@ func buildTasksView(m *Model, line string, index int, list string, file FileInfo
 	}
 
 	return joinVertical(incompleteList, lipgloss.NewStyle().MarginTop(2).Render(completedList)), incompleteList, completedList
+}
+
+func buildFilesView(m *Model) (string, string) {
+	list := ""
+	itemDetails := ""
+	completedList := ""
+	incompleteList := ""
+	for index, file := range sortedFiles(m) {
+		line := ""
+		style := lipgloss.NewStyle()
+
+		if index == m.FileManager.FilesCursor {
+			style = style.Bold(true).Foreground(lipgloss.Color("#CB48B7"))
+			itemDetails = file.FileNameWithoutExtension() + "\n" + file.Content
+			m.FileManager.SelectedFile = file
+		}
+
+		line += file.FileNameWithoutExtension()
+		if m.DirectoryManager.SelectedCategory == "tasks" {
+			list, incompleteList, completedList = buildTasksView(m, line, index, list, file, style, incompleteList, completedList)
+		} else {
+			list = joinVertical(list, style.Render(line))
+		}
+	}
+
+	if m.IsAddTaskView() {
+		itemDetails = m.NewTaskInput.View()
+	} else {
+		markdown := renderMarkdown(itemDetails)
+		m.Viewport.SetContent(markdown)
+		itemDetails = m.Viewport.View()
+	}
+
+	return list, itemDetails
+}
+
+func listContainerStyle(width int, height int, isItemDetailsFocus bool) lipgloss.Style {
+	style := sidebarStyle(width, height)
+	if !isItemDetailsFocus {
+		style = style.Copy().BorderForeground(lipgloss.Color("63"))
+	}
+
+	return style
 }
