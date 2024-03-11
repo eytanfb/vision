@@ -29,6 +29,12 @@ type Task struct {
 	FileName      string
 }
 
+const (
+	StartedIcon   = "🛫 "
+	CompletedIcon = "✅ "
+	ScheduledIcon = "⏳"
+)
+
 func (t Task) String() string {
 	var stringBuilder strings.Builder
 
@@ -188,18 +194,15 @@ func (t Task) textWithoutDates() string {
 }
 
 func extractStartDateFromText(text string) string {
-	startIcon := "🛫 "
-	return extractDateFromText(text, startIcon)
+	return extractDateFromText(text, StartedIcon)
 }
 
 func extractScheduledDateFromText(text string) string {
-	scheduledIcon := "⏳"
-	return extractDateFromText(text, scheduledIcon)
+	return extractDateFromText(text, ScheduledIcon)
 }
 
 func extractCompletedDateFromText(text string) string {
-	completedIcon := "✅ "
-	return extractDateFromText(text, completedIcon)
+	return extractDateFromText(text, CompletedIcon)
 }
 
 func extractDateFromText(text string, icon string) string {

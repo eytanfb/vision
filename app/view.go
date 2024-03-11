@@ -37,7 +37,7 @@ func ViewHandler(m *Model) string {
 		}
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Top, RenderNavBar(m), content, RenderErrors(m))
+	return joinVertical(RenderNavBar(m), content, RenderErrors(m))
 }
 
 func RenderErrors(m *Model) string {
@@ -50,8 +50,7 @@ func RenderErrors(m *Model) string {
 }
 
 func RenderAddTask(m *Model) string {
-	containerStyle := lipgloss.NewStyle().Width(m.ViewManager.DetailsViewWidth).Height(m.ViewManager.DetailsViewHeight).Padding(1).Border(lipgloss.NormalBorder())
-	return containerStyle.Render(m.NewTaskInput.View())
+	return addTaskContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight).Render(m.NewTaskInput.View())
 }
 
 func RenderCompanies(m *Model, companies []string) string {
@@ -61,7 +60,7 @@ func RenderCompanies(m *Model, companies []string) string {
 		textStyle := companyTextStyle
 		if index == m.DirectoryManager.CompaniesCursor {
 			textStyle = selectedCompanyStyle
-			result = lipgloss.JoinHorizontal(lipgloss.Left, result, textStyle.Render("["+company+"]"))
+			result = joinHorizontal(result, textStyle.Render("["+company+"]"))
 		}
 	}
 
@@ -75,10 +74,10 @@ func RenderList(m *Model, items []string, title string) string {
 	cursor := m.GetCurrentCursor()
 
 	for index, item := range items {
-		list = lipgloss.JoinVertical(lipgloss.Top, list, createListItem(item, index, cursor))
+		list = joinVertical(list, createListItem(item, index, cursor))
 	}
 
-	view := sidebarStyle(m.ViewManager.SidebarWidth, m.ViewManager.SidebarHeight).Render(lipgloss.JoinVertical(lipgloss.Top, list))
+	view := sidebarStyle(m.ViewManager.SidebarWidth, m.ViewManager.SidebarHeight).Render(joinVertical(list))
 
 	if m.IsAddTaskView() {
 		summaryView = m.NewTaskInput.View()
@@ -94,7 +93,7 @@ func RenderList(m *Model, items []string, title string) string {
 		view = ""
 	}
 
-	return lipgloss.JoinHorizontal(lipgloss.Left, view, summary)
+	return joinHorizontal(view, summary)
 }
 
 func TaskSummaryToView(m *Model, period string) string {
@@ -106,12 +105,8 @@ func TaskSummaryToView(m *Model, period string) string {
 		tasksByFile = m.TaskManager.WeeklySummary(m.GetCurrentCompanyName(), startDate, endDate)
 	}
 
-	keys := make([]string, 0, len(tasksByFile))
-	for k := range tasksByFile {
-		keys = append(keys, k)
-	}
-
-	viewSort(keys, m)
+	keys := sortTaskKeys(tasksByFile)
+	viewSort(keys, &tasksByFile, m)
 
 	width := m.ViewManager.DetailsViewWidth
 
@@ -120,92 +115,16 @@ func TaskSummaryToView(m *Model, period string) string {
 	containerTitle := taskSummaryContainerStyle(width).Render("Daily Tasks for " + time.Now().Format("2006-01-02"))
 	renderedView := taskSummaryContainerStyle(width).Render(view)
 
-	return lipgloss.JoinVertical(lipgloss.Top, containerTitle, renderedView)
+	return joinVertical(containerTitle, renderedView)
 }
 
-func viewSort(filenames []string, m *Model) {
-	sort.Slice(filenames, func(i, j int) bool {
-		iInactive := m.TaskManager.TaskCollection.IsInactive(filenames[i])
-		jInactive := m.TaskManager.TaskCollection.IsInactive(filenames[j])
-
-		if iInactive {
-			return false
-		}
-
-		if jInactive {
-			return true
-		}
-		iCompletedTasks, iTotalTasks := m.TaskManager.TaskCollection.Progress(filenames[i])
-		jCompletedTasks, jTotalTasks := m.TaskManager.TaskCollection.Progress(filenames[j])
-
-		iPercentage := float64(iCompletedTasks) / float64(iTotalTasks)
-		jPercentage := float64(jCompletedTasks) / float64(jTotalTasks)
-
-		iRoundedUp := int(iPercentage*10) * 10
-		jRoundedUp := int(jPercentage*10) * 10
-
-		if iRoundedUp == 100 {
-			return false
-		}
-
-		if jRoundedUp == 100 {
-			return true
-		}
-
-		if iRoundedUp == jRoundedUp {
-			return filenames[i] < filenames[j]
-		}
-
-		return iRoundedUp > jRoundedUp
-	})
-}
-
-func progressBar(completed, total int) string {
-	percentage := float64(completed) / float64(total)
-	numberOfBars := int(percentage * 10)
-	progressBar := "["
-
-	for i := 0; i < 10; i++ {
-		if i < numberOfBars {
-			progressBar += "#"
-		} else {
-			progressBar += " "
-		}
-	}
-	progressBar += "]"
-
-	return progressBar
-}
-
-func daysAgoFromString(date string) string {
-	parsedDate, err := time.Parse("2006-01-02", date)
-	if err != nil {
-		return ""
+func sortTaskKeys(tasksByFile map[string][]Task) []string {
+	keys := make([]string, 0, len(tasksByFile))
+	for k := range tasksByFile {
+		keys = append(keys, k)
 	}
 
-	today := time.Now()
-	days := today.Sub(parsedDate).Hours() / 24
-	daysString := "days"
-	if days < 1 {
-		return "today"
-	} else if days < 2 {
-		daysString = "day"
-	}
-
-	return fmt.Sprintf("%.0f %s ago", days, daysString)
-}
-
-func createListItem(item string, index int, cursor int) string {
-	line := ""
-	style := lipgloss.NewStyle()
-
-	if index == cursor {
-		style = style.Bold(true).Foreground(lipgloss.Color("#73A580"))
-	}
-
-	line += item + "\n"
-
-	return style.Render(line)
+	return keys
 }
 
 func RenderFiles(m *Model) string {
@@ -213,73 +132,35 @@ func RenderFiles(m *Model) string {
 		return "No files found"
 	}
 
-	var style lipgloss.Style
 	containerStyle := lipgloss.NewStyle()
 	listContainerStyle := sidebarStyle(m.ViewManager.SidebarWidth, m.ViewManager.SidebarHeight)
-	itemDetailsContainerStyle := summaryContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight)
-	borderFocusColor := lipgloss.Color(m.DirectoryManager.SelectedCompany.Color)
+	itemDetailsContainerStyle := itemDetailsContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight)
 	list := ""
 	itemDetails := ""
 
 	if m.IsItemDetailsFocus() {
-		itemDetailsContainerStyle = itemDetailsContainerStyle.BorderForeground(borderFocusColor)
+		itemDetailsContainerStyle = itemDetailsContainerStyle.BorderForeground(lipgloss.Color("63"))
 	} else {
-		listContainerStyle = listContainerStyle.BorderForeground(borderFocusColor)
-	}
-
-	filenames := []string{}
-	for _, file := range m.FileManager.Files {
-		filenames = append(filenames, file.Name)
-	}
-
-	viewSort(filenames, m)
-
-	sortedFiles := []FileInfo{}
-	for _, filename := range filenames {
-		for _, file := range m.FileManager.Files {
-			if file.Name == filename {
-				sortedFiles = append(sortedFiles, file)
-			}
-		}
+		listContainerStyle = listContainerStyle.Copy().BorderForeground(lipgloss.Color("63"))
 	}
 
 	completedList := ""
 	incompleteList := ""
-	for index, file := range sortedFiles {
+	for index, file := range sortedFiles(m) {
 		line := ""
-		style = lipgloss.NewStyle()
+		style := lipgloss.NewStyle()
 
 		if index == m.FileManager.FilesCursor {
-			style = style.Bold(true).Foreground(lipgloss.Color("#73A580"))
+			style = style.Bold(true).Foreground(lipgloss.Color("#CB48B7"))
 			itemDetails = file.FileNameWithoutExtension() + "\n" + file.Content
 			m.FileManager.SelectedFile = file
 		}
 
 		line += file.FileNameWithoutExtension()
 		if m.DirectoryManager.SelectedCategory == "tasks" {
-			isInactive := m.TaskManager.TaskCollection.IsInactive(file.Name)
-
-			if isInactive {
-				if index != m.FileManager.FilesCursor {
-					style = style.Copy().Foreground(lipgloss.Color("#A0A0A0"))
-				}
-				incompleteList = lipgloss.JoinVertical(lipgloss.Top, incompleteList, style.Render(line))
-			} else {
-				completed, total := m.TaskManager.TaskCollection.Progress(file.Name)
-				text := fmt.Sprintf("%d/%d", completed, total)
-				var completedText string
-				if completed == total {
-					style = style.Copy().Foreground(lipgloss.Color("#4DA165"))
-					completedList = lipgloss.JoinVertical(lipgloss.Top, completedList, style.Render(line))
-				} else {
-					completedText = lipgloss.NewStyle().Render(text)
-					line += " " + completedText
-					incompleteList = lipgloss.JoinVertical(lipgloss.Top, incompleteList, style.Render(line))
-				}
-			}
-			list = lipgloss.JoinVertical(lipgloss.Top, incompleteList, lipgloss.NewStyle().MarginTop(2).Render(completedList))
+			list, incompleteList, completedList = buildTasksView(m, line, index, list, file, style, incompleteList, completedList)
 		} else {
-			list = lipgloss.JoinVertical(lipgloss.Top, list, style.Render(line))
+			list = joinVertical(list, style.Render(line))
 		}
 	}
 
@@ -297,11 +178,10 @@ func RenderFiles(m *Model) string {
 	if m.ViewManager.HideSidebar {
 		listContainer = ""
 	}
-	container := containerStyle.Render(lipgloss.JoinHorizontal(lipgloss.Left, listContainer, itemDetailsContainer))
 
-	view := lipgloss.JoinVertical(lipgloss.Top, container)
+	container := containerStyle.Render(joinHorizontal(listContainer, itemDetailsContainer))
 
-	return view
+	return joinVertical(container)
 }
 
 func RenderNavBar(m *Model) string {
@@ -317,12 +197,7 @@ func RenderNavBar(m *Model) string {
 		navbar = textStyle.Render(m.GetCurrentCompanyName() + " > " + m.DirectoryManager.SelectedCategory)
 	}
 
-	navbarView := lipgloss.JoinVertical(lipgloss.Top, style.Render(navbar))
-
-	if m.ViewManager.ShowCompanies {
-		navbarView = lipgloss.JoinHorizontal(lipgloss.Left, navbar, RenderCompanies(m, m.CategoryNames()))
-	}
-	view := container.Render(navbarView)
+	view := container.Render(joinVertical(style.Render(navbar), RenderCompanies(m, m.CompanyNames())))
 
 	return view
 }
@@ -362,7 +237,7 @@ func RenderTasks(m *Model) string {
 		}
 
 		line += file.Name
-		list = lipgloss.JoinVertical(lipgloss.Top, list, style.Render(line))
+		list = joinVertical(list, style.Render(line))
 	}
 
 	listContainer := listContainerStyle.Render(list)
@@ -374,9 +249,9 @@ func RenderTasks(m *Model) string {
 	if m.ViewManager.HideSidebar {
 		listContainer = ""
 	}
-	container := containerStyle.Render(lipgloss.JoinHorizontal(lipgloss.Left, listContainer, itemDetailsContainer))
+	container := containerStyle.Render(joinHorizontal(listContainer, itemDetailsContainer))
 
-	view := lipgloss.JoinVertical(lipgloss.Top, container)
+	view := joinVertical(container)
 
 	return view
 }
@@ -409,37 +284,153 @@ func renderMarkdown(content string) string {
 	return out
 }
 
-func companiesContainerStyle(width int) lipgloss.Style {
-	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Width(width).Align(lipgloss.Center)
-	return style
+func addIconToProgressText(progressText, icon string) string {
+	progressText = strings.Replace(progressText, " ⏳", "", -1)
+	progressText = strings.Replace(progressText, " 🛫", "", -1)
+	progressText = strings.Replace(progressText, " ✅", "", -1)
+	progressText = strings.Replace(progressText, " 🚨", "", -1)
+	return progressText + " " + icon
+}
+
+func viewSort(filenames []string, tasksByFile *map[string][]Task, m *Model) {
+	sort.Slice(filenames, func(i, j int) bool {
+		iInactive := m.TaskManager.TaskCollection.IsInactive(filenames[i])
+		jInactive := m.TaskManager.TaskCollection.IsInactive(filenames[j])
+
+		if iInactive {
+			return false
+		}
+
+		if jInactive {
+			return true
+		}
+		iCompletedTasks, iTotalTasks := m.TaskManager.TaskCollection.Progress(filenames[i])
+		jCompletedTasks, jTotalTasks := m.TaskManager.TaskCollection.Progress(filenames[j])
+
+		iPercentage := float64(iCompletedTasks) / float64(iTotalTasks)
+		jPercentage := float64(jCompletedTasks) / float64(jTotalTasks)
+
+		iRoundedUp := int(iPercentage*10) * 10
+		jRoundedUp := int(jPercentage*10) * 10
+
+		if iRoundedUp == 100 {
+			return false
+		}
+
+		if jRoundedUp == 100 {
+			return true
+		}
+
+		if iRoundedUp == jRoundedUp {
+			return filenames[i] < filenames[j]
+		}
+
+		return iRoundedUp > jRoundedUp
+	})
+}
+
+func createListItem(item string, index int, cursor int) string {
+	line := ""
+	style := lipgloss.NewStyle()
+
+	if index == cursor {
+		style = style.Bold(true).Foreground(lipgloss.Color("#CB48B7"))
+	}
+
+	line += item + "\n"
+
+	return style.Render(line)
+}
+
+func joinVertical(items ...string) string {
+	return lipgloss.JoinVertical(lipgloss.Top, items...)
+}
+
+func joinHorizontal(items ...string) string {
+	return lipgloss.JoinHorizontal(lipgloss.Left, items...)
+}
+
+func itemDetailsContainerStyle(width, height int) lipgloss.Style {
+	return contentContainerStyle(width, height)
+}
+
+func addTaskContainerStyle(width, height int) lipgloss.Style {
+	return contentContainerStyle(width, height)
 }
 
 func summaryContainerStyle(width, height int) lipgloss.Style {
-	summaryStyle := lipgloss.NewStyle().MarginLeft(2).Width(width).Height(height).Padding(1).Border(lipgloss.NormalBorder())
-
-	return summaryStyle
+	return contentContainerStyle(width, height)
 }
 
-func summaryTitleStyle(width int) lipgloss.Style {
-	summaryStyle := lipgloss.NewStyle().Align(lipgloss.Left).Width(width - 40).Bold(true).Foreground(lipgloss.Color("#C17AD3"))
+func contentContainerStyle(width, height int) lipgloss.Style {
+	return lipgloss.NewStyle().Width(width).Height(height).Padding(1).Border(lipgloss.NormalBorder()).MarginLeft(2)
+}
 
-	return summaryStyle
+func taskSummaryContainerTitleStyle(width int) lipgloss.Style {
+	return taskSummaryContainerStyle(width).Copy().Align(lipgloss.Center)
 }
 
 func taskSummaryContainerStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().Width(width).Padding(1)
 }
 
-func taskSummaryContainerTitleStyle(width int) lipgloss.Style {
-	return lipgloss.NewStyle().Align(lipgloss.Center).Width(width).Padding(1)
-}
-
 func taskTitleContainer(width int) lipgloss.Style {
 	return lipgloss.NewStyle().Width(width).MarginTop(1)
 }
 
-func addIconToProgressText(progressText, icon string) string {
-	progressText = strings.Replace(progressText, " ⏳", "", -1)
-	progressText = strings.Replace(progressText, " 🛫", "", -1)
-	return progressText + " " + icon
+func companiesContainerStyle(width int) lipgloss.Style {
+	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Width(width).Align(lipgloss.Center)
+	return style
+}
+
+func summaryTitleStyle(width int) lipgloss.Style {
+	summaryStyle := lipgloss.NewStyle().Align(lipgloss.Left).Width(width - 40).Bold(true).Foreground(lipgloss.Color("63"))
+
+	return summaryStyle
+}
+
+func sortedFiles(m *Model) []FileInfo {
+	filenames := []string{}
+	for _, file := range m.FileManager.Files {
+		filenames = append(filenames, file.Name)
+	}
+
+	viewSort(filenames, &m.TaskManager.TaskCollection.TasksByFile, m)
+
+	sortedFiles := []FileInfo{}
+	for _, filename := range filenames {
+		for _, file := range m.FileManager.Files {
+			if file.Name == filename {
+				sortedFiles = append(sortedFiles, file)
+			}
+		}
+	}
+
+	return sortedFiles
+}
+
+func buildTasksView(m *Model, line string, index int, list string, file FileInfo, style lipgloss.Style, incompleteList string, completedList string) (string, string, string) {
+	isInactive := m.TaskManager.TaskCollection.IsInactive(file.Name)
+
+	completed, total := m.TaskManager.TaskCollection.Progress(file.Name)
+	text := fmt.Sprintf("%d/%d", completed, total)
+	var completedText string
+
+	if total > 0 && completed == total {
+		if index != m.FileManager.FilesCursor {
+			style = style.Copy().Foreground(lipgloss.Color("#4DA165"))
+		}
+		completedList = joinVertical(completedList, style.Render(line))
+	} else if isInactive {
+		if index != m.FileManager.FilesCursor {
+			style = style.Copy().Foreground(lipgloss.Color("#A0A0A0"))
+		}
+		incompleteList = joinVertical(incompleteList, style.Render(line))
+	} else {
+		completedText = lipgloss.NewStyle().Render(text)
+		line += " " + completedText
+		incompleteList = joinVertical(incompleteList, style.Render(line))
+	}
+
+	return joinVertical(incompleteList, lipgloss.NewStyle().MarginTop(2).Render(completedList)), incompleteList, completedList
 }
