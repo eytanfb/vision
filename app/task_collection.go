@@ -37,7 +37,9 @@ func (tc *TaskCollection) FilteredByDates(startDate, endDate string) map[string]
 				filtered = append(filtered, task)
 			}
 		}
-		filteredTasks[filename] = filtered
+		if len(filtered) > 0 {
+			filteredTasks[filename] = filtered
+		}
 	}
 	return filteredTasks
 }
