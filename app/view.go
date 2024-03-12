@@ -77,8 +77,10 @@ func RenderList(m *Model, items []string, title string) string {
 
 	if m.IsAddTaskView() {
 		summaryView = m.NewTaskInput.View()
+	} else if m.ViewManager.IsWeeklyView {
+		summaryView = TaskSummaryToView(m, "weekly")
 	} else {
-		summaryView = TaskSummaryToView(m)
+		summaryView = TaskSummaryToView(m, "daily")
 	}
 	summary := summaryContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.SummaryViewHeight).Render(summaryView)
 
@@ -89,15 +91,21 @@ func RenderList(m *Model, items []string, title string) string {
 	return lipgloss.JoinHorizontal(lipgloss.Left, view, summary)
 }
 
-func TaskSummaryToView(m *Model) string {
+func TaskSummaryToView(m *Model, period string) string {
 	tasksByFile := m.TaskManager.Summary(m.GetCurrentCompanyName())
+
+	if period == "weekly" {
+		monday := time.Now().AddDate(0, 0, -int(time.Now().Weekday())+1).Format("2006-01-02")
+		friday := time.Now().AddDate(0, 0, 5-int(time.Now().Weekday())).Format("2006-01-02")
+		tasksByFile = m.TaskManager.WeeklySummary(m.GetCurrentCompanyName(), monday, friday)
+	}
 
 	keys := make([]string, 0, len(tasksByFile))
 	for k := range tasksByFile {
 		keys = append(keys, k)
 	}
 
-	viewSort(keys, &tasksByFile, m)
+	viewSort(keys, m)
 
 	width := m.ViewManager.DetailsViewWidth
 
@@ -182,13 +190,13 @@ func TaskSummaryToView(m *Model) string {
 	}
 
 	containerTitleStyle := lipgloss.NewStyle().Align(lipgloss.Center).Width(width).Padding(1)
-	containerTitle := containerTitleStyle.Render("Daily Tasks for " + time.Now().Format("2006-01-02"))
+	containerTitle := containerTitleStyle.Render(strings.Title(period) + " Tasks for " + time.Now().Format("2006-01-02"))
 	renderedView := containerStyle.Render(view)
 
 	return lipgloss.JoinVertical(lipgloss.Top, containerTitle, renderedView)
 }
 
-func viewSort(filenames []string, tasksByFile *map[string][]Task, m *Model) {
+func viewSort(filenames []string, m *Model) {
 	sort.Slice(filenames, func(i, j int) bool {
 		iInactive := m.TaskManager.TaskCollection.IsInactive(filenames[i])
 		jInactive := m.TaskManager.TaskCollection.IsInactive(filenames[j])
@@ -296,7 +304,7 @@ func RenderFiles(m *Model) string {
 		filenames = append(filenames, file.Name)
 	}
 
-	viewSort(filenames, &m.TaskManager.TaskCollection.TasksByFile, m)
+	viewSort(filenames, m)
 
 	sortedFiles := []FileInfo{}
 	for _, filename := range filenames {

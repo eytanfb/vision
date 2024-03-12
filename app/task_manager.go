@@ -18,6 +18,15 @@ type TaskCollectionSummary struct {
 	UnscheduledTasks []Task
 }
 
+type TaskCollectionWeeklySummary struct {
+	StartDate        string
+	EndDate          string
+	StartedTasks     []Task
+	CompletedTasks   []Task
+	ScheduledTasks   []Task
+	UnscheduledTasks []Task
+}
+
 func (tm *TaskManager) ExtractTasks(name string, content string) []Task {
 	var tasks []Task
 
@@ -35,6 +44,12 @@ func (tm *TaskManager) Summary(companyName string) map[string][]Task {
 	log.Info("Summary for " + companyName)
 
 	return tm.TaskCollection.TasksByFile
+}
+
+func (tm *TaskManager) WeeklySummary(companyName string, startDate string, endDate string) map[string][]Task {
+	log.Info("Weekly Summary for " + companyName)
+
+	return tm.TaskCollection.FilteredByDates(startDate, endDate)
 }
 
 func createTaskFromFileTask(name string, task utils.FileTask) Task {

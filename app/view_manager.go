@@ -15,6 +15,7 @@ type ViewManager struct {
 	DetailsViewHeight int
 	SummaryViewHeight int
 	IsAddTaskView     bool
+	IsWeeklyView      bool
 }
 
 const (
@@ -88,4 +89,8 @@ func (vm *ViewManager) ToggleHideSidebar() {
 	} else {
 		vm.DetailsViewWidth -= vm.SidebarWidth
 	}
+}
+
+func (vm *ViewManager) ToggleWeeklyView() {
+	vm.IsWeeklyView = !vm.IsWeeklyView
 }
