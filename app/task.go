@@ -56,6 +56,10 @@ func (t Task) Summary() string {
 }
 
 func (t Task) IsOverdue() bool {
+	if t.Completed {
+		return false
+	}
+
 	today := time.Now()
 	isOverdue := false
 
