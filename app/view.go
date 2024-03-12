@@ -8,6 +8,7 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/reflow/wordwrap"
 )
 
 var (
@@ -183,8 +184,13 @@ func TaskSummaryToView(m *Model, period string) string {
 		}
 
 		rightAlignedProgressText := progressTextStyle.Copy().Width(30).Align(lipgloss.Right).Render(progressText)
-		taskTitle += " (" + fmt.Sprintf("%d", incompleteTaskCount) + " tasks remaining)"
-		taskTitleView := lipgloss.JoinHorizontal(lipgloss.Left, titleStyle.Render(taskTitle), rightAlignedProgressText)
+		if !m.ViewManager.IsWeeklyView {
+			taskTitle += " (" + fmt.Sprintf("%d", incompleteTaskCount) + " tasks remaining)"
+		}
+		taskTitleView := lipgloss.JoinHorizontal(lipgloss.Left, titleStyle.Render(taskTitle))
+		if !m.ViewManager.IsWeeklyView {
+			taskTitleView = lipgloss.JoinHorizontal(lipgloss.Left, taskTitleView, rightAlignedProgressText)
+		}
 		tasksView = lipgloss.JoinVertical(lipgloss.Top, titleContainer.Render(taskTitleView), tasksView)
 		view = lipgloss.JoinVertical(lipgloss.Top, view, tasksView)
 	}
@@ -366,7 +372,7 @@ func RenderFiles(m *Model) string {
 	if m.IsAddTaskView() {
 		itemDetails = m.NewTaskInput.View()
 	} else {
-		markdown := renderMarkdown(itemDetails)
+		markdown := renderMarkdown(wordwrap.String(itemDetails, m.ViewManager.DetailsViewWidth))
 		m.Viewport.SetContent(markdown)
 		itemDetails = m.Viewport.View()
 	}
@@ -440,7 +446,6 @@ func RenderTasks(m *Model) string {
 	listContainer := listContainerStyle.Render(list)
 
 	markdown := renderMarkdown(tasks.String())
-	m.Errors = append(m.Errors, fmt.Sprintf("%d", m.ViewManager.DetailsViewHeight))
 	m.Viewport.SetContent(markdown)
 
 	itemDetailsContainer := itemDetailsContainerStyle.Render(m.Viewport.View())
