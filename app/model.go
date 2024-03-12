@@ -2,6 +2,7 @@ package app
 
 import (
 	"strings"
+	"time"
 	"vision/config"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -31,6 +32,10 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 
 	textInput := textinput.New()
 
+	monday := time.Now().AddDate(0, 0, -int(time.Now().Weekday())+1).Format("2006-01-02")
+	friday := time.Now().AddDate(0, 0, 5-int(time.Now().Weekday())).Format("2006-01-02")
+	today := time.Now().Format("2006-01-02")
+
 	m := Model{
 		DirectoryManager: DirectoryManager{
 			Companies:        companies,
@@ -44,7 +49,10 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 			TaskCollection: TaskCollection{
 				TasksByFile: make(map[string][]Task),
 			},
-			TasksCursor: 0,
+			TasksCursor:            0,
+			WeeklySummaryStartDate: monday,
+			WeeklySummaryEndDate:   friday,
+			DailySummaryDate:       today,
 		},
 		FileManager: FileManager{
 			FilesCursor: 0,
@@ -64,6 +72,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 			NavbarWidth:      40,
 			DetailsViewWidth: 40,
 			IsAddTaskView:    false,
+			IsWeeklyView:     false,
 			ShowCompanies:    false,
 		},
 		Viewport:     viewport.Model{},

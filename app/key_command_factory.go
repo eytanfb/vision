@@ -44,6 +44,12 @@ func (kcf KeyCommandFactory) CreateKeyCommand(key string) KeyCommand {
 		return ThreeKeyCommand{}
 	case "a":
 		return AKeyCommand{}
+	case "w":
+		return WKeyCommand{}
+	case "-":
+		return MinusKeyCommand{}
+	case "+":
+		return PlusKeyCommand{}
 	}
 	return NilKeyCommand{}
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/reflow/wordwrap"
 )
 
 var (
@@ -77,8 +78,10 @@ func RenderList(m *Model, items []string, title string) string {
 
 	if m.IsAddTaskView() {
 		summaryView = m.NewTaskInput.View()
+	} else if m.ViewManager.IsWeeklyView {
+		summaryView = TaskSummaryToView(m, "weekly")
 	} else {
-		summaryView = TaskSummaryToView(m)
+		summaryView = TaskSummaryToView(m, "daily")
 	}
 	summary := summaryContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.SummaryViewHeight).Render(summaryView)
 
@@ -89,15 +92,21 @@ func RenderList(m *Model, items []string, title string) string {
 	return lipgloss.JoinHorizontal(lipgloss.Left, view, summary)
 }
 
-func TaskSummaryToView(m *Model) string {
+func TaskSummaryToView(m *Model, period string) string {
 	tasksByFile := m.TaskManager.Summary(m.GetCurrentCompanyName())
+
+	if period == "weekly" {
+		startDate := m.TaskManager.WeeklySummaryStartDate
+		endDate := m.TaskManager.WeeklySummaryEndDate
+		tasksByFile = m.TaskManager.WeeklySummary(m.GetCurrentCompanyName(), startDate, endDate)
+	}
 
 	keys := make([]string, 0, len(tasksByFile))
 	for k := range tasksByFile {
 		keys = append(keys, k)
 	}
 
-	viewSort(keys, &tasksByFile, m)
+	viewSort(keys, m)
 
 	width := m.ViewManager.DetailsViewWidth
 
@@ -116,12 +125,12 @@ func TaskSummaryToView(m *Model) string {
 		category := key
 		tasks := tasksByFile[key]
 		isInactive := m.TaskManager.TaskCollection.IsInactive(category)
-		if isInactive {
+		if !m.ViewManager.IsWeeklyView && isInactive {
 			continue
 		}
 		completedTasks, totalTasks := m.TaskManager.TaskCollection.Progress(category)
 		percentage := float64(completedTasks) / float64(totalTasks)
-		if percentage == 1 {
+		if !m.ViewManager.IsWeeklyView && percentage == 1 {
 			continue
 		}
 		roundedUpPercentage := int(percentage*10) * 10
@@ -132,7 +141,7 @@ func TaskSummaryToView(m *Model) string {
 		tasksView := ""
 		incompleteTaskCount := 0
 		for _, task := range tasks {
-			if task.Completed && !task.IsCompletedToday() {
+			if !m.ViewManager.IsWeeklyView && task.Completed && !task.IsCompletedToday() {
 				progressText = strings.Replace(progressText, " 🛫", "", -1)
 				continue
 			}
@@ -175,20 +184,31 @@ func TaskSummaryToView(m *Model) string {
 		}
 
 		rightAlignedProgressText := progressTextStyle.Copy().Width(30).Align(lipgloss.Right).Render(progressText)
-		taskTitle += " (" + fmt.Sprintf("%d", incompleteTaskCount) + " tasks remaining)"
-		taskTitleView := lipgloss.JoinHorizontal(lipgloss.Left, titleStyle.Render(taskTitle), rightAlignedProgressText)
+		if !m.ViewManager.IsWeeklyView {
+			taskTitle += " (" + fmt.Sprintf("%d", incompleteTaskCount) + " tasks remaining)"
+		}
+		taskTitleView := lipgloss.JoinHorizontal(lipgloss.Left, titleStyle.Render(taskTitle))
+		if !m.ViewManager.IsWeeklyView {
+			taskTitleView = lipgloss.JoinHorizontal(lipgloss.Left, taskTitleView, rightAlignedProgressText)
+		}
 		tasksView = lipgloss.JoinVertical(lipgloss.Top, titleContainer.Render(taskTitleView), tasksView)
 		view = lipgloss.JoinVertical(lipgloss.Top, view, tasksView)
 	}
 
 	containerTitleStyle := lipgloss.NewStyle().Align(lipgloss.Center).Width(width).Padding(1)
-	containerTitle := containerTitleStyle.Render("Daily Tasks for " + time.Now().Format("2006-01-02"))
+	titleString := strings.Title(period) + " Tasks for "
+	if period == "weekly" {
+		titleString += fmt.Sprintf("%s - %s", m.TaskManager.WeeklySummaryStartDate, m.TaskManager.WeeklySummaryEndDate)
+	} else {
+		titleString += m.TaskManager.DailySummaryDate
+	}
+	containerTitle := containerTitleStyle.Render(titleString)
 	renderedView := containerStyle.Render(view)
 
 	return lipgloss.JoinVertical(lipgloss.Top, containerTitle, renderedView)
 }
 
-func viewSort(filenames []string, tasksByFile *map[string][]Task, m *Model) {
+func viewSort(filenames []string, m *Model) {
 	sort.Slice(filenames, func(i, j int) bool {
 		iInactive := m.TaskManager.TaskCollection.IsInactive(filenames[i])
 		jInactive := m.TaskManager.TaskCollection.IsInactive(filenames[j])
@@ -296,7 +316,7 @@ func RenderFiles(m *Model) string {
 		filenames = append(filenames, file.Name)
 	}
 
-	viewSort(filenames, &m.TaskManager.TaskCollection.TasksByFile, m)
+	viewSort(filenames, m)
 
 	sortedFiles := []FileInfo{}
 	for _, filename := range filenames {
@@ -352,7 +372,7 @@ func RenderFiles(m *Model) string {
 	if m.IsAddTaskView() {
 		itemDetails = m.NewTaskInput.View()
 	} else {
-		markdown := renderMarkdown(m.ViewManager.Width, itemDetails)
+		markdown := renderMarkdown(wordwrap.String(itemDetails, m.ViewManager.DetailsViewWidth))
 		m.Viewport.SetContent(markdown)
 		itemDetails = m.Viewport.View()
 	}
@@ -430,8 +450,7 @@ func RenderTasks(m *Model) string {
 
 	listContainer := listContainerStyle.Render(list)
 
-	markdown := renderMarkdown(m.ViewManager.DetailsViewWidth, tasks.String())
-	m.Errors = append(m.Errors, fmt.Sprintf("%d", m.ViewManager.DetailsViewHeight))
+	markdown := renderMarkdown(tasks.String())
 	m.Viewport.SetContent(markdown)
 
 	itemDetailsContainer := itemDetailsContainerStyle.Render(m.Viewport.View())
@@ -458,7 +477,7 @@ func sidebarStyle(width, height int) lipgloss.Style {
 	return lipgloss.NewStyle().Width(width).Height(height).Padding(1).Border(lipgloss.NormalBorder())
 }
 
-func renderMarkdown(width int, content string) string {
+func renderMarkdown(content string) string {
 	background := "light"
 
 	if lipgloss.HasDarkBackground() {
