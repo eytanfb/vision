@@ -154,18 +154,18 @@ func TaskSummaryToView(m *Model, period string) string {
 			text := task.Summary()
 			if task.Completed {
 				incompleteTaskCount--
-				text += " ✅ " + DaysAgoFromString(task.CompletedDate)
+				text += " ✅ " + daysAgoFromString(task.CompletedDate)
 				textStyle = completedTextStyle
 				progressTextStyle = completedTextStyle
 			} else if task.Started {
-				text += " 🛫 " + DaysAgoFromString(task.StartDate)
+				text += " 🛫 " + daysAgoFromString(task.StartDate)
 				if !strings.Contains(progressText, "🛫") {
 					progressText = strings.Replace(progressText, " ⏳", "", -1)
 					progressText += " 🛫"
 					progressTextStyle = startedTextStyle
 				}
 			} else if task.Scheduled {
-				text += " ⏳ " + DaysAgoFromString(task.ScheduledDate)
+				text += " ⏳ " + daysAgoFromString(task.ScheduledDate)
 				textStyle = scheduledTextStyle
 				if !strings.Contains(progressText, "⏳") && !strings.Contains(progressText, "🚨") && !strings.Contains(progressText, "🛫") {
 					progressText += " ⏳"
@@ -266,7 +266,7 @@ func progressBar(completed, total int) string {
 	return progressBar
 }
 
-func DaysAgoFromString(date string) string {
+func daysAgoFromString(date string) string {
 	parsedDate, err := time.Parse("2006-01-02", date)
 	if err != nil {
 		return ""
