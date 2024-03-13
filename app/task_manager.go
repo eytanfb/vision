@@ -59,6 +59,26 @@ func (tm *TaskManager) WeeklySummary(companyName string, startDate string, endDa
 	return tm.TaskCollection.FilteredByDates(startDate, endDate)
 }
 
+func (tm *TaskManager) ChangeDailySummaryDateToNextDay() {
+	log.Info("Changing daily summary day to next day")
+
+	currentDate, _ := time.Parse("2006-01-02", tm.DailySummaryDate)
+
+	nextDay := currentDate.AddDate(0, 0, 1)
+
+	tm.DailySummaryDate = nextDay.Format("2006-01-02")
+}
+
+func (tm *TaskManager) ChangeDailySummaryDateToPreviousDay() {
+	log.Info("Changing daily summary day to previous day")
+
+	currentDate, _ := time.Parse("2006-01-02", tm.DailySummaryDate)
+
+	previousDay := currentDate.AddDate(0, 0, -1)
+
+	tm.DailySummaryDate = previousDay.Format("2006-01-02")
+}
+
 func (tm *TaskManager) ChangeWeeklySummaryToPreviousWeek() {
 	log.Info("Changing weekly summary to previous week")
 

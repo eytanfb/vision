@@ -133,6 +133,14 @@ func (t Task) IsScheduledForFuture() bool {
 	return parsedScheduledDate.Format("2006-01-02") > time.Now().Format("2006-01-02")
 }
 
+func (t Task) IsStarted() bool {
+	return t.Started && !t.Completed
+}
+
+func (t Task) IsScheduled() bool {
+	return t.Scheduled && !t.Completed && !t.Started
+}
+
 func (t Task) textWithoutDates() string {
 	return removeDatesFromText(t.Text)
 }
