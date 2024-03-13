@@ -120,6 +120,19 @@ func (t Task) IsCompletedToday() bool {
 	return parsedCompletedDate.Day() == time.Now().Day()
 }
 
+func (t Task) IsScheduledForFuture() bool {
+	if t.ScheduledDate == "" {
+		return false
+	}
+
+	parsedScheduledDate, err := time.Parse("2006-01-02", t.ScheduledDate)
+	if err != nil {
+		return false
+	}
+
+	return parsedScheduledDate.Format("2006-01-02") > time.Now().Format("2006-01-02")
+}
+
 func (t Task) textWithoutDates() string {
 	return removeDatesFromText(t.Text)
 }

@@ -145,6 +145,10 @@ func TaskSummaryToView(m *Model, period string) string {
 				progressText = strings.Replace(progressText, " 🛫", "", -1)
 				continue
 			}
+			if task.IsScheduledForFuture() {
+				incompleteTaskCount++
+				continue
+			}
 			incompleteTaskCount++
 			tasks := ""
 			text := task.Summary()
