@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
@@ -12,10 +11,10 @@ import (
 
 var (
 	companyTextStyle     = lipgloss.NewStyle().MarginLeft(2).MarginRight(2)
-	selectedCompanyStyle = lipgloss.NewStyle().MarginLeft(2).MarginRight(2).Foreground(lipgloss.Color("#C0DFA1")).Bold(true)
-	startedTextStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#035E7B"))
-	completedTextStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#1C3A13"))
+	selectedCompanyStyle = lipgloss.NewStyle().MarginLeft(2).MarginRight(2).Foreground(lipgloss.Color("#4CD137")).Bold(true)
 	scheduledTextStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#F2D0A4"))
+	startedTextStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#0AAFC7"))
+	completedTextStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#4CD137"))
 	overdueTextStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#EC4E20"))
 )
 
@@ -97,11 +96,13 @@ func RenderList(m *Model, items []string, title string) string {
 
 func TaskSummaryToView(m *Model, period string) string {
 	tasksByFile := m.TaskManager.Summary(m.GetCurrentCompanyName())
+	summaryDate := m.TaskManager.DailySummaryDate
 
 	if period == "weekly" {
 		startDate := m.TaskManager.WeeklySummaryStartDate
 		endDate := m.TaskManager.WeeklySummaryEndDate
 		tasksByFile = m.TaskManager.WeeklySummary(m.GetCurrentCompanyName(), startDate, endDate)
+		summaryDate = m.TaskManager.WeeklySummaryEndDate
 	}
 
 	keys := sortTaskKeys(tasksByFile)
@@ -109,12 +110,21 @@ func TaskSummaryToView(m *Model, period string) string {
 
 	width := m.ViewManager.DetailsViewWidth
 
-	view := BuildSummaryView(m, keys, tasksByFile, width)
+	view := BuildSummaryView(m, keys, tasksByFile, width, summaryDate)
 
-	containerTitle := taskSummaryContainerStyle(width).Render("Daily Tasks for " + time.Now().Format("2006-01-02"))
+	containerTitle := taskSummaryContainerStyle(width).Render(summaryTitle(m, period))
 	renderedView := taskSummaryContainerStyle(width).Render(view)
 
 	return joinVertical(containerTitle, renderedView)
+}
+
+func summaryTitle(m *Model, period string) string {
+	title := "Daily Tasks for " + m.TaskManager.DailySummaryDate
+	if period == "weekly" {
+		title = "Weekly Tasks for " + m.TaskManager.WeeklySummaryStartDate + " - " + m.TaskManager.WeeklySummaryEndDate
+	}
+	return title
+
 }
 
 func sortTaskKeys(tasksByFile map[string][]Task) []string {
@@ -160,7 +170,13 @@ func RenderNavBar(m *Model) string {
 		navbar = textStyle.Render(m.GetCurrentCompanyName() + " > " + m.DirectoryManager.SelectedCategory)
 	}
 
-	view := container.Render(joinVertical(style.Render(navbar), RenderCompanies(m, m.CompanyNames())))
+	navbarView := lipgloss.JoinVertical(lipgloss.Top, style.Render(navbar))
+
+	if m.ViewManager.ShowCompanies {
+		navbarView = lipgloss.JoinHorizontal(lipgloss.Left, navbar, RenderCompanies(m, m.CategoryNames()))
+	}
+
+	view := container.Render(navbarView)
 
 	return view
 }
@@ -252,7 +268,7 @@ func addIconToProgressText(progressText, icon string) string {
 	progressText = strings.Replace(progressText, " 🛫", "", -1)
 	progressText = strings.Replace(progressText, " ✅", "", -1)
 	progressText = strings.Replace(progressText, " 🚨", "", -1)
-	return progressText + " " + icon
+	return icon + " " + progressText
 }
 
 func viewSort(filenames []string, tasksByFile *map[string][]Task, m *Model) {

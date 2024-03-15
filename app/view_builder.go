@@ -8,40 +8,44 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-func BuildSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, width int) string {
+func BuildSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, width int, date string) string {
 	titleStyle := summaryTitleStyle(width)
-	progressTextStyle := startedTextStyle
+	progressTextStyle := titleStyle
 
 	view := ""
 	for _, key := range keys {
 		category := key
 		tasks := tasksByFile[key]
-		if isCategoryActive(m, category) {
-			progressText := buildProgressText(m, category)
-			taskTitle := category[0 : len(category)-len(".md")]
-			tasksView := ""
-			incompleteTaskCount := 0
-			for _, task := range tasks {
-				textStyle := startedTextStyle
-				if task.Completed && !task.IsCompletedToday() {
-					progressText = strings.Replace(progressText, " 🛫", "", -1)
-					continue
-				}
-				incompleteTaskCount++
-				tasks := ""
-				text := ""
-				text, textStyle, progressTextStyle, incompleteTaskCount = buildTaskView(task, progressText)
+		progressText := buildProgressText(m, category)
+		taskTitle := category[0 : len(category)-len(".md")]
+		tasksView := ""
+		incompleteTaskCount := 0
+		for _, task := range tasks {
+			textStyle := startedTextStyle
 
-				tasks = textStyle.Render(text)
-				tasksView = lipgloss.JoinVertical(lipgloss.Top, tasksView, tasks)
+			if task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) {
+				incompleteTaskCount++
+				continue
 			}
 
-			rightAlignedProgressText := progressTextStyle.Copy().Width(30).Align(lipgloss.Right).Render(progressText)
-			taskTitle += " (" + fmt.Sprintf("%d", incompleteTaskCount) + " tasks remaining)"
-			taskTitleView := lipgloss.JoinHorizontal(lipgloss.Left, titleStyle.Render(taskTitle), rightAlignedProgressText)
-			tasksView = lipgloss.JoinVertical(lipgloss.Top, taskTitleContainer(width).Render(taskTitleView), tasksView)
-			view = lipgloss.JoinVertical(lipgloss.Top, view, tasksView)
+			incompleteTaskCount++
+			tasks := ""
+			text := ""
+			status := task.StatusAtDate(date)
+			if m.ViewManager.IsWeeklyView {
+				status = task.WeeklyStatusAtDate(date)
+			}
+			text, textStyle, incompleteTaskCount = buildTaskView(task, progressText, date, status, incompleteTaskCount)
+
+			tasks = textStyle.Render(text)
+			tasksView = joinVertical(tasksView, tasks)
 		}
+
+		rightAlignedProgressText := progressTextStyle.Copy().Width(30).Align(lipgloss.Right).Render(progressText)
+		taskTitle += " (" + fmt.Sprintf("%d", incompleteTaskCount) + " tasks remaining)"
+		taskTitleView := lipgloss.JoinHorizontal(lipgloss.Left, titleStyle.Render(taskTitle), rightAlignedProgressText)
+		tasksView = joinVertical(taskTitleContainer(width).Render(taskTitleView), tasksView)
+		view = joinVertical(view, tasksView)
 	}
 
 	return view
@@ -74,30 +78,25 @@ func daysAgoFromString(date string) string {
 	return fmt.Sprintf("%.0f %s ago", days, daysString)
 }
 
-func buildTaskView(task Task, progressText string) (string, lipgloss.Style, lipgloss.Style, int) {
+func buildTaskView(task Task, progressText string, date string, status status, incompleteTaskCount int) (string, lipgloss.Style, int) {
 	var textStyle lipgloss.Style
-	var progressTextStyle lipgloss.Style
 
 	text := task.Summary()
-	incompleteTaskCount := 0
 
-	if task.Completed {
+	if status == completed {
 		incompleteTaskCount--
 		text += " ✅ " + daysAgoFromString(task.CompletedDate)
 		textStyle = completedTextStyle
-		progressTextStyle = completedTextStyle
-	} else if task.Started {
+	} else if status == started {
 		text += " 🛫 " + daysAgoFromString(task.StartDate)
 		if !strings.Contains(progressText, "🛫") {
 			progressText = addIconToProgressText(progressText, "🛫")
-			progressTextStyle = startedTextStyle
 		}
-	} else if task.Scheduled {
+	} else if status == scheduled {
 		text += " ⏳ " + daysAgoFromString(task.ScheduledDate)
 		textStyle = scheduledTextStyle
 		if !strings.Contains(progressText, "⏳") && !strings.Contains(progressText, "🚨") && !strings.Contains(progressText, "🛫") {
 			progressText = addIconToProgressText(progressText, "⏳")
-			progressTextStyle = scheduledTextStyle
 		}
 	}
 	if task.IsOverdue() {
@@ -105,11 +104,10 @@ func buildTaskView(task Task, progressText string) (string, lipgloss.Style, lipg
 		textStyle = overdueTextStyle
 		if !strings.Contains(progressText, "🚨") {
 			progressText = addIconToProgressText(progressText, "🚨")
-			progressTextStyle = overdueTextStyle
 		}
 	}
 
-	return text, textStyle, progressTextStyle, incompleteTaskCount
+	return text, textStyle, incompleteTaskCount
 }
 
 func progressBar(completed, total int) string {
