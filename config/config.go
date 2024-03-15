@@ -11,6 +11,7 @@ type Company struct {
 	FolderPathName string   `json:"folderPathName"`
 	FullPath       string   `json:"fullPath"`
 	SubFolders     []string `json:"subFolders"`
+	Color          string   `json:"color"`
 }
 
 type Config struct {

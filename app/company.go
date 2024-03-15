@@ -7,6 +7,7 @@ type Company struct {
 	FolderPathName string   `json:"folderPathName"`
 	FullPath       string   `json:"fullPath"`
 	SubFolders     []string `json:"subFolders"`
+	Color          string   `json:"color"`
 }
 
 func CreateCompanyFromConfigCompany(company config.Company) Company {
@@ -15,6 +16,7 @@ func CreateCompanyFromConfigCompany(company config.Company) Company {
 		FolderPathName: company.FolderPathName,
 		FullPath:       company.FullPath,
 		SubFolders:     company.SubFolders,
+		Color:          company.Color,
 	}
 }
 
