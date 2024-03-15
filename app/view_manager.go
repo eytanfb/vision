@@ -59,7 +59,7 @@ func (vm ViewManager) IsItemDetailsFocus() bool {
 }
 
 func (vm *ViewManager) GoToPreviousView() {
-	if vm.IsDetailsView() {
+	if vm.IsDetailsView() && !vm.HideSidebar {
 		vm.CurrentView = CategoriesView
 	}
 }
@@ -75,20 +75,25 @@ func (vm *ViewManager) GoToNextView(fm *FileManager, dm *DirectoryManager, tm *T
 }
 
 func (vm *ViewManager) Select(fm *FileManager, dm *DirectoryManager, tm *TaskManager) {
-	if vm.IsCompanyView() {
-		dm.AssignCompany()
-	} else if vm.IsCategoryView() {
-		dm.AssignCategory()
+	if !vm.HideSidebar {
+		if vm.IsCompanyView() {
+			dm.AssignCompany()
+		} else if vm.IsCategoryView() {
+			dm.AssignCategory()
+		}
+		vm.GoToNextView(fm, dm, tm)
 	}
-	vm.GoToNextView(fm, dm, tm)
 }
 
 func (vm *ViewManager) ToggleHideSidebar() {
 	vm.HideSidebar = !vm.HideSidebar
 	if vm.HideSidebar {
 		vm.DetailsViewWidth += vm.SidebarWidth
+		vm.ItemDetailsFocus = true
 	} else {
 		vm.DetailsViewWidth -= vm.SidebarWidth
+		vm.ItemDetailsFocus = false
+		vm.TaskDetailsFocus = false
 	}
 }
 

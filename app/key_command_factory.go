@@ -22,8 +22,6 @@ func (kcf KeyCommandFactory) CreateKeyCommand(key string) KeyCommand {
 		return HKeyCommand{}
 	case "esc":
 		return EscKeyCommand{}
-	case "s":
-		return SKeyCommand{}
 	case "o":
 		return OKeyCommand{}
 	case "n":

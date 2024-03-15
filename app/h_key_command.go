@@ -3,13 +3,7 @@ package app
 type HKeyCommand struct{}
 
 func (j HKeyCommand) Execute(m *Model) error {
-	if m.IsItemDetailsFocus() {
-		m.LoseDetailsFocus()
-	} else {
-		return EscKeyCommand{}.Execute(m)
-	}
-
-	return nil
+	return EscKeyCommand{}.Execute(m)
 }
 
 func (j HKeyCommand) HelpText() string {

@@ -155,7 +155,9 @@ func (m *Model) GoToNextCompany() {
 }
 
 func (m *Model) GoToNextCategory() {
-	goToNext(&m.DirectoryManager.CategoriesCursor, len(m.DirectoryManager.Categories))
+	if !m.ViewManager.HideSidebar {
+		goToNext(&m.DirectoryManager.CategoriesCursor, len(m.DirectoryManager.Categories))
+	}
 }
 
 func (m *Model) GoToNextTask() {
@@ -163,7 +165,9 @@ func (m *Model) GoToNextTask() {
 }
 
 func (m *Model) GoToNextFile() {
-	goToNext(&m.FileManager.FilesCursor, len(m.FileManager.Files))
+	if !m.ViewManager.HideSidebar {
+		goToNext(&m.FileManager.FilesCursor, len(m.FileManager.Files))
+	}
 }
 
 func (m *Model) GoToPreviousCompany() {
@@ -218,8 +222,10 @@ func (m *Model) Select() {
 }
 
 func (m *Model) LoseDetailsFocus() {
-	m.ViewManager.ItemDetailsFocus = false
-	m.ViewManager.TaskDetailsFocus = false
+	if !m.ViewManager.HideSidebar {
+		m.ViewManager.ItemDetailsFocus = false
+		m.ViewManager.TaskDetailsFocus = false
+	}
 }
 
 func (m *Model) GainDetailsFocus() {

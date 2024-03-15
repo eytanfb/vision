@@ -3,9 +3,7 @@ package app
 type TKeyCommand struct{}
 
 func (j TKeyCommand) Execute(m *Model) error {
-	if m.IsCategoryView() {
-		m.GoToNextViewWithCategory("tasks")
-	} else if m.IsItemDetailsFocus() {
+	if m.IsItemDetailsFocus() {
 		m.ShowTasks()
 	}
 

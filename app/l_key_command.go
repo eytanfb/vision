@@ -3,13 +3,7 @@ package app
 type LKeyCommand struct{}
 
 func (j LKeyCommand) Execute(m *Model) error {
-	if m.IsDetailsView() {
-		m.GainDetailsFocus()
-	} else {
-		return EnterKeyCommand{}.Execute(m)
-	}
-
-	return nil
+	return EnterKeyCommand{}.Execute(m)
 }
 
 func (j LKeyCommand) HelpText() string {
