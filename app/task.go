@@ -7,6 +7,15 @@ import (
 	"time"
 )
 
+type status uint
+
+const (
+	unscheduled status = iota
+	scheduled
+	started
+	completed
+)
+
 type Task struct {
 	IsDone        bool
 	Text          string
