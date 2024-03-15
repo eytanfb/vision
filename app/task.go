@@ -66,8 +66,17 @@ func (t Task) String() string {
 	return stringBuilder.String()
 }
 
-func (t Task) Summary() string {
-	return t.textWithoutDates()
+func (t Task) Summary(date string) string {
+	text := t.textWithoutDates()
+	status := t.StatusAtDate(date)
+	if status == completed {
+		text += t.daysAgoWithIcon(t.CompletedDate, CompletedIcon)
+	} else if status == started {
+		text += t.daysAgoWithIcon(t.StartDate, StartedIcon)
+	} else if status == scheduled {
+		text += t.daysAgoWithIcon(t.ScheduledDate, ScheduledIcon)
+	}
+	return text
 }
 
 func (t Task) IsOverdue() bool {
@@ -230,4 +239,26 @@ func removeDatesFromText(text string) string {
 	text = datesRegex.ReplaceAllString(text, "")
 
 	return strings.Trim(text, " ")
+}
+
+func daysAgoFromString(date string) string {
+	parsedDate, err := time.Parse("2006-01-02", date)
+	if err != nil {
+		return ""
+	}
+
+	today := time.Now()
+	days := today.Sub(parsedDate).Hours() / 24
+	daysString := "days"
+	if days < 1 {
+		return "today"
+	} else if days < 2 {
+		daysString = "day"
+	}
+
+	return fmt.Sprintf("%.0f %s ago", days, daysString)
+}
+
+func (t Task) daysAgoWithIcon(date, icon string) string {
+	return " " + icon + " " + daysAgoFromString(date)
 }

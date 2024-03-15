@@ -3,7 +3,6 @@ package app
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -14,9 +13,9 @@ func BuildSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, wi
 
 	view := ""
 	for _, key := range keys {
+		var progressText string
 		category := key
 		tasks := tasksByFile[key]
-		progressText := buildProgressText(m, category)
 		taskTitle := category[0 : len(category)-len(".md")]
 		tasksView := ""
 		incompleteTaskCount := 0
@@ -35,7 +34,11 @@ func BuildSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, wi
 			if m.ViewManager.IsWeeklyView {
 				status = task.WeeklyStatusAtDate(date)
 			}
-			text, textStyle, incompleteTaskCount = buildTaskView(task, progressText, date, status, incompleteTaskCount)
+			if status == completed {
+				incompleteTaskCount--
+			}
+			tasks = buildTaskView(task, date, status, progressText)
+			progressText = buildProgressText(m, category, status)
 
 			tasks = textStyle.Render(text)
 			tasksView = joinVertical(tasksView, tasks)
@@ -51,49 +54,18 @@ func BuildSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, wi
 	return view
 }
 
-func isCategoryActive(m *Model, category string) bool {
-	if m.TaskManager.TaskCollection.IsInactive(category) {
-		return false
-	}
-
-	completedTasks, totalTasks := m.TaskManager.TaskCollection.Progress(category)
-	return float64(completedTasks)/float64(totalTasks) != 1
-}
-
-func daysAgoFromString(date string) string {
-	parsedDate, err := time.Parse("2006-01-02", date)
-	if err != nil {
-		return ""
-	}
-
-	today := time.Now()
-	days := today.Sub(parsedDate).Hours() / 24
-	daysString := "days"
-	if days < 1 {
-		return "today"
-	} else if days < 2 {
-		daysString = "day"
-	}
-
-	return fmt.Sprintf("%.0f %s ago", days, daysString)
-}
-
-func buildTaskView(task Task, progressText string, date string, status status, incompleteTaskCount int) (string, lipgloss.Style, int) {
+func buildTaskView(task Task, date string, status status, progressText string) string {
 	var textStyle lipgloss.Style
 
-	text := task.Summary()
+	text := task.Summary(date)
 
 	if status == completed {
-		incompleteTaskCount--
-		text += " ✅ " + daysAgoFromString(task.CompletedDate)
 		textStyle = completedTextStyle
 	} else if status == started {
-		text += " 🛫 " + daysAgoFromString(task.StartDate)
 		if !strings.Contains(progressText, "🛫") {
 			progressText = addIconToProgressText(progressText, "🛫")
 		}
 	} else if status == scheduled {
-		text += " ⏳ " + daysAgoFromString(task.ScheduledDate)
 		textStyle = scheduledTextStyle
 		if !strings.Contains(progressText, "⏳") && !strings.Contains(progressText, "🚨") && !strings.Contains(progressText, "🛫") {
 			progressText = addIconToProgressText(progressText, "⏳")
@@ -107,7 +79,7 @@ func buildTaskView(task Task, progressText string, date string, status status, i
 		}
 	}
 
-	return text, textStyle, incompleteTaskCount
+	return textStyle.Render(text)
 }
 
 func progressBar(completed, total int) string {
@@ -127,9 +99,10 @@ func progressBar(completed, total int) string {
 	return progressBar
 }
 
-func buildProgressText(m *Model, category string) string {
+func buildProgressText(m *Model, category string, status status) string {
 	completedTasksCount, totalTasksCount := m.TaskManager.TaskCollection.Progress(category)
 	percentage := float64(completedTasksCount) / float64(totalTasksCount)
 	roundedUpPercentage := int(percentage*10) * 10
-	return progressBar(completedTasksCount, totalTasksCount) + " " + fmt.Sprintf("%d%%", roundedUpPercentage)
+	progressText := progressBar(completedTasksCount, totalTasksCount) + " " + fmt.Sprintf("%d%%", roundedUpPercentage)
+	return progressText
 }
