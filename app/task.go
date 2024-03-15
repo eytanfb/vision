@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type status uint
+type status int
 
 const (
 	unscheduled status = iota
@@ -100,8 +100,6 @@ func (t Task) IsOverdue() bool {
 }
 
 func (t Task) IsInactive() bool {
-	// create date from t.ScheduledDate
-	// if it is in the future, then it is not inactive
 	if t.ScheduledDate != "" {
 		scheduledDate, err := time.Parse("2006-01-02", t.ScheduledDate)
 		if err != nil {
@@ -129,17 +127,12 @@ func (t Task) IsCompletedToday() bool {
 	return parsedCompletedDate.Day() == time.Now().Day()
 }
 
-func (t Task) IsScheduledForFuture() bool {
+func (t Task) IsScheduledForFuture(date string) bool {
 	if t.ScheduledDate == "" {
 		return false
 	}
 
-	parsedScheduledDate, err := time.Parse("2006-01-02", t.ScheduledDate)
-	if err != nil {
-		return false
-	}
-
-	return parsedScheduledDate.Format("2006-01-02") > time.Now().Format("2006-01-02")
+	return t.ScheduledDate > date
 }
 
 func (t Task) IsStarted() bool {
@@ -148,6 +141,46 @@ func (t Task) IsStarted() bool {
 
 func (t Task) IsScheduled() bool {
 	return t.Scheduled && !t.Completed && !t.Started
+}
+
+func (t Task) StatusAtDate(date string) status {
+	if t.CompletedDate != "" && date == t.CompletedDate {
+		return completed
+	}
+
+	if t.StartDate != "" && date >= t.StartDate {
+		if t.CompletedDate == "" || date < t.CompletedDate {
+			return started
+		}
+	}
+
+	if t.ScheduledDate != "" && date >= t.ScheduledDate {
+		if (t.StartDate == "" || date < t.StartDate) && (t.CompletedDate == "" || date < t.CompletedDate) {
+			return scheduled
+		}
+	}
+
+	return unscheduled
+}
+
+func (t Task) WeeklyStatusAtDate(date string) status {
+	if t.CompletedDate != "" && date >= t.CompletedDate {
+		return completed
+	}
+
+	if t.StartDate != "" && date >= t.StartDate {
+		if t.CompletedDate == "" || date < t.CompletedDate {
+			return started
+		}
+	}
+
+	if t.ScheduledDate != "" && date >= t.ScheduledDate {
+		if (t.StartDate == "" || date < t.StartDate) && (t.CompletedDate == "" || date < t.CompletedDate) {
+			return scheduled
+		}
+	}
+
+	return unscheduled
 }
 
 func (t Task) textWithoutDates() string {

@@ -45,9 +45,11 @@ func (tm *TaskManager) ExtractTasks(name string, content string) []Task {
 }
 
 func (tm *TaskManager) Summary(companyName string) map[string][]Task {
-	log.Info("Summary for " + companyName)
+	currentDayDate := tm.DailySummaryDate
 
-	return tm.TaskCollection.TasksByFile
+	log.Info("Summary for " + companyName + " for " + currentDayDate)
+
+	return tm.TaskCollection.FilteredForDay(currentDayDate)
 }
 
 func (tm *TaskManager) WeeklySummary(companyName string, startDate string, endDate string) map[string][]Task {
@@ -103,6 +105,16 @@ func (tm *TaskManager) ChangeWeeklySummaryToNextWeek() {
 
 	tm.WeeklySummaryStartDate = nextStartDate.Format("2006-01-02")
 	tm.WeeklySummaryEndDate = nextEndDate.Format("2006-01-02")
+}
+
+func (tm *TaskManager) FridayOfWeekFromDay(day string) string {
+	parsedDay, _ := time.Parse("2006-01-02", day)
+
+	offset := (5 + 7 - int(parsedDay.Weekday())) % 7
+
+	friday := parsedDay.Add(time.Hour * 24 * time.Duration(offset))
+
+	return friday.Format("2006-01-02")
 }
 
 func createTaskFromFileTask(name string, task utils.FileTask) Task {

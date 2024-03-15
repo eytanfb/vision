@@ -122,15 +122,8 @@ func TaskSummaryToView(m *Model, period string) string {
 	for _, key := range keys {
 		category := key
 		tasks := tasksByFile[key]
-		isInactive := m.TaskManager.TaskCollection.IsInactive(category)
-		if !m.ViewManager.IsWeeklyView && isInactive {
-			continue
-		}
 		completedTasks, totalTasks := m.TaskManager.TaskCollection.Progress(category)
 		percentage := float64(completedTasks) / float64(totalTasks)
-		if !m.ViewManager.IsWeeklyView && percentage == 1 {
-			continue
-		}
 		roundedUpPercentage := int(percentage*10) * 10
 
 		titleContainer := lipgloss.NewStyle().Width(width).MarginTop(1)
@@ -141,30 +134,30 @@ func TaskSummaryToView(m *Model, period string) string {
 		for _, task := range tasks {
 			textStyle := startedTextStyle
 
-			if !m.ViewManager.IsWeeklyView && task.Completed && !task.IsCompletedToday() {
-				progressText = strings.Replace(progressText, " 🛫", "", -1)
-				continue
-			}
-			if task.IsScheduledForFuture() {
+			if task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) {
 				incompleteTaskCount++
 				continue
 			}
 			incompleteTaskCount++
 			tasks := ""
 			text := task.Summary()
-			if task.Completed {
+			status := task.StatusAtDate(m.TaskManager.DailySummaryDate)
+			if m.ViewManager.IsWeeklyView {
+				status = task.WeeklyStatusAtDate(m.TaskManager.WeeklySummaryEndDate)
+			}
+			if status == completed {
 				incompleteTaskCount--
 				text += " ✅ " + daysAgoFromString(task.CompletedDate)
 				textStyle = completedTextStyle
 				progressTextStyle = completedTextStyle
-			} else if task.Started {
+			} else if status == started {
 				text += " 🛫 " + daysAgoFromString(task.StartDate)
 				if !strings.Contains(progressText, "🛫") {
 					progressText = strings.Replace(progressText, " ⏳", "", -1)
 					progressText += " 🛫"
 					progressTextStyle = startedTextStyle
 				}
-			} else if task.Scheduled {
+			} else if status == scheduled {
 				text += " ⏳ " + daysAgoFromString(task.ScheduledDate)
 				textStyle = scheduledTextStyle
 				if !strings.Contains(progressText, "⏳") && !strings.Contains(progressText, "🚨") && !strings.Contains(progressText, "🛫") {

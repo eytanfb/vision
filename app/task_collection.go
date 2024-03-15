@@ -44,6 +44,26 @@ func (tc *TaskCollection) FilteredByDates(startDate, endDate string) map[string]
 	return filteredTasks
 }
 
+func (tc *TaskCollection) FilteredForDay(date string) map[string][]Task {
+	filteredTasks := make(map[string][]Task)
+	for filename, tasks := range tc.TasksByFile {
+		var filtered []Task
+		for _, task := range tasks {
+			if task.StatusAtDate(date) == scheduled {
+				filtered = append(filtered, task)
+			} else if task.StatusAtDate(date) == started {
+				filtered = append(filtered, task)
+			} else if task.StatusAtDate(date) == completed {
+				filtered = append(filtered, task)
+			}
+		}
+		if len(filtered) > 0 {
+			filteredTasks[filename] = filtered
+		}
+	}
+	return filteredTasks
+}
+
 func (tc *TaskCollection) Progress(filename string) (int, int) {
 	tasks := tc.TasksByFile[filename]
 	var completed int
@@ -114,16 +134,15 @@ func (tc *TaskCollection) GetUnscheduledTasksByDate(startDate, endDate string) [
 	return unscheduledTasks
 }
 
-func (tc *TaskCollection) GetStartedTasksByDay(date string) []Task {
-	log.Info("Getting started tasks")
+func (tc *TaskCollection) GetTasksByDayByStatus(date string, status status) []Task {
 	tasks := tc.allTasks()
-	var startedTasks []Task
+	var filteredTasks []Task
 	for _, task := range tasks {
-		if task.IsStarted() && task.StartDate <= date {
-			startedTasks = append(startedTasks, task)
+		if task.StatusAtDate(date) == status {
+			filteredTasks = append(filteredTasks, task)
 		}
 	}
-	return startedTasks
+	return tasks
 }
 
 func (tc *TaskCollection) GetCompletedTasks() []Task {

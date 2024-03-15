@@ -3,7 +3,11 @@ package app
 type MinusKeyCommand struct{}
 
 func (j MinusKeyCommand) Execute(m *Model) error {
-	m.TaskManager.ChangeWeeklySummaryToPreviousWeek()
+	if !m.ViewManager.IsWeeklyView {
+		m.TaskManager.ChangeDailySummaryDateToPreviousDay()
+	} else {
+		m.TaskManager.ChangeWeeklySummaryToPreviousWeek()
+	}
 
 	return nil
 }
