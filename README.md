@@ -2,6 +2,8 @@
 
 ## Ideas
 
+- [ ] Single click Daily Standup Slack text generator
+- [ ] Single click Weekly Standup Slack text generator
 - [x] Weekly retrospective
 - [x] Upcoming week view
 - [x] Add icons for tasks
