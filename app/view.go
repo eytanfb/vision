@@ -118,8 +118,6 @@ func TaskSummaryToView(m *Model, period string) string {
 	overdueTextStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#EC4E20"))
 	progressTextStyle := startedTextStyle
 
-	textStyle := startedTextStyle
-
 	view := ""
 	for _, key := range keys {
 		category := key
@@ -141,6 +139,8 @@ func TaskSummaryToView(m *Model, period string) string {
 		tasksView := ""
 		incompleteTaskCount := 0
 		for _, task := range tasks {
+			textStyle := startedTextStyle
+
 			if !m.ViewManager.IsWeeklyView && task.Completed && !task.IsCompletedToday() {
 				progressText = strings.Replace(progressText, " 🛫", "", -1)
 				continue

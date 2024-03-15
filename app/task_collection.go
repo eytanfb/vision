@@ -65,18 +65,6 @@ func (tc *TaskCollection) IsInactive(filename string) bool {
 	return true
 }
 
-func (tc *TaskCollection) GetStartedTasksByDay(date string) []Task {
-	log.Info("Getting started tasks")
-	tasks := tc.allTasks()
-	var startedTasks []Task
-	for _, task := range tasks {
-		if task.IsStarted() {
-			startedTasks = append(startedTasks, task)
-		}
-	}
-	return startedTasks
-}
-
 func (tc *TaskCollection) GetStartedTasksByDate(startDate, endDate string) []Task {
 	log.Info("Getting started tasks")
 	tasks := tc.allTasks()
@@ -124,6 +112,18 @@ func (tc *TaskCollection) GetUnscheduledTasksByDate(startDate, endDate string) [
 		}
 	}
 	return unscheduledTasks
+}
+
+func (tc *TaskCollection) GetStartedTasksByDay(date string) []Task {
+	log.Info("Getting started tasks")
+	tasks := tc.allTasks()
+	var startedTasks []Task
+	for _, task := range tasks {
+		if task.IsStarted() && task.StartDate <= date {
+			startedTasks = append(startedTasks, task)
+		}
+	}
+	return startedTasks
 }
 
 func (tc *TaskCollection) GetCompletedTasks() []Task {
