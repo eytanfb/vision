@@ -2,6 +2,7 @@
 
 ## Ideas
 
+- [ ] Better task display on tasks
 - [ ] Single click Daily Standup Slack text generator
 - [ ] Single click Weekly Standup Slack text generator
 - [x] Weekly retrospective

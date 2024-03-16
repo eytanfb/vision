@@ -194,14 +194,8 @@ func RenderTasks(m *Model) string {
 	var tasks strings.Builder
 	containerStyle := lipgloss.NewStyle()
 	listContainerStyle := sidebarStyle(m.ViewManager.SidebarWidth, m.ViewManager.SidebarHeight)
-	itemDetailsContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.DetailsViewWidth).Height(m.ViewManager.DetailsViewHeight).Padding(1)
+	itemDetailsContainerStyle := itemDetailsContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight, m.IsItemDetailsFocus())
 	list := ""
-
-	if m.IsItemDetailsFocus() {
-		itemDetailsContainerStyle = itemDetailsContainerStyle.Border(lipgloss.RoundedBorder()).Padding(1)
-	} else {
-		listContainerStyle = listContainerStyle.Border(lipgloss.RoundedBorder()).Padding(1)
-	}
 
 	for index, file := range m.FileManager.Files {
 		line := "  "
@@ -346,7 +340,7 @@ func summaryContainerStyle(width, height int) lipgloss.Style {
 }
 
 func contentContainerStyle(width, height int) lipgloss.Style {
-	return lipgloss.NewStyle().Width(width).Height(height).Padding(1).Border(lipgloss.NormalBorder()).MarginLeft(2)
+	return lipgloss.NewStyle().Width(width).Padding(1).Border(lipgloss.NormalBorder()).MarginLeft(2)
 }
 
 func taskSummaryContainerTitleStyle(width int) lipgloss.Style {
