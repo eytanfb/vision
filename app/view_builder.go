@@ -35,7 +35,7 @@ func BuildSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, wi
 			if m.ViewManager.IsWeeklyView {
 				status = task.WeeklyStatusAtDate(date)
 			}
-			text, textStyle, incompleteTaskCount = buildTaskView(task, progressText, date, status, incompleteTaskCount)
+			text, textStyle, incompleteTaskCount = buildTaskView(task, progressText, status, incompleteTaskCount)
 
 			tasks = textStyle.Render(text)
 			tasksView = joinVertical(tasksView, tasks)
@@ -43,21 +43,12 @@ func BuildSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, wi
 
 		rightAlignedProgressText := progressTextStyle.Copy().Width(30).Align(lipgloss.Right).Render(progressText)
 		taskTitle += " (" + fmt.Sprintf("%d", incompleteTaskCount) + " tasks remaining)"
-		taskTitleView := lipgloss.JoinHorizontal(lipgloss.Left, titleStyle.Render(taskTitle), rightAlignedProgressText)
+		taskTitleView := joinHorizontal(titleStyle.Render(taskTitle), rightAlignedProgressText)
 		tasksView = joinVertical(taskTitleContainer(width).Render(taskTitleView), tasksView)
 		view = joinVertical(view, tasksView)
 	}
 
 	return view
-}
-
-func isCategoryActive(m *Model, category string) bool {
-	if m.TaskManager.TaskCollection.IsInactive(category) {
-		return false
-	}
-
-	completedTasks, totalTasks := m.TaskManager.TaskCollection.Progress(category)
-	return float64(completedTasks)/float64(totalTasks) != 1
 }
 
 func daysAgoFromString(date string) string {
@@ -78,7 +69,7 @@ func daysAgoFromString(date string) string {
 	return fmt.Sprintf("%.0f %s ago", days, daysString)
 }
 
-func buildTaskView(task Task, progressText string, date string, status status, incompleteTaskCount int) (string, lipgloss.Style, int) {
+func buildTaskView(task Task, progressText string, status status, incompleteTaskCount int) (string, lipgloss.Style, int) {
 	var textStyle lipgloss.Style
 
 	text := task.Summary()
