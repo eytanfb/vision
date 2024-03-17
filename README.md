@@ -2,6 +2,7 @@
 
 ## Ideas
 
+- [ ] Task retrospective view if done, maybe with a timeline explanation
 - [ ] Better task display on tasks
 - [ ] Single click Daily Standup Slack text generator
 - [ ] Single click Weekly Standup Slack text generator
