@@ -15,8 +15,9 @@ type Company struct {
 }
 
 type Config struct {
-	Companies  []Company `json:"companies"`
-	Categories []string
+	Companies      []Company `json:"companies"`
+	Categories     []string
+	DefaultCompany string
 }
 
 func LoadConfig(path string) (*Config, error) {
@@ -38,6 +39,13 @@ func LoadConfig(path string) (*Config, error) {
 	}
 
 	config.Categories = LoadCategories(&config)
+
+	defaultCompany := os.Getenv("VISION_DEFAULT_COMPANY")
+	if defaultCompany == "" {
+		defaultCompany = "clerky"
+	}
+
+	config.DefaultCompany = defaultCompany
 
 	return &config, nil
 }

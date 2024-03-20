@@ -23,10 +23,10 @@ type Model struct {
 func InitialModel(cfg *config.Config, args []string) tea.Model {
 	companies := CompaniesFromConfig(cfg.Companies)
 
-	var clerky Company
+	var defaultCompany Company
 	for _, company := range companies {
-		if strings.ToLower(company.DisplayName) == "lifeplus" {
-			clerky = company
+		if strings.ToLower(company.DisplayName) == cfg.DefaultCompany {
+			defaultCompany = company
 		}
 	}
 
@@ -40,7 +40,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 		DirectoryManager: DirectoryManager{
 			Companies:        companies,
 			Categories:       cfg.Categories,
-			SelectedCompany:  clerky,
+			SelectedCompany:  defaultCompany,
 			SelectedCategory: "",
 			CompaniesCursor:  0,
 			CategoriesCursor: 0,
