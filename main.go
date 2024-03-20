@@ -10,7 +10,10 @@ import (
 )
 
 func main() {
-	cfg, err := config.LoadConfig("/Users/eytananjel/Code/vision/config/config.json")
+	homeDirectory, _ := os.UserHomeDir()
+	configPath := homeDirectory + "/Code/vision/config/config.json"
+
+	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
 		panic(err) // Simplified error handling for brevity
 	}

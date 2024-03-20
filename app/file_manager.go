@@ -25,7 +25,7 @@ func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileI
 	companyFolderPath := dm.CurrentFolderPath()
 	categoryPath := strings.ToLower(dm.SelectedCategory)
 
-	path := "/Users/eytananjel/Notes/" + companyFolderPath + "/" + categoryPath
+	path := notesPath() + "/" + companyFolderPath + "/" + categoryPath
 	log.Info("Path: " + path)
 
 	sorting := "default"
@@ -56,7 +56,7 @@ func (fm *FileManager) FetchTasks(dm *DirectoryManager, tm *TaskManager) []Task 
 	log.Info("Fetching tasks")
 	companyFolderPath := dm.CurrentFolderPath()
 
-	path := "/Users/eytananjel/Notes/" + companyFolderPath + "/tasks"
+	path := notesPath() + "/" + companyFolderPath + "/tasks"
 	log.Info("Path: " + path)
 
 	files := readFilesInDirecory(path, "updatedAt")
@@ -70,7 +70,7 @@ func (fm *FileManager) FetchTasks(dm *DirectoryManager, tm *TaskManager) []Task 
 }
 
 func (fm *FileManager) GetCurrentFilePath(companyName string, categoryName string) string {
-	return "/Users/eytananjel/Notes/" + companyName + "/" + categoryName + "/" + fm.currentFileName()
+	return notesPath() + "/" + companyName + "/" + categoryName + "/" + fm.currentFileName()
 }
 
 func (fm FileManager) CurrentFile() FileInfo {
@@ -84,8 +84,8 @@ func (fm FileManager) CurrentFileContent() string {
 func (fm FileManager) CreateStandup(company string) {
 	todayInFormat := time.Now().Format("2006-01-02")
 
-	filePath := "/Users/eytananjel/Notes/" + company + "/standups/" + todayInFormat + ".md"
-	templatePath := "/Users/eytananjel/Notes/obsidian/templates/" + company + "_standup.md"
+	filePath := notesPath() + "/" + company + "/standups/" + todayInFormat + ".md"
+	templatePath := notesPath() + "/obsidian/templates/" + company + "_standup.md"
 
 	err := copyFile(templatePath, filePath)
 	if err != nil {
@@ -94,8 +94,8 @@ func (fm FileManager) CreateStandup(company string) {
 }
 
 func (fm FileManager) CreateTask(company string, taskName string) {
-	filePath := "/Users/eytananjel/Notes/" + company + "/tasks/" + taskName + ".md"
-	templatePath := "/Users/eytananjel/Notes/obsidian/templates/" + company + "_task.md"
+	filePath := notesPath() + "/" + company + "/tasks/" + taskName + ".md"
+	templatePath := notesPath() + "/obsidian/templates/" + company + "_task.md"
 
 	err := copyFile(templatePath, filePath)
 	if err != nil {
@@ -210,4 +210,9 @@ func updatedAtCmp(a, b FileInfo) int {
 
 func isWorkingDay() bool {
 	return time.Now().Weekday() != time.Saturday && time.Now().Weekday() != time.Sunday
+}
+
+func notesPath() string {
+	homeDir, _ := os.UserHomeDir()
+	return homeDir + "/Notes"
 }

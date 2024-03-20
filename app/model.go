@@ -25,7 +25,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 
 	var clerky Company
 	for _, company := range companies {
-		if strings.ToLower(company.DisplayName) == "clerky" {
+		if strings.ToLower(company.DisplayName) == "lifeplus" {
 			clerky = company
 		}
 	}
