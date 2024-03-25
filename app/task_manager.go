@@ -1,6 +1,7 @@
 package app
 
 import (
+	"strings"
 	"time"
 	"vision/utils"
 
@@ -50,6 +51,58 @@ func (tm *TaskManager) Summary(companyName string) map[string][]Task {
 	log.Info("Summary for " + companyName + " for " + currentDayDate)
 
 	return tm.TaskCollection.FilteredForDay(currentDayDate)
+}
+
+func (tm *TaskManager) SummaryForSlack(companyName string) string {
+	slackMessage := strings.Builder{}
+	previousDayString := previousDayString(tm.DailySummaryDate)
+	previousDaySummary := tm.Summary(previousDayString)
+	summary := tm.Summary(tm.DailySummaryDate)
+
+	previousDayKeys := sortTaskKeys(previousDaySummary)
+
+	slackMessage.WriteString("*Daily Update*" + "\n")
+	slackMessage.WriteString("Previously" + "\n")
+	for _, key := range previousDayKeys {
+		category := key
+		tasks := previousDaySummary[key]
+
+		taskTitle := category[0 : len(category)-len(".md")]
+		slackMessage.WriteString("• " + taskTitle + "\n")
+
+		for _, task := range tasks {
+			if task.Completed {
+				slackMessage.WriteString("  • Finished " + task.textWithoutDates() + "\n")
+			} else if task.Started && !task.IsScheduledForDay(previousDayString) {
+				slackMessage.WriteString("  • Kept working on " + task.textWithoutDates() + "\n")
+			} else if task.Scheduled {
+				slackMessage.WriteString("  • Starting to work on " + task.textWithoutDates() + "\n")
+			}
+		}
+	}
+
+	slackMessage.WriteString("Today" + "\n")
+	keys := sortTaskKeys(summary)
+
+	for _, key := range keys {
+		category := key
+		tasks := summary[key]
+
+		taskTitle := category[0 : len(category)-len(".md")]
+		slackMessage.WriteString("• " + taskTitle + "\n")
+
+		for _, task := range tasks {
+			if task.Completed {
+				slackMessage.WriteString("  • Finished " + task.textWithoutDates() + "\n")
+			} else if task.Started && !task.IsScheduledForDay(tm.DailySummaryDate) {
+				slackMessage.WriteString("  • Kept working on " + task.textWithoutDates() + "\n")
+			} else if task.Scheduled {
+				slackMessage.WriteString("  • Starting to work on " + task.textWithoutDates() + "\n")
+			}
+		}
+	}
+
+	return slackMessage.String()
 }
 
 func (tm *TaskManager) WeeklySummary(companyName string, startDate string, endDate string) map[string][]Task {
@@ -137,4 +190,20 @@ func createTaskFromFileTask(name string, task utils.FileTask) Task {
 		Scheduled:     scheduled,
 		FileName:      name,
 	}
+}
+
+func previousDayString(date string) string {
+	currentDate, _ := time.Parse("2006-01-02", date)
+
+	previousDay := currentDate.AddDate(0, 0, -1)
+
+	return previousDay.Format("2006-01-02")
+}
+
+func nextDayString(date string) string {
+	currentDate, _ := time.Parse("2006-01-02", date)
+
+	nextDay := currentDate.AddDate(0, 0, 1)
+
+	return nextDay.Format("2006-01-02")
 }

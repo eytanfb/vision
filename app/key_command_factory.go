@@ -50,6 +50,8 @@ func (kcf KeyCommandFactory) CreateKeyCommand(key string) KeyCommand {
 		return PlusKeyCommand{}
 	case "g":
 		return GKeyCommand{}
+	case "D":
+		return UppercaseDKeyCommand{}
 	}
 	return NilKeyCommand{}
 }

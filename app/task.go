@@ -133,6 +133,24 @@ func (t Task) IsCompletedToday() bool {
 	return parsedCompletedDate.Day() == time.Now().Day()
 }
 
+func (t Task) IsScheduledForDay(date string) bool {
+	if t.ScheduledDate == "" {
+		return false
+	}
+
+	parsedScheduledDate, err := time.Parse("2006-01-02", t.ScheduledDate)
+	if err != nil {
+		return false
+	}
+
+	dateDay, _ := time.Parse("2006-01-02", date)
+	if err != nil {
+		return false
+	}
+
+	return parsedScheduledDate.Day() == dateDay.Day()
+}
+
 func (t Task) IsScheduledForFuture(date string) bool {
 	if t.ScheduledDate == "" {
 		return false
