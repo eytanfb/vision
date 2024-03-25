@@ -33,9 +33,9 @@ func (vm *ViewManager) SetWidth(width int) {
 
 func (vm *ViewManager) SetHeight(height int) {
 	vm.Height = height
-	vm.SidebarHeight = height - 10
-	vm.SummaryViewHeight = height - 13
-	vm.DetailsViewHeight = height - 13
+	vm.SidebarHeight = height - 12
+	vm.SummaryViewHeight = height - 15
+	vm.DetailsViewHeight = height - 15
 }
 
 func (vm ViewManager) IsCompanyView() bool {

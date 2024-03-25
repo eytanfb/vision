@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/log"
 )
 
 var (
@@ -39,6 +40,8 @@ func ViewHandler(m *Model) string {
 }
 
 func RenderErrors(m *Model) string {
+	error := fmt.Sprintf("Viewport Dimensions: %dx%d, Screen Dimesnions: %dx%d", m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight, m.ViewManager.Width, m.ViewManager.Height)
+	m.Errors = append(m.Errors, error)
 	var errors strings.Builder
 	for _, err := range m.Errors {
 		errors.WriteString(err + "\n")
@@ -167,7 +170,7 @@ func RenderNavBar(m *Model) string {
 	if m.IsCategoryView() {
 		navbar = textStyle.Render(m.GetCurrentCompanyName())
 	} else if m.IsDetailsView() {
-		navbar = textStyle.Render(m.GetCurrentCompanyName() + " > " + m.DirectoryManager.SelectedCategory)
+		navbar = textStyle.Render(m.GetCurrentCompanyName() + " > " + m.DirectoryManager.SelectedCategory + " > " + m.FileManager.SelectedFile.Name)
 	}
 
 	navbarView := lipgloss.JoinVertical(lipgloss.Top, style.Render(navbar))
@@ -216,6 +219,7 @@ func RenderTasks(m *Model) string {
 	listContainer := listContainerStyle.Render(list)
 
 	markdown := renderMarkdown(tasks.String())
+	log.Info("viewport dimensions in tasks: ", m.Viewport.Width, "x", m.Viewport.Height)
 	m.Viewport.SetContent(markdown)
 
 	itemDetailsContainer := itemDetailsContainerStyle.Render(m.Viewport.View())
@@ -361,7 +365,7 @@ func companiesContainerStyle(width int) lipgloss.Style {
 }
 
 func summaryTitleStyle(width int) lipgloss.Style {
-	summaryStyle := lipgloss.NewStyle().Align(lipgloss.Left).Width(width - 40).Bold(true).Foreground(lipgloss.Color("63"))
+	summaryStyle := lipgloss.NewStyle().Align(lipgloss.Left).Width(width - 40).Bold(true).Foreground(lipgloss.Color("#9A9CCD"))
 
 	return summaryStyle
 }
@@ -440,6 +444,7 @@ func buildFilesView(m *Model) (string, string) {
 	} else {
 		markdown := renderMarkdown(itemDetails)
 		m.Viewport.SetContent(markdown)
+		log.Info("viewport dimensions in files: ", m.Viewport.Width, "x", m.Viewport.Height)
 		itemDetails = m.Viewport.View()
 	}
 
