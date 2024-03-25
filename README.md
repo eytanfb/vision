@@ -14,7 +14,7 @@
 - [ ] Think of a way to include personal projects here
 - [ ] Make file paths configurable, have a notes folder env variable
 - [ ] check to see if there can be a way to pull track info from radio
-- [ ] Add config option for launch company by env variable
+- [x] Add config option for launch company by env variable
 - [x] Weekly retrospective
 - [x] Upcoming week view
 - [x] Add icons for tasks
