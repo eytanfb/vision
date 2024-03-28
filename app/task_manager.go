@@ -105,6 +105,56 @@ func (tm *TaskManager) SummaryForSlack(companyName string) string {
 	return slackMessage.String()
 }
 
+func (tm *TaskManager) WeeklySummaryForSlack(companyName string) string {
+	slackMessage := strings.Builder{}
+	summary := tm.WeeklySummary(companyName, tm.WeeklySummaryStartDate, tm.WeeklySummaryEndDate)
+
+	previousDayKeys := sortTaskKeys(summary)
+
+	slackMessage.WriteString("*Daily Update*" + "\n")
+	slackMessage.WriteString("Previously" + "\n")
+	for _, key := range previousDayKeys {
+		category := key
+		tasks := summary[key]
+
+		taskTitle := category[0 : len(category)-len(".md")]
+		slackMessage.WriteString("• " + taskTitle + "\n")
+
+		for _, task := range tasks {
+			if task.Completed {
+				slackMessage.WriteString("  • Finished " + task.textWithoutDates() + "\n")
+			} else if task.Started {
+				slackMessage.WriteString("  • Kept working on " + task.textWithoutDates() + "\n")
+			} else if task.Scheduled {
+				slackMessage.WriteString("  • Starting to work on " + task.textWithoutDates() + "\n")
+			}
+		}
+	}
+
+	slackMessage.WriteString("Today" + "\n")
+	keys := sortTaskKeys(summary)
+
+	for _, key := range keys {
+		category := key
+		tasks := summary[key]
+
+		taskTitle := category[0 : len(category)-len(".md")]
+		slackMessage.WriteString("• " + taskTitle + "\n")
+
+		for _, task := range tasks {
+			if task.Completed {
+				slackMessage.WriteString("  • Finished " + task.textWithoutDates() + "\n")
+			} else if task.Started {
+				slackMessage.WriteString("  • Kept working on " + task.textWithoutDates() + "\n")
+			} else if task.Scheduled {
+				slackMessage.WriteString("  • Starting to work on " + task.textWithoutDates() + "\n")
+			}
+		}
+	}
+
+	return slackMessage.String()
+}
+
 func (tm *TaskManager) WeeklySummary(companyName string, startDate string, endDate string) map[string][]Task {
 	log.Info("Weekly Summary for " + companyName)
 

@@ -52,6 +52,8 @@ func (kcf KeyCommandFactory) CreateKeyCommand(key string) KeyCommand {
 		return GKeyCommand{}
 	case "D":
 		return UppercaseDKeyCommand{}
+	case "W":
+		return UppercaseWKeyCommand{}
 	}
 	return NilKeyCommand{}
 }
