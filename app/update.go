@@ -14,7 +14,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		key := msg.String()
-		if key == "ctrl+c" || key == "q" {
+		if key == "ctrl+c" {
+			return m, tea.Quit
+		} else if key == "q" {
+			if m.IsAddTaskView() {
+				m.NewTaskInput, cmd = m.NewTaskInput.Update(msg)
+				return m, cmd
+			}
 			return m, tea.Quit
 		} else if m.IsAddTaskView() {
 			if key == "esc" {
