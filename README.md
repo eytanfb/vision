@@ -2,6 +2,7 @@
 
 ## Ideas
 
+- [ ] Task management
 - [ ] Filter by any text
 - [ ] Be able to tag filter, when /{{folder}}/{{filter}} limit search to folder
 - [ ] For now, only filter from same company
@@ -9,11 +10,11 @@
 - [ ] Have a way to load all data for all companies
 - [ ] Task retrospective view if done, maybe with a timeline explanation
 - [ ] Better task display on tasks
-- [ ] Single click Daily Standup Slack text generator
-- [ ] Single click Weekly Standup Slack text generator
 - [ ] Think of a way to include personal projects here
 - [ ] Make file paths configurable, have a notes folder env variable
 - [ ] Check to see if there can be a way to pull track info from radio
+- [x] Single click Daily Standup Slack text generator
+- [x] Single click Weekly Standup Slack text generator
 - [x] Add config option for launch company by env variable
 - [x] Weekly retrospective
 - [x] Upcoming week view
