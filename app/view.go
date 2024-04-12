@@ -40,8 +40,6 @@ func ViewHandler(m *Model) string {
 }
 
 func RenderErrors(m *Model) string {
-	error := fmt.Sprintf("Viewport Dimensions: %dx%d, Screen Dimesnions: %dx%d", m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight, m.ViewManager.Width, m.ViewManager.Height)
-	m.Errors = append(m.Errors, error)
 	var errors strings.Builder
 	for _, err := range m.Errors {
 		errors.WriteString(err + "\n")
@@ -145,12 +143,11 @@ func RenderFiles(m *Model) string {
 	}
 
 	listContainerStyle := listContainerStyle(m.ViewManager.SidebarWidth, m.ViewManager.SidebarHeight, m.IsItemDetailsFocus())
-	itemDetailsContainerStyle := itemDetailsContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight, m.IsItemDetailsFocus())
 
 	list, itemDetails := buildFilesView(m)
 	listContainer := listContainerStyle.Render(list)
 
-	itemDetailsContainer := itemDetailsContainerStyle.Render(itemDetails)
+	itemDetailsContainer := lipgloss.NewStyle().MarginLeft(2).Border(lipgloss.NormalBorder()).Render(itemDetails)
 	if m.ViewManager.HideSidebar {
 		listContainer = ""
 	}
@@ -344,7 +341,7 @@ func summaryContainerStyle(width, height int) lipgloss.Style {
 }
 
 func contentContainerStyle(width, height int) lipgloss.Style {
-	return lipgloss.NewStyle().Width(width).Padding(1).Border(lipgloss.NormalBorder()).MarginLeft(2)
+	return lipgloss.NewStyle().Border(lipgloss.NormalBorder()).MarginLeft(2)
 }
 
 func taskSummaryContainerTitleStyle(width int) lipgloss.Style {
