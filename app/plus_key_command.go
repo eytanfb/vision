@@ -3,10 +3,12 @@ package app
 type PlusKeyCommand struct{}
 
 func (j PlusKeyCommand) Execute(m *Model) error {
-	if !m.ViewManager.IsWeeklyView {
-		m.TaskManager.ChangeDailySummaryDateToNextDay()
-	} else {
-		m.TaskManager.ChangeWeeklySummaryToNextWeek()
+	if !m.ViewManager.IsTaskDetailsFocus() {
+		if !m.ViewManager.IsWeeklyView {
+			m.TaskManager.ChangeDailySummaryDateToNextDay()
+		} else {
+			m.TaskManager.ChangeWeeklySummaryToNextWeek()
+		}
 	}
 
 	return nil

@@ -14,6 +14,7 @@ const (
 	scheduled
 	started
 	completed
+	overdue
 )
 
 type Task struct {
@@ -36,73 +37,67 @@ const (
 )
 
 func (t Task) String() string {
-	var stringBuilder strings.Builder
+	return t.Text
+}
 
-	if t.IsDone {
-		stringBuilder.WriteString("- [x] ")
-	} else {
-		stringBuilder.WriteString("- [ ] ")
+func (t Task) HumanizedString() string {
+	var humanizedString string
+
+	if t.ScheduledDate != "" {
+		scheduledDate, _ := time.Parse("2006-01-02", t.ScheduledDate)
+
+		today := time.Now()
+
+		if scheduledDate.Day() == today.Day() && scheduledDate.Month() == today.Month() && scheduledDate.Year() == today.Year() {
+			humanizedString += "Scheduled for today"
+		} else {
+			formattedScheduledDate := scheduledDate.Format("Jan 2")
+
+			humanizedString += "Scheduled for " + formattedScheduledDate
+		}
 	}
 
-	stringBuilder.WriteString(t.Text)
-	result := stringBuilder.String()
-	resultWithoutDates := removeDatesFromText(result)
-	stringBuilder.Reset()
-	stringBuilder.WriteString(resultWithoutDates)
+	if t.StartDate != "" {
+		startedDate, _ := time.Parse("2006-01-02", t.StartDate)
+		formattedStartedDate := startedDate.Format("Jan 2")
 
-	if t.StartDate != "" || t.CompletedDate != "" || t.ScheduledDate != "" {
-		stringBuilder.WriteString("\n")
+		if humanizedString != "" {
+			humanizedString += ", "
+		}
+
 		if t.ScheduledDate != "" {
-			stringBuilder.WriteString("Scheduled: " + strings.Trim(t.ScheduledDate, " ") + "\n")
-		}
-		if t.StartDate != "" {
-			stringBuilder.WriteString("Start: " + strings.Trim(t.StartDate, " ") + "\n")
-		}
-		if t.CompletedDate != "" {
-			stringBuilder.WriteString("Completed: " + strings.Trim(t.CompletedDate, " ") + "\n")
+			humanizedString += "and started on " + formattedStartedDate
+		} else {
+			humanizedString += "Started on " + formattedStartedDate
 		}
 	}
 
-	return stringBuilder.String()
+	if t.CompletedDate != "" {
+		parsedCompletedDate, _ := time.Parse("2006-01-02", t.CompletedDate)
+		formattedCompletedDate := parsedCompletedDate.Format("Jan 2")
+
+		if t.StartDate != "" {
+			parsedStartDate, _ := time.Parse("2006-01-02", t.StartDate)
+			formattedStartDate := parsedStartDate.Format("Jan 2")
+
+			days := parsedCompletedDate.Sub(parsedStartDate).Hours() / 24
+			if days == 0 {
+				humanizedString = fmt.Sprintf("Started on %s, completed the same day", formattedStartDate)
+			} else if days == 1 {
+				humanizedString = fmt.Sprintf("Started on %s, took 1 day, completed on %s", formattedStartDate, formattedCompletedDate)
+			} else {
+				humanizedString = fmt.Sprintf("Started on %s, took %.0f days, completed on %s", formattedStartDate, days, formattedCompletedDate)
+			}
+		} else {
+			humanizedString = "Completed on " + formattedCompletedDate
+		}
+	}
+
+	return humanizedString
 }
 
 func (t Task) Summary() string {
 	return t.textWithoutDates()
-}
-
-func (t Task) IsOverdue() bool {
-	if t.Completed {
-		return false
-	}
-
-	today := time.Now()
-	isOverdue := false
-
-	if t.Scheduled {
-		parsedScheduleDate, err := time.Parse("2006-01-02", t.ScheduledDate)
-		if err != nil {
-			isOverdue = false
-		}
-		scheduledDays := today.Sub(parsedScheduleDate).Hours() / 24
-		if scheduledDays > 14 {
-			isOverdue = true
-		}
-	}
-
-	if t.Started {
-		isOverdue = false
-		parsedStartDate, err := time.Parse("2006-01-02", t.StartDate)
-		if err != nil {
-			return false
-		}
-
-		startedDays := today.Sub(parsedStartDate).Hours() / 24
-		if startedDays > 14 {
-			isOverdue = true
-		}
-	}
-
-	return isOverdue
 }
 
 func (t Task) IsInactive() bool {
@@ -130,7 +125,7 @@ func (t Task) IsCompletedToday() bool {
 		return false
 	}
 
-	return parsedCompletedDate.Day() == time.Now().Day()
+	return parsedCompletedDate.Day() == time.Now().Day() && parsedCompletedDate.Month() == time.Now().Month() && parsedCompletedDate.Year() == time.Now().Year()
 }
 
 func (t Task) IsScheduledForDay(date string) bool {
@@ -144,9 +139,6 @@ func (t Task) IsScheduledForDay(date string) bool {
 	}
 
 	dateDay, _ := time.Parse("2006-01-02", date)
-	if err != nil {
-		return false
-	}
 
 	return parsedScheduledDate.Day() == dateDay.Day()
 }
@@ -168,43 +160,83 @@ func (t Task) IsScheduled() bool {
 }
 
 func (t Task) StatusAtDate(date string) status {
+	status := unscheduled
+
 	if t.CompletedDate != "" && date == t.CompletedDate {
-		return completed
+		status = completed
 	}
 
-	if t.StartDate != "" && date >= t.StartDate {
+	if status != completed && t.StartDate != "" && date >= t.StartDate {
 		if t.CompletedDate == "" || date < t.CompletedDate {
-			return started
+			status = started
 		}
 	}
 
-	if t.ScheduledDate != "" && date >= t.ScheduledDate {
+	if status != completed && status != started && t.ScheduledDate != "" && date >= t.ScheduledDate {
 		if (t.StartDate == "" || date < t.StartDate) && (t.CompletedDate == "" || date < t.CompletedDate) {
-			return scheduled
+			status = scheduled
 		}
 	}
 
-	return unscheduled
+	if status == scheduled {
+		parsedDate, _ := time.Parse("2006-01-02", date)
+		parsedScheduleDate, _ := time.Parse("2006-01-02", t.ScheduledDate)
+
+		scheduledDays := parsedDate.Sub(parsedScheduleDate).Hours() / 24
+		if scheduledDays > 14 {
+			status = overdue
+		}
+	} else if status == started {
+		parsedDate, _ := time.Parse("2006-01-02", date)
+		parsedStartDate, _ := time.Parse("2006-01-02", t.StartDate)
+
+		startedDays := parsedDate.Sub(parsedStartDate).Hours() / 24
+		if startedDays > 14 {
+			status = overdue
+		}
+	}
+
+	return status
 }
 
 func (t Task) WeeklyStatusAtDate(date string) status {
+	status := unscheduled
+
 	if t.CompletedDate != "" && date >= t.CompletedDate {
-		return completed
+		status = completed
 	}
 
 	if t.StartDate != "" && date >= t.StartDate {
 		if t.CompletedDate == "" || date < t.CompletedDate {
-			return started
+			status = started
 		}
 	}
 
 	if t.ScheduledDate != "" && date >= t.ScheduledDate {
 		if (t.StartDate == "" || date < t.StartDate) && (t.CompletedDate == "" || date < t.CompletedDate) {
-			return scheduled
+			status = scheduled
 		}
 	}
 
-	return unscheduled
+	if status == scheduled {
+		parsedDate, _ := time.Parse("2006-01-02", date)
+		parsedScheduleDate, _ := time.Parse("2006-01-02", t.ScheduledDate)
+
+		scheduledDays := parsedDate.Sub(parsedScheduleDate).Hours() / 24
+		if scheduledDays > 14 {
+			status = overdue
+		}
+	} else if status == started {
+		parsedDate, _ := time.Parse("2006-01-02", date)
+		parsedStartDate, _ := time.Parse("2006-01-02", t.StartDate)
+
+		startedDays := parsedDate.Sub(parsedStartDate).Hours() / 24
+		if startedDays > 14 {
+			status = overdue
+		}
+	}
+
+	return status
 }
 
 func (t Task) textWithoutDates() string {

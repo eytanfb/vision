@@ -49,11 +49,15 @@ func (tc *TaskCollection) FilteredForDay(date string) map[string][]Task {
 	for filename, tasks := range tc.TasksByFile {
 		var filtered []Task
 		for _, task := range tasks {
-			if task.StatusAtDate(date) == scheduled {
+			status := task.StatusAtDate(date)
+
+			if status == scheduled {
 				filtered = append(filtered, task)
-			} else if task.StatusAtDate(date) == started {
+			} else if status == started {
 				filtered = append(filtered, task)
-			} else if task.StatusAtDate(date) == completed {
+			} else if status == completed {
+				filtered = append(filtered, task)
+			} else if status == overdue {
 				filtered = append(filtered, task)
 			}
 		}
@@ -189,13 +193,18 @@ func (tc *TaskCollection) Flush() {
 	tc.TasksByFile = make(map[string][]Task)
 }
 
-func (tc *TaskCollection) IncompleteTasks(filename string) []Task {
+func (tc *TaskCollection) IncompleteTasks(filename string, date string) []Task {
 	tasks := tc.TasksByFile[filename]
+
 	var incompleteTasks []Task
+
 	for _, task := range tasks {
-		if !task.Completed {
+		status := task.WeeklyStatusAtDate(date)
+
+		if status != completed {
 			incompleteTasks = append(incompleteTasks, task)
 		}
 	}
+
 	return incompleteTasks
 }

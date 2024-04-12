@@ -8,6 +8,10 @@ func (j EscKeyCommand) Execute(m *Model) error {
 		m.NewTaskInput.Blur()
 		return nil
 	}
+	if m.ViewManager.IsTaskDetailsFocus() {
+		FKeyCommand{}.Execute(m)
+		return nil
+	}
 	m.GoToPreviousView()
 
 	return nil

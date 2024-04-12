@@ -189,48 +189,23 @@ func RenderSidebar(m *Model) string {
 }
 
 func RenderTasks(m *Model) string {
-	if len(m.FileManager.Files) == 0 {
-		return "No files found"
+	itemDetailsContainerStyle := lipgloss.NewStyle().Width(m.ViewManager.DetailsViewWidth).Height(m.ViewManager.DetailsViewHeight).MarginLeft(2).Border(lipgloss.NormalBorder())
+
+	if m.ViewManager.IsAddTaskView {
+		addTaskView := m.NewTaskInput.View()
+
+		m.Viewport.SetContent(addTaskView)
+
+		return contentContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight).Render(m.Viewport.View())
 	}
 
-	var style lipgloss.Style
-	var tasks strings.Builder
-	containerStyle := lipgloss.NewStyle()
-	listContainerStyle := sidebarStyle(m.ViewManager.SidebarWidth, m.ViewManager.SidebarHeight)
-	itemDetailsContainerStyle := itemDetailsContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight, m.IsItemDetailsFocus())
-	list := ""
+	date := m.TaskManager.DailySummaryDate
 
-	for index, file := range m.FileManager.Files {
-		line := "  "
-		style = lipgloss.NewStyle()
+	tasks := m.TaskManager.TaskCollection.GetTasks(m.FileManager.currentFileName())
 
-		if index == m.FileManager.FilesCursor {
-			line += "❯ "
-			style = style.Bold(true)
-			for index, task := range m.TaskManager.TaskCollection.GetTasks(file.Name) {
-				tasks.WriteString(writeTaskString(task, index, m.TaskManager.TasksCursor))
-			}
-		}
+	tasksView := BuildTasksForFileView(m, tasks, date, m.TaskManager.TasksCursor)
 
-		line += file.Name
-		list = joinVertical(list, style.Render(line))
-	}
-
-	listContainer := listContainerStyle.Render(list)
-
-	markdown := renderMarkdown(tasks.String())
-	log.Info("viewport dimensions in tasks: ", m.Viewport.Width, "x", m.Viewport.Height)
-	m.Viewport.SetContent(markdown)
-
-	itemDetailsContainer := itemDetailsContainerStyle.Render(m.Viewport.View())
-	if m.ViewManager.HideSidebar {
-		listContainer = ""
-	}
-	container := containerStyle.Render(joinHorizontal(listContainer, itemDetailsContainer))
-
-	view := joinVertical(container)
-
-	return view
+	return joinVertical(itemDetailsContainerStyle.Render(tasksView))
 }
 
 func writeTaskString(task Task, index int, cursor int) string {
@@ -344,7 +319,7 @@ func summaryContainerStyle(width, height int) lipgloss.Style {
 }
 
 func contentContainerStyle(width, height int) lipgloss.Style {
-	return lipgloss.NewStyle().Border(lipgloss.NormalBorder()).MarginLeft(2)
+	return lipgloss.NewStyle().Width(width).Height(height).Border(lipgloss.NormalBorder()).MarginLeft(2)
 }
 
 func taskSummaryContainerStyle(width, height int) lipgloss.Style {

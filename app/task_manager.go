@@ -184,6 +184,12 @@ func (tm *TaskManager) ChangeDailySummaryDateToPreviousDay() {
 	tm.DailySummaryDate = previousDay.Format("2006-01-02")
 }
 
+func (tm *TaskManager) ChangeDailySummaryDateToToday() {
+	log.Info("Changing daily summary day to today")
+
+	tm.DailySummaryDate = time.Now().Format("2006-01-02")
+}
+
 func (tm *TaskManager) ChangeWeeklySummaryToPreviousWeek() {
 	log.Info("Changing weekly summary to previous week")
 

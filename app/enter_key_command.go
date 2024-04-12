@@ -5,9 +5,15 @@ type EnterKeyCommand struct{}
 func (j EnterKeyCommand) Execute(m *Model) error {
 	if m.IsAddTaskView() {
 		company := m.GetCurrentCompanyName()
-		taskName := m.NewTaskInput.Value()
-		m.FileManager.CreateTask(company, taskName)
-		EscKeyCommand{}.Execute(m)
+		input := m.NewTaskInput.Value()
+
+		if m.ViewManager.IsTaskDetailsFocus() {
+			m.FileManager.CreateTask(company, input)
+			EscKeyCommand{}.Execute(m)
+		} else {
+			m.FileManager.CreateTask(company, input)
+			EscKeyCommand{}.Execute(m)
+		}
 
 		return nil
 	}
