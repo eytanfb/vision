@@ -188,3 +188,14 @@ func (tc *TaskCollection) GetAll() []Task {
 func (tc *TaskCollection) Flush() {
 	tc.TasksByFile = make(map[string][]Task)
 }
+
+func (tc *TaskCollection) IncompleteTasks(filename string) []Task {
+	tasks := tc.TasksByFile[filename]
+	var incompleteTasks []Task
+	for _, task := range tasks {
+		if !task.Completed {
+			incompleteTasks = append(incompleteTasks, task)
+		}
+	}
+	return incompleteTasks
+}

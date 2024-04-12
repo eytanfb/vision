@@ -110,11 +110,14 @@ func TaskSummaryToView(m *Model, period string) string {
 	viewSort(keys, &tasksByFile, m)
 
 	width := m.ViewManager.DetailsViewWidth
+	height := m.ViewManager.SummaryViewHeight
+	containerTitleHeight := 2
+	viewHeight := height - containerTitleHeight
 
 	view := BuildSummaryView(m, keys, tasksByFile, width, summaryDate)
 
-	containerTitle := taskSummaryContainerStyle(width).Render(summaryTitle(m, period))
-	renderedView := taskSummaryContainerStyle(width).Render(view)
+	containerTitle := taskSummaryContainerStyle(width, containerTitleHeight).Height(2).Render(summaryTitle(m, period))
+	renderedView := taskSummaryContainerStyle(width, viewHeight).Render(view)
 
 	return joinVertical(containerTitle, renderedView)
 }
@@ -124,8 +127,8 @@ func summaryTitle(m *Model, period string) string {
 	if period == "weekly" {
 		title = "Weekly Tasks for " + m.TaskManager.WeeklySummaryStartDate + " - " + m.TaskManager.WeeklySummaryEndDate
 	}
-	return title
 
+	return title
 }
 
 func sortTaskKeys(tasksByFile map[string][]Task) []string {
@@ -344,27 +347,17 @@ func contentContainerStyle(width, height int) lipgloss.Style {
 	return lipgloss.NewStyle().Border(lipgloss.NormalBorder()).MarginLeft(2)
 }
 
-func taskSummaryContainerTitleStyle(width int) lipgloss.Style {
-	return taskSummaryContainerStyle(width).Copy().Align(lipgloss.Center)
-}
-
-func taskSummaryContainerStyle(width int) lipgloss.Style {
-	return lipgloss.NewStyle().Width(width).Padding(1)
+func taskSummaryContainerStyle(width, height int) lipgloss.Style {
+	return lipgloss.NewStyle().Width(width).Height(height).Padding(1)
 }
 
 func taskTitleContainer(width int) lipgloss.Style {
-	return lipgloss.NewStyle().Width(width).MarginTop(1)
+	return lipgloss.NewStyle().Width(width).Height(1).MarginTop(1)
 }
 
 func companiesContainerStyle(width int) lipgloss.Style {
 	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Width(width).Align(lipgloss.Center)
 	return style
-}
-
-func summaryTitleStyle(width int) lipgloss.Style {
-	summaryStyle := lipgloss.NewStyle().Align(lipgloss.Left).Width(width - 40).Bold(true).Foreground(lipgloss.Color("#9A9CCD"))
-
-	return summaryStyle
 }
 
 func sortedFiles(m *Model) []FileInfo {

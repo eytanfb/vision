@@ -21,7 +21,7 @@ func main() {
 	args := os.Args[1:]
 	initialModel := app.InitialModel(cfg, args) // Pass cmdline args to the model
 
-	p := tea.NewProgram(initialModel, tea.WithMouseCellMotion())
+	p := tea.NewProgram(initialModel, tea.WithMouseCellMotion(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		log.Error("Oh no!", err)
 		os.Exit(1)

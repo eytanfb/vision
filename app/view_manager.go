@@ -9,6 +9,7 @@ type ViewManager struct {
 	ItemDetailsFocus  bool
 	HideSidebar       bool
 	NavbarWidth       int
+	NavbarHeight      int
 	SidebarWidth      int
 	SidebarHeight     int
 	DetailsViewWidth  int

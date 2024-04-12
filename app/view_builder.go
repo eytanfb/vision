@@ -19,23 +19,24 @@ func BuildSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, wi
 		progressText := buildProgressText(m, category)
 		taskTitle := category[0 : len(category)-len(".md")]
 		tasksView := ""
-		incompleteTaskCount := 0
+		incompleteTaskCount := len(m.TaskManager.TaskCollection.IncompleteTasks(category))
+
 		for _, task := range tasks {
 			textStyle := startedTextStyle
 
 			if task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) {
-				incompleteTaskCount++
 				continue
 			}
 
-			incompleteTaskCount++
 			tasks := ""
 			text := ""
 			status := task.StatusAtDate(date)
+
 			if m.ViewManager.IsWeeklyView {
 				status = task.WeeklyStatusAtDate(date)
 			}
-			text, textStyle, incompleteTaskCount = buildTaskView(task, progressText, status, incompleteTaskCount)
+
+			text, textStyle = buildTaskView(task, progressText, status)
 
 			tasks = textStyle.Render(text)
 			tasksView = joinVertical(tasksView, tasks)
@@ -69,13 +70,12 @@ func daysAgoFromString(date string) string {
 	return fmt.Sprintf("%.0f %s ago", days, daysString)
 }
 
-func buildTaskView(task Task, progressText string, status status, incompleteTaskCount int) (string, lipgloss.Style, int) {
+func buildTaskView(task Task, progressText string, status status) (string, lipgloss.Style) {
 	var textStyle lipgloss.Style
 
 	text := task.Summary()
 
 	if status == completed {
-		incompleteTaskCount--
 		text += " ✅ " + daysAgoFromString(task.CompletedDate)
 		textStyle = completedTextStyle
 	} else if status == started {
@@ -98,7 +98,7 @@ func buildTaskView(task Task, progressText string, status status, incompleteTask
 		}
 	}
 
-	return text, textStyle, incompleteTaskCount
+	return text, textStyle
 }
 
 func progressBar(completed, total int) string {
@@ -123,4 +123,10 @@ func buildProgressText(m *Model, category string) string {
 	percentage := float64(completedTasksCount) / float64(totalTasksCount)
 	roundedUpPercentage := int(percentage*10) * 10
 	return progressBar(completedTasksCount, totalTasksCount) + " " + fmt.Sprintf("%d%%", roundedUpPercentage)
+}
+
+func summaryTitleStyle(width int) lipgloss.Style {
+	summaryStyle := lipgloss.NewStyle().Align(lipgloss.Left).Width(width - 40).Bold(true).Foreground(lipgloss.Color("#9A9CCD"))
+
+	return summaryStyle
 }
