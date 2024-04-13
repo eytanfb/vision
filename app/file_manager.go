@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -31,10 +32,17 @@ func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileI
 	sorting := "default"
 
 	if categoryPath == "tasks" {
-		sorting = "updatedAt"
+		sorting = "active"
 	}
 
-	files = readFilesInDirecory(path, sorting)
+	files = readFilesInDirecory(path, sorting, tm)
+
+	filenames := []string{}
+	for _, file := range files {
+		filenames = append(filenames, file.Name)
+	}
+	log.Info("Files: \n" + strings.Join(filenames, "\n"))
+
 	if categoryPath == "standups" {
 		lastStandup := files[0] // The first one is the most recent
 		todayInFormat := time.Now().Format("2006-01-02")
@@ -42,7 +50,7 @@ func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileI
 
 		if lastStandup.Name != todayInFormat && isWorkingDay() {
 			fm.CreateStandup(companyFolderPath)
-			files = readFilesInDirecory(path, sorting)
+			files = readFilesInDirecory(path, sorting, tm)
 		}
 	}
 
@@ -59,7 +67,7 @@ func (fm *FileManager) FetchTasks(dm *DirectoryManager, tm *TaskManager) []Task 
 	path := notesPath() + "/" + companyFolderPath + "/tasks"
 	log.Info("Path: " + path)
 
-	files := readFilesInDirecory(path, "updatedAt")
+	files := readFilesInDirecory(path, "updatedAt", tm)
 	for _, file := range files {
 		tasks := tm.ExtractTasks(file.Name, file.Content)
 		tm.TaskCollection.Add(file.Name, tasks)
@@ -74,7 +82,7 @@ func (fm *FileManager) GetCurrentFilePath(companyName string, categoryName strin
 }
 
 func (fm FileManager) CurrentFile() FileInfo {
-	return fm.Files[fm.FilesCursor]
+	return fm.SelectedFile
 }
 
 func (fm FileManager) CurrentFileContent() string {
@@ -130,14 +138,14 @@ func copyFile(src, dst string) error {
 }
 
 func (fm FileManager) currentFile() FileInfo {
-	return fm.Files[fm.FilesCursor]
+	return fm.SelectedFile
 }
 
 func (fm FileManager) currentFileName() string {
 	return fm.CurrentFile().Name
 }
 
-func readFilesInDirecory(path string, sortBy string) []FileInfo {
+func readFilesInDirecory(path string, sortBy string, tm *TaskManager) []FileInfo {
 	var fileInfos []FileInfo
 
 	files, err := os.ReadDir(path)
@@ -181,11 +189,91 @@ func readFilesInDirecory(path string, sortBy string) []FileInfo {
 
 	if sortBy == "updatedAt" {
 		slices.SortFunc(fileInfos, updatedAtCmp)
+	} else if sortBy == "active" {
+		fileInfos = sortedFiles(fileInfos, tm)
 	} else {
 		slices.SortFunc(fileInfos, nameCmp)
 	}
 
 	return fileInfos
+}
+
+func sortedFiles(fileInfos []FileInfo, tm *TaskManager) []FileInfo {
+	filenames := []string{}
+	for _, file := range fileInfos {
+		filenames = append(filenames, file.Name)
+	}
+
+	activeCmp(filenames, tm)
+
+	sortedFiles := []FileInfo{}
+	for _, filename := range filenames {
+		for _, file := range fileInfos {
+			if file.Name == filename {
+				sortedFiles = append(sortedFiles, file)
+			}
+		}
+	}
+
+	return sortedFiles
+}
+
+func activeCmp(filenames []string, tm *TaskManager) {
+	sort.Slice(filenames, func(i, j int) bool {
+		iFilename := filenames[i]
+		jFilename := filenames[j]
+
+		log.Info("Comparing " + iFilename + " with " + jFilename)
+
+		iCompleted := tm.TaskCollection.IsCompleted(iFilename)
+		jCompleted := tm.TaskCollection.IsCompleted(jFilename)
+
+		iInactive := tm.TaskCollection.IsInactive(iFilename)
+		jInactive := tm.TaskCollection.IsInactive(jFilename)
+
+		if iCompleted {
+			log.Info(iFilename + " is completed returning false")
+			return false
+		}
+
+		if jCompleted {
+			log.Info(jFilename + " is completed returning true")
+			return true
+		}
+
+		if iInactive {
+			log.Info(iFilename + " is inactive returning false")
+			return false
+		}
+
+		if jInactive {
+			log.Info(jFilename + " is inactive returning true")
+			return true
+		}
+
+		iCompletedTasks, iTotalTasks := tm.TaskCollection.Progress(iFilename)
+		jCompletedTasks, jTotalTasks := tm.TaskCollection.Progress(jFilename)
+
+		iPercentage := float64(iCompletedTasks) / float64(iTotalTasks)
+		jPercentage := float64(jCompletedTasks) / float64(jTotalTasks)
+
+		iRoundedUp := int(iPercentage*10) * 10
+		jRoundedUp := int(jPercentage*10) * 10
+
+		if iRoundedUp == 100 {
+			return false
+		}
+
+		if jRoundedUp == 100 {
+			return true
+		}
+
+		if iRoundedUp == jRoundedUp {
+			return iFilename < jFilename
+		}
+
+		return iRoundedUp > jRoundedUp
+	})
 }
 
 func nameCmp(a, b FileInfo) int {

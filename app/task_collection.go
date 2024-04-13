@@ -89,6 +89,21 @@ func (tc *TaskCollection) IsInactive(filename string) bool {
 	return true
 }
 
+func (tc *TaskCollection) IsCompleted(filename string) bool {
+	tasks := tc.TasksByFile[filename]
+
+	if len(tasks) == 0 {
+		return false
+	}
+
+	for _, task := range tasks {
+		if !task.Completed {
+			return false
+		}
+	}
+	return true
+}
+
 func (tc *TaskCollection) GetStartedTasksByDate(startDate, endDate string) []Task {
 	log.Info("Getting started tasks")
 	tasks := tc.allTasks()

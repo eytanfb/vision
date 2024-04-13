@@ -7,7 +7,6 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/log"
 )
 
 var (
@@ -194,7 +193,7 @@ func RenderTasks(m *Model) string {
 	if m.ViewManager.IsAddTaskView {
 		addTaskView := m.NewTaskInput.View()
 
-		m.Viewport.SetContent(addTaskView)
+		m.Viewport.SetContent("Add new subtask\n" + addTaskView)
 
 		return contentContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight).Render(m.Viewport.View())
 	}
@@ -335,26 +334,6 @@ func companiesContainerStyle(width int) lipgloss.Style {
 	return style
 }
 
-func sortedFiles(m *Model) []FileInfo {
-	filenames := []string{}
-	for _, file := range m.FileManager.Files {
-		filenames = append(filenames, file.Name)
-	}
-
-	viewSort(filenames, &m.TaskManager.TaskCollection.TasksByFile, m)
-
-	sortedFiles := []FileInfo{}
-	for _, filename := range filenames {
-		for _, file := range m.FileManager.Files {
-			if file.Name == filename {
-				sortedFiles = append(sortedFiles, file)
-			}
-		}
-	}
-
-	return sortedFiles
-}
-
 func buildTasksView(m *Model, line string, index int, list string, file FileInfo, style lipgloss.Style, incompleteList string, completedList string) (string, string, string) {
 	isInactive := m.TaskManager.TaskCollection.IsInactive(file.Name)
 
@@ -386,7 +365,7 @@ func buildFilesView(m *Model) (string, string) {
 	itemDetails := ""
 	completedList := ""
 	incompleteList := ""
-	for index, file := range sortedFiles(m) {
+	for index, file := range m.FileManager.Files {
 		line := ""
 		style := lipgloss.NewStyle()
 
@@ -409,7 +388,6 @@ func buildFilesView(m *Model) (string, string) {
 	} else {
 		markdown := renderMarkdown(itemDetails)
 		m.Viewport.SetContent(markdown)
-		log.Info("viewport dimensions in files: ", m.Viewport.Width, "x", m.Viewport.Height)
 		itemDetails = m.Viewport.View()
 	}
 
