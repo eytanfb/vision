@@ -28,12 +28,13 @@ func BuildSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, wi
 				task:   task,
 				date:   date,
 				weekly: m.ViewManager.IsWeeklyView,
+				width:  m.ViewManager.DetailsViewWidth - 25,
 			}.RenderedText()
 
 			tasksView = joinVertical(tasksView, tasksString)
 		}
 
-		rightAlignedProgressText := progressTextStyle.Copy().Width(30).Align(lipgloss.Right).Render(progressText)
+		rightAlignedProgressText := progressTextStyle.Copy().Width(35).Align(lipgloss.Right).Render(progressText)
 		taskTitle += " (" + fmt.Sprintf("%d", incompleteTaskCount) + " tasks remaining)"
 		taskTitleView := joinHorizontal(titleStyle.Render(taskTitle), rightAlignedProgressText)
 		tasksView = joinVertical(taskTitleContainer(width).Render(taskTitleView), tasksView)
@@ -46,20 +47,22 @@ func BuildSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, wi
 func BuildTasksForFileView(m *Model, tasks []Task, date string, cursor int) string {
 	view := ""
 	background := "#474747"
+	offset := 15
 
 	for index, task := range tasks {
 		if task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) {
 			continue
 		}
 
-		taskStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.DetailsViewWidth - 40)
-		datesContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.DetailsViewWidth - 40)
+		taskStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.DetailsViewWidth - offset)
+		datesContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.DetailsViewWidth - offset)
 		dateStyle := lipgloss.NewStyle().Background(lipgloss.Color(background)).Foreground(lipgloss.Color("#9A9CCD")).PaddingRight(2)
 
 		tasksString := TaskView{
 			task:   task,
 			date:   date,
 			weekly: true,
+			width:  m.ViewManager.DetailsViewWidth - offset,
 		}.RenderedText()
 
 		tasksString = taskStyle.Render(tasksString)
@@ -68,7 +71,7 @@ func BuildTasksForFileView(m *Model, tasks []Task, date string, cursor int) stri
 			datesString := dateStyle.Render(task.HumanizedString())
 
 			tasksString = joinVertical(tasksString, "\n", datesContainerStyle.Render(datesString))
-			tasksString = lipgloss.NewStyle().Background(lipgloss.Color(background)).Width(m.ViewManager.DetailsViewWidth - 40).PaddingTop(1).PaddingBottom(1).MarginTop(1).MarginBottom(1).Render(tasksString)
+			tasksString = lipgloss.NewStyle().Background(lipgloss.Color(background)).Width(m.ViewManager.DetailsViewWidth - offset).PaddingTop(1).PaddingBottom(1).MarginTop(1).MarginBottom(1).Render(tasksString)
 		}
 
 		view = joinVertical(view, tasksString)

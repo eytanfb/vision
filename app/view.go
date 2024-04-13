@@ -149,7 +149,7 @@ func RenderFiles(m *Model) string {
 	list, itemDetails := buildFilesView(m)
 	listContainer := listContainerStyle.Render(list)
 
-	itemDetailsContainer := lipgloss.NewStyle().MarginLeft(2).Border(lipgloss.NormalBorder()).Render(itemDetails)
+	itemDetailsContainer := lipgloss.NewStyle().Width(m.ViewManager.DetailsViewWidth).MarginLeft(2).Border(lipgloss.NormalBorder()).Render(itemDetails)
 	if m.ViewManager.HideSidebar {
 		listContainer = ""
 	}
@@ -233,14 +233,6 @@ func renderMarkdown(content string) string {
 	}
 
 	return out
-}
-
-func addIconToProgressText(progressText, icon string) string {
-	progressText = strings.Replace(progressText, " ⏳", "", -1)
-	progressText = strings.Replace(progressText, " 🛫", "", -1)
-	progressText = strings.Replace(progressText, " ✅", "", -1)
-	progressText = strings.Replace(progressText, " 🚨", "", -1)
-	return icon + " " + progressText
 }
 
 func viewSort(filenames []string, tasksByFile *map[string][]Task, m *Model) {

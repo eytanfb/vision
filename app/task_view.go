@@ -11,6 +11,7 @@ type TaskView struct {
 	task   Task
 	date   string
 	weekly bool
+	width  int
 }
 
 func (tv TaskView) RenderedText() string {
@@ -20,23 +21,43 @@ func (tv TaskView) RenderedText() string {
 		status = tv.task.WeeklyStatusAtDate(tv.date)
 	}
 
-	text := tv.text(status)
+	icon := tv.statusIcon(status)
+	text := tv.task.Summary()
 	textStyle := tv.textStyle(status)
 
-	return textStyle.Render(text)
+	statusText := tv.statusText(status)
+
+	renderedText := textStyle.Render(text)
+	renderedStatusText := lipgloss.NewStyle().Width(15).Align(lipgloss.Right).Render(statusText)
+
+	return joinHorizontal(icon, renderedText, renderedStatusText)
 }
 
-func (tv TaskView) text(status status) string {
-	text := tv.task.Summary()
+func (tv TaskView) statusIcon(status status) string {
+	icon := ""
+	iconStyle := lipgloss.NewStyle().MarginRight(1)
 
 	if status == completed {
-		text += " ✅ " + tv.daysAgoFromString(tv.task.CompletedDate)
+		icon = "✅"
 	} else if status == started {
-		text += " 🛫 " + tv.daysAgoFromString(tv.task.StartDate)
+		icon = "🛫"
 	} else if status == scheduled {
-		text += " ⏳ " + tv.daysAgoFromString(tv.task.ScheduledDate)
+		icon = "⏳"
 	} else if status == overdue {
-		text += " 🚨 "
+		icon = "🚨"
+	}
+
+	return iconStyle.Render(icon)
+}
+
+func (tv TaskView) statusText(status status) string {
+	text := ""
+
+	if status == completed {
+		text += tv.daysAgoFromString(tv.task.CompletedDate)
+	} else if status == started {
+		text += tv.daysAgoFromString(tv.task.StartDate)
+	} else if status == scheduled {
 		date := tv.task.ScheduledDate
 
 		if tv.task.StartDate != "" {
@@ -62,7 +83,7 @@ func (tv TaskView) textStyle(status status) lipgloss.Style {
 		textStyle = overdueTextStyle
 	}
 
-	return textStyle
+	return textStyle.Width(tv.width)
 }
 
 func (tv TaskView) daysAgoFromString(date string) string {

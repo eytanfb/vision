@@ -49,7 +49,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 			TaskCollection: TaskCollection{
 				TasksByFile: make(map[string][]Task),
 			},
-			TasksCursor:            0,
+			TasksCursor:            -1,
 			WeeklySummaryStartDate: monday,
 			WeeklySummaryEndDate:   friday,
 			DailySummaryDate:       today,

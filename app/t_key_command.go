@@ -4,6 +4,7 @@ type TKeyCommand struct{}
 
 func (j TKeyCommand) Execute(m *Model) error {
 	if m.IsItemDetailsFocus() {
+		m.TaskManager.TasksCursor = -1
 		m.TaskManager.ChangeDailySummaryDateToToday()
 		m.ShowTasks()
 	}
