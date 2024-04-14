@@ -67,7 +67,6 @@ func RenderCompanies(m *Model, companies []string) string {
 }
 
 func RenderList(m *Model, items []string, title string) string {
-	summaryView := ""
 	list := ""
 
 	cursor := m.GetCurrentCursor()
@@ -78,14 +77,10 @@ func RenderList(m *Model, items []string, title string) string {
 
 	view := sidebarStyle(m.ViewManager.SidebarWidth, m.ViewManager.SidebarHeight).Render(joinVertical(list))
 
-	if m.IsAddTaskView() {
-		summaryView = m.NewTaskInput.View()
-	} else if m.ViewManager.IsWeeklyView {
-		summaryView = TaskSummaryToView(m, "weekly")
-	} else {
-		summaryView = TaskSummaryToView(m, "daily")
-	}
+	summaryView := buildSummaryView(m)
+
 	m.Viewport.SetContent(summaryView)
+
 	summary := summaryContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.SummaryViewHeight).Render(m.Viewport.View())
 
 	if m.ViewManager.HideSidebar {
@@ -93,6 +88,20 @@ func RenderList(m *Model, items []string, title string) string {
 	}
 
 	return joinHorizontal(view, summary)
+}
+
+func buildSummaryView(m *Model) string {
+	summaryView := ""
+
+	if m.IsAddTaskView() {
+		summaryView = m.NewTaskInput.View()
+	} else if m.ViewManager.IsWeeklyView {
+		summaryView = TaskSummaryToView(m, "weekly")
+	} else {
+		summaryView = TaskSummaryToView(m, "daily")
+	}
+
+	return summaryView
 }
 
 func TaskSummaryToView(m *Model, period string) string {
@@ -193,10 +202,6 @@ func RenderNavBar(m *Model) string {
 	view := container.Render(navbarView)
 
 	return view
-}
-
-func RenderSidebar(m *Model) string {
-	return ""
 }
 
 func RenderTasks(m *Model) string {
