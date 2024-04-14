@@ -3,16 +3,29 @@ package app
 import "github.com/charmbracelet/lipgloss"
 
 var (
-	white = lipgloss.Color("#FFF")
+	white                          = lipgloss.Color("#FFFFFF")
+	taskDateColor                  = lipgloss.Color("#9A9CCD")
+	highlightedTaskBackgroundColor = lipgloss.Color("#474747")
+	completedColor                 = lipgloss.Color("#4CD137")
+	scheduledColor                 = lipgloss.Color("#F2D0A4")
+	startedColor                   = lipgloss.Color("#0AAFC7")
+	overdueColor                   = lipgloss.Color("#EC4E20")
+	completedFileColor             = lipgloss.Color("#4DA165")
+	inactiveFileColor              = lipgloss.Color("#A0A0A0")
+	highlightedTextColor           = lipgloss.Color("#CB48B7")
+	summaryTitleColor              = lipgloss.Color("#9A9CCD")
 )
 
 var (
 	companyTextStyle     = lipgloss.NewStyle().MarginLeft(2).MarginRight(2)
-	selectedCompanyStyle = lipgloss.NewStyle().MarginLeft(2).MarginRight(2).Foreground(lipgloss.Color("#4CD137")).Bold(true)
-	scheduledTextStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#F2D0A4"))
-	startedTextStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#0AAFC7"))
-	completedTextStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#4CD137"))
-	overdueTextStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#EC4E20"))
+	selectedCompanyStyle = lipgloss.NewStyle().MarginLeft(2).MarginRight(2).Foreground(completedColor).Bold(true)
+	scheduledTextStyle   = lipgloss.NewStyle().Foreground(scheduledColor)
+	startedTextStyle     = lipgloss.NewStyle().Foreground(startedColor)
+	completedTextStyle   = lipgloss.NewStyle().Foreground(completedColor)
+	overdueTextStyle     = lipgloss.NewStyle().Foreground(overdueColor)
+	taskFileTitleStyle   = lipgloss.NewStyle().Foreground(white).Bold(true).Underline(true)
+	completedFileStyle   = lipgloss.NewStyle().Foreground(completedFileColor)
+	inactiveFileStyle    = lipgloss.NewStyle().Foreground(inactiveFileColor)
 )
 
 func navbarTextStyle(color string) lipgloss.Style {
@@ -83,4 +96,48 @@ func listContainerStyle(width int, height int, isItemDetailsFocus bool) lipgloss
 
 func filesItemDetailsContainerStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().Width(width).MarginLeft(2).Border(lipgloss.NormalBorder())
+}
+
+func progressTextStyle(style lipgloss.Style) lipgloss.Style {
+	return style.Copy().Width(35).Align(lipgloss.Right)
+}
+
+func taskStyle(width int) lipgloss.Style {
+	return lipgloss.NewStyle().MarginLeft(2).Width(width)
+}
+
+func datesContainerStyle(width int) lipgloss.Style {
+	return lipgloss.NewStyle().MarginLeft(2).Width(width)
+}
+
+func dateStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Background(highlightedTaskBackgroundColor).Foreground(taskDateColor).PaddingRight(2)
+}
+
+func tasksStringStyle(width int) lipgloss.Style {
+	return lipgloss.NewStyle().Background(highlightedTaskBackgroundColor).Width(width).PaddingTop(1).PaddingBottom(1).MarginTop(1).MarginBottom(1)
+}
+
+func summaryTitleStyle(width int) lipgloss.Style {
+	return lipgloss.NewStyle().Align(lipgloss.Left).Width(width - 40).Bold(true).Foreground(summaryTitleColor)
+}
+
+func inactiveTitleStyle() lipgloss.Style {
+	return taskFileTitleStyle.Copy().Foreground(inactiveFileColor)
+}
+
+func completedTitleStyle() lipgloss.Style {
+	return taskFileTitleStyle.Copy().Foreground(completedFileColor)
+}
+
+func renderedActiveListStyle() lipgloss.Style {
+	return lipgloss.NewStyle().MarginTop(1).MarginBottom(2)
+}
+
+func renderedInactiveListStyle() lipgloss.Style {
+	return lipgloss.NewStyle().MarginTop(1).MarginBottom(3)
+}
+
+func renderedCompletedListStyle() lipgloss.Style {
+	return lipgloss.NewStyle().MarginTop(1).MarginBottom(1)
 }

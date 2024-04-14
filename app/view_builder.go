@@ -43,6 +43,7 @@ func buildTaskTitleView(m *Model, category string, width int, date string) strin
 func buildTaskTitle(m *Model, category string, date string, titleStyle lipgloss.Style) string {
 	taskTitle := category[0 : len(category)-len(".md")]
 	taskTitle += " (" + fmt.Sprintf("%d", incompleteTaskCount(m, category, date)) + " tasks remaining)"
+
 	return titleStyle.Render(taskTitle)
 }
 
@@ -51,11 +52,9 @@ func incompleteTaskCount(m *Model, category string, date string) int {
 }
 
 func buildRightAlignedProgressText(m *Model, category string, titleStyle lipgloss.Style) string {
-	progressTextStyle := titleStyle
-
 	progressText := buildProgressText(m, category)
 
-	return progressTextStyle.Copy().Width(35).Align(lipgloss.Right).Render(progressText)
+	return progressTextStyle(titleStyle).Render(progressText)
 }
 
 func buildTaskView(m *Model, task Task, date string, tasksView string) string {
@@ -84,31 +83,26 @@ func BuildTasksForFileView(m *Model, tasks []Task, date string, cursor int) stri
 }
 
 func buildTaskForFileView(m *Model, task Task, date string, view string, cursor int, index int) string {
-	background := "#474747"
-	offset := 15
+	width := m.ViewManager.DetailsViewWidth - 15
 
 	if task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) {
 		return ""
 	}
 
-	taskStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.DetailsViewWidth - offset)
-	datesContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.DetailsViewWidth - offset)
-	dateStyle := lipgloss.NewStyle().Background(lipgloss.Color(background)).Foreground(lipgloss.Color("#9A9CCD")).PaddingRight(2)
-
 	tasksString := TaskView{
 		task:   task,
 		date:   date,
 		weekly: true,
-		width:  m.ViewManager.DetailsViewWidth - offset,
+		width:  width,
 	}.RenderedText()
 
-	tasksString = taskStyle.Render(tasksString)
+	tasksString = taskStyle(width).Render(tasksString)
 
 	if index == cursor {
-		datesString := dateStyle.Render(task.HumanizedString())
+		datesString := dateStyle().Render(task.HumanizedString())
 
-		tasksString = joinVertical(tasksString, "\n", datesContainerStyle.Render(datesString))
-		tasksString = lipgloss.NewStyle().Background(lipgloss.Color(background)).Width(m.ViewManager.DetailsViewWidth - offset).PaddingTop(1).PaddingBottom(1).MarginTop(1).MarginBottom(1).Render(tasksString)
+		tasksString = joinVertical(tasksString, "\n", datesContainerStyle(width).Render(datesString))
+		tasksString = tasksStringStyle(width).Render(tasksString)
 	}
 
 	view = joinVertical(view, tasksString)
@@ -125,12 +119,12 @@ func buildTaskFilesView(m *Model, line string, index int, file FileInfo, style l
 
 	if total > 0 && completed == total {
 		if index != m.FileManager.FilesCursor {
-			style = style.Copy().Foreground(lipgloss.Color("#4DA165"))
+			style = completedFileStyle
 		}
 		completedList = joinVertical(completedList, style.Render(line))
 	} else if isInactive {
 		if index != m.FileManager.FilesCursor {
-			style = style.Copy().Foreground(lipgloss.Color("#A0A0A0"))
+			style = inactiveFileStyle
 		}
 		inactiveList = joinVertical(inactiveList, style.Render(line))
 	} else {
@@ -139,14 +133,13 @@ func buildTaskFilesView(m *Model, line string, index int, file FileInfo, style l
 		activeList = joinVertical(activeList, style.Render(line))
 	}
 
-	titleStyle := lipgloss.NewStyle().Bold(true).Underline(true)
-	activeTitle := titleStyle.Render("Active")
-	inactiveTitle := titleStyle.Foreground(lipgloss.Color("#A0A0A0")).Render("Inactive")
-	completeTitle := titleStyle.Foreground(lipgloss.Color("#4DA165")).Render("Complete")
+	activeTitle := taskFileTitleStyle.Render("Active")
+	inactiveTitle := inactiveTitleStyle().Render("Inactive")
+	completeTitle := completedTitleStyle().Render("Complete")
 
-	renderedActiveList := lipgloss.NewStyle().MarginTop(1).MarginBottom(2).Render(activeList)
-	renderedInactiveList := lipgloss.NewStyle().MarginTop(1).MarginBottom(3).Render(inactiveList)
-	renderedCompletedList := lipgloss.NewStyle().MarginTop(1).MarginBottom(1).Render(completedList)
+	renderedActiveList := renderedActiveListStyle().Render(activeList)
+	renderedInactiveList := renderedInactiveListStyle().Render(inactiveList)
+	renderedCompletedList := renderedCompletedListStyle().Render(completedList)
 
 	return joinVertical(activeTitle, renderedActiveList, inactiveTitle, renderedInactiveList, completeTitle, renderedCompletedList), activeList, completedList, inactiveList
 }
@@ -172,13 +165,8 @@ func buildProgressText(m *Model, category string) string {
 	completedTasksCount, totalTasksCount := m.TaskManager.TaskCollection.Progress(category)
 	percentage := float64(completedTasksCount) / float64(totalTasksCount)
 	roundedUpPercentage := int(percentage*10) * 10
+
 	return progressBar(completedTasksCount, totalTasksCount) + " " + fmt.Sprintf("%d%%", roundedUpPercentage)
-}
-
-func summaryTitleStyle(width int) lipgloss.Style {
-	summaryStyle := lipgloss.NewStyle().Align(lipgloss.Left).Width(width - 40).Bold(true).Foreground(lipgloss.Color("#9A9CCD"))
-
-	return summaryStyle
 }
 
 func BuildFilesView(m *Model) (string, string) {
@@ -193,8 +181,8 @@ func BuildFilesView(m *Model) (string, string) {
 		style := lipgloss.NewStyle()
 
 		if index == m.FileManager.FilesCursor {
-			style = style.Bold(true).Foreground(lipgloss.Color("#CB48B7"))
-			itemDetails = file.FileNameWithoutExtension() + "\n" + file.Content
+			style = style.Bold(true).Foreground(highlightedTextColor)
+			itemDetails = file.Content
 			m.FileManager.SelectedFile = file
 		}
 
@@ -214,10 +202,5 @@ func BuildFilesView(m *Model) (string, string) {
 		itemDetails = m.Viewport.View()
 	}
 
-	return list, itemDetails
-}
-
-func buildFileListAndItemDetails(m *Model) (string, string) {
-	list, itemDetails := BuildFilesView(m)
 	return list, itemDetails
 }
