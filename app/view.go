@@ -213,18 +213,17 @@ func sidebarStyle(width, height int) lipgloss.Style {
 }
 
 func renderMarkdown(content string) string {
-	background := "light"
+	out, err := glamour.NewTermRenderer(
+		glamour.WithAutoStyle(),
+		glamour.WithWordWrap(120),
+	)
 
-	if lipgloss.HasDarkBackground() {
-		background = "dark"
-	}
-
-	out, err := glamour.Render(content, background)
+	markdown, err := out.Render(content)
 	if err != nil {
 		return ""
 	}
 
-	return out
+	return markdown
 }
 
 func viewSort(filenames []string, tasksByFile *map[string][]Task, m *Model) {
