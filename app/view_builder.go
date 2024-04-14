@@ -8,6 +8,7 @@ import (
 
 func BuildSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, width int, date string) string {
 	view := ""
+
 	for _, key := range keys {
 		category := key
 		tasks := tasksByFile[key]
@@ -66,6 +67,9 @@ func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
 		line := file.FileNameWithoutExtension()
 
 		if m.DirectoryManager.SelectedCategory == "tasks" {
+			if index > 9 {
+				break
+			}
 			list, activeList, completedList, inactiveList = buildTaskFilesView(m, line, index, file, style, activeList, completedList, inactiveList)
 		} else {
 			list = joinVertical(list, style.Render(line))

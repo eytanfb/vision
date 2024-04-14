@@ -172,11 +172,15 @@ func renderFiles(m *Model) string {
 	}
 
 	listContainerStyle := listContainerStyle(m.ViewManager.SidebarWidth, m.ViewManager.SidebarHeight, m.IsItemDetailsFocus())
+	listContainer := ""
 
 	list, itemDetails := BuildFilesView(m, m.ViewManager.HideSidebar)
-	listContainer := listContainerStyle.Render(list)
 
 	itemDetailsContainer := filesItemDetailsContainerStyle(m.ViewManager.DetailsViewWidth).Render(itemDetails)
+
+	if list != "" {
+		listContainer = listContainerStyle.Render(list)
+	}
 
 	container := joinHorizontal(listContainer, itemDetailsContainer)
 
