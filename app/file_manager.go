@@ -41,7 +41,6 @@ func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileI
 	for _, file := range files {
 		filenames = append(filenames, file.Name)
 	}
-	log.Info("Files: \n" + strings.Join(filenames, "\n"))
 
 	if categoryPath == "standups" {
 		lastStandup := files[0] // The first one is the most recent
@@ -223,8 +222,6 @@ func activeCmp(filenames []string, tm *TaskManager) {
 		iFilename := filenames[i]
 		jFilename := filenames[j]
 
-		log.Info("Comparing " + iFilename + " with " + jFilename)
-
 		iCompleted := tm.TaskCollection.IsCompleted(iFilename)
 		jCompleted := tm.TaskCollection.IsCompleted(jFilename)
 
@@ -232,22 +229,18 @@ func activeCmp(filenames []string, tm *TaskManager) {
 		jInactive := tm.TaskCollection.IsInactive(jFilename)
 
 		if iCompleted {
-			log.Info(iFilename + " is completed returning false")
 			return false
 		}
 
 		if jCompleted {
-			log.Info(jFilename + " is completed returning true")
 			return true
 		}
 
 		if iInactive {
-			log.Info(iFilename + " is inactive returning false")
 			return false
 		}
 
 		if jInactive {
-			log.Info(jFilename + " is inactive returning true")
 			return true
 		}
 

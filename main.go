@@ -10,6 +10,7 @@ import (
 )
 
 func main() {
+	log.Info("Starting Vision")
 	homeDirectory, _ := os.UserHomeDir()
 	configPath := homeDirectory + "/Code/vision/config/config.json"
 

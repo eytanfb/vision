@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/log"
 )
 
 var (
@@ -23,6 +24,7 @@ func (m *Model) View() string {
 
 func ViewHandler(m *Model) string {
 	content := "Something is wrong"
+	log.Info("ViewHandler is called")
 
 	if m.IsCategoryView() {
 		content = RenderList(m, m.CategoryNames(), "category")
@@ -345,6 +347,7 @@ func buildFilesView(m *Model) (string, string) {
 		itemDetails = m.NewTaskInput.View()
 	} else {
 		markdown := renderMarkdown(itemDetails)
+		log.Info("Viewport widthxheight %d x %d", m.Viewport.Width, m.Viewport.Height)
 		m.Viewport.SetContent(markdown)
 		itemDetails = m.Viewport.View()
 	}
