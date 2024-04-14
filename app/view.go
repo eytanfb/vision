@@ -15,19 +15,19 @@ func ViewHandler(m *Model) string {
 	content := "Something is wrong"
 
 	if m.IsCategoryView() {
-		content = RenderList(m, m.CategoryNames(), "category")
+		content = renderList(m, m.CategoryNames())
 	} else if m.IsDetailsView() {
 		if m.IsTaskDetailsFocus() {
-			content = RenderTasks(m)
+			content = renderTasks(m)
 		} else {
-			content = RenderFiles(m)
+			content = renderFiles(m)
 		}
 	}
 
-	return joinVertical(RenderNavBar(m), content, RenderErrors(m))
+	return joinVertical(renderNavbar(m), content, renderErrors(m))
 }
 
-func RenderErrors(m *Model) string {
+func renderErrors(m *Model) string {
 	var errors strings.Builder
 	for _, err := range m.Errors {
 		errors.WriteString(err + "\n")
@@ -36,11 +36,7 @@ func RenderErrors(m *Model) string {
 	return errors.String()
 }
 
-func RenderAddTask(m *Model) string {
-	return addTaskContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight).Render(m.NewTaskInput.View())
-}
-
-func RenderCompanies(m *Model, companies []string) string {
+func renderCompanies(m *Model, companies []string) string {
 	result := ""
 
 	for index, company := range companies {
@@ -54,7 +50,7 @@ func RenderCompanies(m *Model, companies []string) string {
 	return companiesContainerStyle(m.ViewManager.Width).Render(result)
 }
 
-func RenderList(m *Model, items []string, title string) string {
+func renderList(m *Model, items []string) string {
 	list := ""
 
 	cursor := m.GetCurrentCursor()
@@ -63,36 +59,58 @@ func RenderList(m *Model, items []string, title string) string {
 		list = joinVertical(list, createListItem(item, index, cursor))
 	}
 
-	view := sidebarStyle(m.ViewManager.SidebarWidth, m.ViewManager.SidebarHeight).Render(joinVertical(list))
+	sidebar := sidebarStyle(m.ViewManager.SidebarWidth, m.ViewManager.SidebarHeight).Render(joinVertical(list))
 
-	summaryView := buildSummaryView(m)
+	summaryView := buildSummaryView(m, m.ViewManager.HideSidebar)
 
 	m.Viewport.SetContent(summaryView)
 
 	summary := summaryContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.SummaryViewHeight).Render(m.Viewport.View())
 
 	if m.ViewManager.HideSidebar {
-		view = ""
+		sidebar = ""
 	}
 
-	return joinHorizontal(view, summary)
+	return joinHorizontal(sidebar, summary)
 }
 
-func buildSummaryView(m *Model) string {
+func buildSummaryView(m *Model, hiddenSidebar bool) string {
 	summaryView := ""
+	period := "daily"
 
 	if m.IsAddTaskView() {
 		summaryView = m.NewTaskInput.View()
-	} else if m.ViewManager.IsWeeklyView {
-		summaryView = TaskSummaryToView(m, "weekly")
 	} else {
-		summaryView = TaskSummaryToView(m, "daily")
+		if m.ViewManager.IsWeeklyView {
+			period = "weekly"
+		}
+
+		if hiddenSidebar {
+			summaryView = kanbanSummaryView(m, period)
+		} else {
+			summaryView = taskSummaryToView(m, period)
+		}
 	}
 
 	return summaryView
 }
 
-func TaskSummaryToView(m *Model, period string) string {
+func kanbanSummaryView(m *Model, period string) string {
+	tasksByFile, summaryDate := setDailySummaryValues(m)
+
+	if period == "weekly" {
+		tasksByFile, summaryDate = setWeeklySummaryValues(m)
+	}
+
+	keys := sortTaskKeys(tasksByFile)
+	viewSort(keys, m)
+
+	view := BuildKanbanSummaryView(m, keys, tasksByFile, m.ViewManager.DetailsViewWidth, summaryDate)
+
+	return view
+}
+
+func taskSummaryToView(m *Model, period string) string {
 	tasksByFile, summaryDate := setDailySummaryValues(m)
 
 	if period == "weekly" {
@@ -148,28 +166,24 @@ func sortTaskKeys(tasksByFile map[string][]Task) []string {
 	return keys
 }
 
-func RenderFiles(m *Model) string {
+func renderFiles(m *Model) string {
 	if !m.HasFiles() {
 		return "No files found"
 	}
 
 	listContainerStyle := listContainerStyle(m.ViewManager.SidebarWidth, m.ViewManager.SidebarHeight, m.IsItemDetailsFocus())
 
-	list, itemDetails := BuildFilesView(m)
+	list, itemDetails := BuildFilesView(m, m.ViewManager.HideSidebar)
 	listContainer := listContainerStyle.Render(list)
 
 	itemDetailsContainer := filesItemDetailsContainerStyle(m.ViewManager.DetailsViewWidth).Render(itemDetails)
-
-	if m.ViewManager.HideSidebar {
-		listContainer = ""
-	}
 
 	container := joinHorizontal(listContainer, itemDetailsContainer)
 
 	return joinVertical(container)
 }
 
-func RenderNavBar(m *Model) string {
+func renderNavbar(m *Model) string {
 	companyColor := m.DirectoryManager.SelectedCompany.Color
 	textStyle := navbarTextStyle(companyColor)
 	container := navbarContainerStyle(m.ViewManager.NavbarWidth)
@@ -185,7 +199,7 @@ func RenderNavBar(m *Model) string {
 	navbarView := joinVertical(style.Render(navbar))
 
 	if m.ViewManager.ShowCompanies {
-		navbarView = joinHorizontal(navbar, RenderCompanies(m, m.CategoryNames()))
+		navbarView = joinHorizontal(navbar, renderCompanies(m, m.CategoryNames()))
 	}
 
 	view := container.Render(navbarView)
@@ -193,7 +207,7 @@ func RenderNavBar(m *Model) string {
 	return view
 }
 
-func RenderTasks(m *Model) string {
+func renderTasks(m *Model) string {
 	if m.ViewManager.IsAddTaskView {
 		addTaskView := m.NewTaskInput.View()
 

@@ -11,10 +11,80 @@ func BuildSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, wi
 	for _, key := range keys {
 		category := key
 		tasks := tasksByFile[key]
+
 		view = buildTaskFileView(m, category, width, date, view, tasks)
 	}
 
 	return view
+}
+
+func BuildKanbanSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, width int, date string) string {
+	view := ""
+
+	for _, key := range keys {
+		category := key
+		tasks := tasksByFile[key]
+
+		view = buildTaskFileView(m, category, width, date, view, tasks)
+	}
+
+	return view
+}
+
+func kanbanListView(tasks []Task, date string, boardNumber int) string {
+	view := ""
+
+	return view
+}
+
+func BuildTasksForFileView(m *Model, tasks []Task, date string, cursor int) string {
+	view := ""
+
+	for index, task := range tasks {
+		view = buildTaskForFileView(m, task, date, view, cursor, index)
+	}
+
+	return view
+}
+
+func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
+	list := ""
+	itemDetails := ""
+	completedList := ""
+	activeList := ""
+	inactiveList := ""
+
+	for index, file := range m.FileManager.Files {
+		style := defaultTextStyle
+
+		if index == m.FileManager.FilesCursor {
+			style = highlightedTextStyle
+			itemDetails = file.Content
+			m.FileManager.SelectedFile = file
+		}
+
+		line := file.FileNameWithoutExtension()
+
+		if m.DirectoryManager.SelectedCategory == "tasks" {
+			list, activeList, completedList, inactiveList = buildTaskFilesView(m, line, index, file, style, activeList, completedList, inactiveList)
+		} else {
+			list = joinVertical(list, style.Render(line))
+		}
+	}
+
+	if hiddenSidebar {
+		list = ""
+	}
+
+	if m.IsAddTaskView() {
+		itemDetails = m.NewTaskInput.View()
+	} else {
+		markdown := renderMarkdown(itemDetails)
+		m.Viewport.SetContent(markdown)
+		itemDetails = m.Viewport.View()
+	}
+
+	return list, itemDetails
 }
 
 func buildTaskFileView(m *Model, category string, width int, date string, view string, tasks []Task) string {
@@ -70,16 +140,6 @@ func buildTaskView(m *Model, task Task, date string, tasksView string) string {
 	}.RenderedText()
 
 	return joinVertical(tasksView, tasksString)
-}
-
-func BuildTasksForFileView(m *Model, tasks []Task, date string, cursor int) string {
-	view := ""
-
-	for index, task := range tasks {
-		view = buildTaskForFileView(m, task, date, view, cursor, index)
-	}
-
-	return view
 }
 
 func buildTaskForFileView(m *Model, task Task, date string, view string, cursor int, index int) string {
@@ -164,40 +224,4 @@ func buildProgressText(m *Model, category string) string {
 	roundedUpPercentage := int(percentage*10) * 10
 
 	return progressBar(completedTasksCount, totalTasksCount) + " " + fmt.Sprintf("%d%%", roundedUpPercentage)
-}
-
-func BuildFilesView(m *Model) (string, string) {
-	list := ""
-	itemDetails := ""
-	completedList := ""
-	activeList := ""
-	inactiveList := ""
-
-	for index, file := range m.FileManager.Files {
-		style := defaultTextStyle
-
-		if index == m.FileManager.FilesCursor {
-			style = highlightedTextStyle
-			itemDetails = file.Content
-			m.FileManager.SelectedFile = file
-		}
-
-		line := file.FileNameWithoutExtension()
-
-		if m.DirectoryManager.SelectedCategory == "tasks" {
-			list, activeList, completedList, inactiveList = buildTaskFilesView(m, line, index, file, style, activeList, completedList, inactiveList)
-		} else {
-			list = joinVertical(list, style.Render(line))
-		}
-	}
-
-	if m.IsAddTaskView() {
-		itemDetails = m.NewTaskInput.View()
-	} else {
-		markdown := renderMarkdown(itemDetails)
-		m.Viewport.SetContent(markdown)
-		itemDetails = m.Viewport.View()
-	}
-
-	return list, itemDetails
 }
