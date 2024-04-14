@@ -28,14 +28,13 @@ func (tv TaskView) RenderedText() string {
 	statusText := tv.statusText(status)
 
 	renderedText := textStyle.Render(text)
-	renderedStatusText := lipgloss.NewStyle().Width(15).Align(lipgloss.Right).Render(statusText)
+	renderedStatusText := renderedStatusTextStyle.Render(statusText)
 
 	return joinHorizontal(icon, renderedText, renderedStatusText)
 }
 
 func (tv TaskView) statusIcon(status status) string {
 	icon := ""
-	iconStyle := lipgloss.NewStyle().MarginRight(1)
 
 	if status == completed {
 		icon = "✅"

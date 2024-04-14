@@ -112,10 +112,7 @@ func buildTaskForFileView(m *Model, task Task, date string, view string, cursor 
 
 func buildTaskFilesView(m *Model, line string, index int, file FileInfo, style lipgloss.Style, activeList string, completedList string, inactiveList string) (string, string, string, string) {
 	isInactive := m.TaskManager.TaskCollection.IsInactive(file.Name)
-
 	completed, total := m.TaskManager.TaskCollection.Progress(file.Name)
-	text := fmt.Sprintf("%d/%d", completed, total)
-	var completedText string
 
 	if total > 0 && completed == total {
 		if index != m.FileManager.FilesCursor {
@@ -128,8 +125,8 @@ func buildTaskFilesView(m *Model, line string, index int, file FileInfo, style l
 		}
 		inactiveList = joinVertical(inactiveList, style.Render(line))
 	} else {
-		completedText = lipgloss.NewStyle().Render(text)
-		line = "[" + completedText + "] " + line
+		text := fmt.Sprintf("%d/%d", completed, total)
+		line = "[" + text + "] " + line
 		activeList = joinVertical(activeList, style.Render(line))
 	}
 
@@ -177,16 +174,16 @@ func BuildFilesView(m *Model) (string, string) {
 	inactiveList := ""
 
 	for index, file := range m.FileManager.Files {
-		line := ""
-		style := lipgloss.NewStyle()
+		style := defaultTextStyle
 
 		if index == m.FileManager.FilesCursor {
-			style = style.Bold(true).Foreground(highlightedTextColor)
+			style = highlightedTextStyle
 			itemDetails = file.Content
 			m.FileManager.SelectedFile = file
 		}
 
-		line += file.FileNameWithoutExtension()
+		line := file.FileNameWithoutExtension()
+
 		if m.DirectoryManager.SelectedCategory == "tasks" {
 			list, activeList, completedList, inactiveList = buildTaskFilesView(m, line, index, file, style, activeList, completedList, inactiveList)
 		} else {

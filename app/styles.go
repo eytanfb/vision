@@ -17,15 +17,19 @@ var (
 )
 
 var (
-	companyTextStyle     = lipgloss.NewStyle().MarginLeft(2).MarginRight(2)
-	selectedCompanyStyle = lipgloss.NewStyle().MarginLeft(2).MarginRight(2).Foreground(completedColor).Bold(true)
-	scheduledTextStyle   = lipgloss.NewStyle().Foreground(scheduledColor)
-	startedTextStyle     = lipgloss.NewStyle().Foreground(startedColor)
-	completedTextStyle   = lipgloss.NewStyle().Foreground(completedColor)
-	overdueTextStyle     = lipgloss.NewStyle().Foreground(overdueColor)
-	taskFileTitleStyle   = lipgloss.NewStyle().Foreground(white).Bold(true).Underline(true)
-	completedFileStyle   = lipgloss.NewStyle().Foreground(completedFileColor)
-	inactiveFileStyle    = lipgloss.NewStyle().Foreground(inactiveFileColor)
+	defaultTextStyle        = lipgloss.NewStyle().Foreground(white)
+	companyTextStyle        = lipgloss.NewStyle().MarginLeft(2).MarginRight(2)
+	selectedCompanyStyle    = lipgloss.NewStyle().MarginLeft(2).MarginRight(2).Foreground(completedColor).Bold(true)
+	scheduledTextStyle      = lipgloss.NewStyle().Foreground(scheduledColor)
+	startedTextStyle        = lipgloss.NewStyle().Foreground(startedColor)
+	completedTextStyle      = lipgloss.NewStyle().Foreground(completedColor)
+	overdueTextStyle        = lipgloss.NewStyle().Foreground(overdueColor)
+	taskFileTitleStyle      = lipgloss.NewStyle().Foreground(white).Bold(true).Underline(true)
+	completedFileStyle      = lipgloss.NewStyle().Foreground(completedFileColor)
+	inactiveFileStyle       = lipgloss.NewStyle().Foreground(inactiveFileColor)
+	highlightedTextStyle    = lipgloss.NewStyle().Foreground(highlightedTextColor).Bold(true)
+	renderedStatusTextStyle = lipgloss.NewStyle().Width(15).Align(lipgloss.Right)
+	iconStyle               = lipgloss.NewStyle().MarginRight(1)
 )
 
 func navbarTextStyle(color string) lipgloss.Style {
@@ -140,4 +144,8 @@ func renderedInactiveListStyle() lipgloss.Style {
 
 func renderedCompletedListStyle() lipgloss.Style {
 	return lipgloss.NewStyle().MarginTop(1).MarginBottom(1)
+}
+
+func taskItemDetailsContainerStyle(width, height int) lipgloss.Style {
+	return lipgloss.NewStyle().Width(width).Height(height).MarginLeft(2).Border(lipgloss.NormalBorder())
 }

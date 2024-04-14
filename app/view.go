@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/glamour"
-	"github.com/charmbracelet/lipgloss"
 )
 
 func (m *Model) View() string {
@@ -165,7 +164,7 @@ func RenderFiles(m *Model) string {
 		listContainer = ""
 	}
 
-	container := lipgloss.NewStyle().Render(joinHorizontal(listContainer, itemDetailsContainer))
+	container := joinHorizontal(listContainer, itemDetailsContainer)
 
 	return joinVertical(container)
 }
@@ -195,8 +194,6 @@ func RenderNavBar(m *Model) string {
 }
 
 func RenderTasks(m *Model) string {
-	itemDetailsContainerStyle := lipgloss.NewStyle().Width(m.ViewManager.DetailsViewWidth).Height(m.ViewManager.DetailsViewHeight).MarginLeft(2).Border(lipgloss.NormalBorder())
-
 	if m.ViewManager.IsAddTaskView {
 		addTaskView := m.NewTaskInput.View()
 
@@ -211,7 +208,9 @@ func RenderTasks(m *Model) string {
 
 	tasksView := BuildTasksForFileView(m, tasks, date, m.TaskManager.TasksCursor)
 
-	return joinVertical(itemDetailsContainerStyle.Render(tasksView))
+	renderedTasksView := taskItemDetailsContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight).Render(tasksView)
+
+	return joinVertical(renderedTasksView)
 }
 
 func renderMarkdown(content string) string {
@@ -267,10 +266,10 @@ func viewSort(filenames []string, m *Model) {
 
 func createListItem(item string, index int, cursor int) string {
 	line := ""
-	style := lipgloss.NewStyle()
+	style := defaultTextStyle
 
 	if index == cursor {
-		style = style.Bold(true).Foreground(lipgloss.Color("#CB48B7"))
+		style = highlightedTextStyle
 	}
 
 	line += item + "\n"
