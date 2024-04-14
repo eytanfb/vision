@@ -6,16 +6,6 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/log"
-)
-
-var (
-	companyTextStyle     = lipgloss.NewStyle().MarginLeft(2).MarginRight(2)
-	selectedCompanyStyle = lipgloss.NewStyle().MarginLeft(2).MarginRight(2).Foreground(lipgloss.Color("#4CD137")).Bold(true)
-	scheduledTextStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#F2D0A4"))
-	startedTextStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#0AAFC7"))
-	completedTextStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#4CD137"))
-	overdueTextStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#EC4E20"))
 )
 
 func (m *Model) View() string {
@@ -24,7 +14,6 @@ func (m *Model) View() string {
 
 func ViewHandler(m *Model) string {
 	content := "Something is wrong"
-	log.Info("ViewHandler is called")
 
 	if m.IsCategoryView() {
 		content = RenderList(m, m.CategoryNames(), "category")
@@ -63,7 +52,7 @@ func RenderCompanies(m *Model, companies []string) string {
 		}
 	}
 
-	return companiesContainerStyle(m.ViewManager.Width - 5).Render(result)
+	return companiesContainerStyle(m.ViewManager.Width).Render(result)
 }
 
 func RenderList(m *Model, items []string, title string) string {
@@ -170,7 +159,8 @@ func RenderFiles(m *Model) string {
 	list, itemDetails := BuildFilesView(m)
 	listContainer := listContainerStyle.Render(list)
 
-	itemDetailsContainer := lipgloss.NewStyle().Width(m.ViewManager.DetailsViewWidth).MarginLeft(2).Border(lipgloss.NormalBorder()).Render(itemDetails)
+	itemDetailsContainer := filesItemDetailsContainerStyle(m.ViewManager.DetailsViewWidth).Render(itemDetails)
+
 	if m.ViewManager.HideSidebar {
 		listContainer = ""
 	}
@@ -182,9 +172,9 @@ func RenderFiles(m *Model) string {
 
 func RenderNavBar(m *Model) string {
 	companyColor := m.DirectoryManager.SelectedCompany.Color
-	textStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(companyColor))
-	container := lipgloss.NewStyle().Width(m.ViewManager.NavbarWidth).Padding(1).Border(lipgloss.NormalBorder())
-	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Width(m.ViewManager.NavbarWidth).Align(lipgloss.Center)
+	textStyle := navbarTextStyle(companyColor)
+	container := navbarContainerStyle(m.ViewManager.NavbarWidth)
+	style := navbarStyle(m.ViewManager.NavbarWidth)
 	navbar := textStyle.Render("Vision")
 
 	if m.IsCategoryView() {
@@ -193,10 +183,10 @@ func RenderNavBar(m *Model) string {
 		navbar = textStyle.Render(m.GetCurrentCompanyName() + " > " + m.DirectoryManager.SelectedCategory + " > " + m.FileManager.SelectedFile.Name)
 	}
 
-	navbarView := lipgloss.JoinVertical(lipgloss.Top, style.Render(navbar))
+	navbarView := joinVertical(style.Render(navbar))
 
 	if m.ViewManager.ShowCompanies {
-		navbarView = lipgloss.JoinHorizontal(lipgloss.Left, navbar, RenderCompanies(m, m.CategoryNames()))
+		navbarView = joinHorizontal(navbar, RenderCompanies(m, m.CategoryNames()))
 	}
 
 	view := container.Render(navbarView)
@@ -222,10 +212,6 @@ func RenderTasks(m *Model) string {
 	tasksView := BuildTasksForFileView(m, tasks, date, m.TaskManager.TasksCursor)
 
 	return joinVertical(itemDetailsContainerStyle.Render(tasksView))
-}
-
-func sidebarStyle(width, height int) lipgloss.Style {
-	return lipgloss.NewStyle().Width(width).Height(height).Padding(1).Border(lipgloss.NormalBorder())
 }
 
 func renderMarkdown(content string) string {
@@ -290,54 +276,4 @@ func createListItem(item string, index int, cursor int) string {
 	line += item + "\n"
 
 	return style.Render(line)
-}
-
-func joinVertical(items ...string) string {
-	return lipgloss.JoinVertical(lipgloss.Top, items...)
-}
-
-func joinHorizontal(items ...string) string {
-	return lipgloss.JoinHorizontal(lipgloss.Left, items...)
-}
-
-func itemDetailsContainerStyle(width, height int, isItemDetailsFocus bool) lipgloss.Style {
-	style := contentContainerStyle(width, height)
-	if isItemDetailsFocus {
-		style = style.Copy().BorderForeground(lipgloss.Color("63"))
-	}
-	return style
-}
-
-func addTaskContainerStyle(width, height int) lipgloss.Style {
-	return contentContainerStyle(width, height)
-}
-
-func summaryContainerStyle(width, height int) lipgloss.Style {
-	return contentContainerStyle(width, height)
-}
-
-func contentContainerStyle(width, height int) lipgloss.Style {
-	return lipgloss.NewStyle().Width(width).Height(height).Border(lipgloss.NormalBorder()).MarginLeft(2)
-}
-
-func taskSummaryContainerStyle(width, height int) lipgloss.Style {
-	return lipgloss.NewStyle().Width(width).Height(height).Padding(1)
-}
-
-func taskTitleContainer(width int) lipgloss.Style {
-	return lipgloss.NewStyle().Width(width).Height(1).MarginTop(1)
-}
-
-func companiesContainerStyle(width int) lipgloss.Style {
-	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Width(width).Align(lipgloss.Center)
-	return style
-}
-
-func listContainerStyle(width int, height int, isItemDetailsFocus bool) lipgloss.Style {
-	style := sidebarStyle(width, height)
-	if !isItemDetailsFocus {
-		style = style.Copy().BorderForeground(lipgloss.Color("63"))
-	}
-
-	return style
 }
