@@ -96,30 +96,41 @@ func RenderList(m *Model, items []string, title string) string {
 }
 
 func TaskSummaryToView(m *Model, period string) string {
-	tasksByFile := m.TaskManager.Summary(m.GetCurrentCompanyName())
-	summaryDate := m.TaskManager.DailySummaryDate
+	tasksByFile, summaryDate := setDailySummaryValues(m)
 
 	if period == "weekly" {
-		startDate := m.TaskManager.WeeklySummaryStartDate
-		endDate := m.TaskManager.WeeklySummaryEndDate
-		tasksByFile = m.TaskManager.WeeklySummary(m.GetCurrentCompanyName(), startDate, endDate)
-		summaryDate = m.TaskManager.WeeklySummaryEndDate
+		tasksByFile, summaryDate = setWeeklySummaryValues(m)
 	}
 
 	keys := sortTaskKeys(tasksByFile)
-	viewSort(keys, &tasksByFile, m)
+	viewSort(keys, m)
 
-	width := m.ViewManager.DetailsViewWidth
 	height := m.ViewManager.SummaryViewHeight
 	containerTitleHeight := 2
 	viewHeight := height - containerTitleHeight
 
-	view := BuildSummaryView(m, keys, tasksByFile, width, summaryDate)
+	view := BuildSummaryView(m, keys, tasksByFile, m.ViewManager.DetailsViewWidth, summaryDate)
 
-	containerTitle := taskSummaryContainerStyle(width, containerTitleHeight).Height(2).Render(summaryTitle(m, period))
-	renderedView := taskSummaryContainerStyle(width, viewHeight).Render(view)
+	containerTitle := taskSummaryContainerStyle(m.ViewManager.DetailsViewWidth, containerTitleHeight).Height(2).Render(summaryTitle(m, period))
+	renderedView := taskSummaryContainerStyle(m.ViewManager.DetailsViewWidth, viewHeight).Render(view)
 
 	return joinVertical(containerTitle, renderedView)
+}
+
+func setDailySummaryValues(m *Model) (map[string][]Task, string) {
+	tasksByFile := m.TaskManager.Summary(m.GetCurrentCompanyName())
+	summaryDate := m.TaskManager.DailySummaryDate
+
+	return tasksByFile, summaryDate
+}
+
+func setWeeklySummaryValues(m *Model) (map[string][]Task, string) {
+	startDate := m.TaskManager.WeeklySummaryStartDate
+	endDate := m.TaskManager.WeeklySummaryEndDate
+	tasksByFile := m.TaskManager.WeeklySummary(m.GetCurrentCompanyName(), startDate, endDate)
+	summaryDate := m.TaskManager.WeeklySummaryEndDate
+
+	return tasksByFile, summaryDate
 }
 
 func summaryTitle(m *Model, period string) string {
@@ -147,7 +158,7 @@ func RenderFiles(m *Model) string {
 
 	listContainerStyle := listContainerStyle(m.ViewManager.SidebarWidth, m.ViewManager.SidebarHeight, m.IsItemDetailsFocus())
 
-	list, itemDetails := buildFilesView(m)
+	list, itemDetails := BuildFilesView(m)
 	listContainer := listContainerStyle.Render(list)
 
 	itemDetailsContainer := lipgloss.NewStyle().Width(m.ViewManager.DetailsViewWidth).MarginLeft(2).Border(lipgloss.NormalBorder()).Render(itemDetails)
@@ -226,7 +237,7 @@ func renderMarkdown(content string) string {
 	return markdown
 }
 
-func viewSort(filenames []string, tasksByFile *map[string][]Task, m *Model) {
+func viewSort(filenames []string, m *Model) {
 	sort.Slice(filenames, func(i, j int) bool {
 		iInactive := m.TaskManager.TaskCollection.IsInactive(filenames[i])
 		jInactive := m.TaskManager.TaskCollection.IsInactive(filenames[j])
@@ -315,43 +326,6 @@ func taskTitleContainer(width int) lipgloss.Style {
 func companiesContainerStyle(width int) lipgloss.Style {
 	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF")).Width(width).Align(lipgloss.Center)
 	return style
-}
-
-func buildFilesView(m *Model) (string, string) {
-	list := ""
-	itemDetails := ""
-	completedList := ""
-	activeList := ""
-	inactiveList := ""
-
-	for index, file := range m.FileManager.Files {
-		line := ""
-		style := lipgloss.NewStyle()
-
-		if index == m.FileManager.FilesCursor {
-			style = style.Bold(true).Foreground(lipgloss.Color("#CB48B7"))
-			itemDetails = file.FileNameWithoutExtension() + "\n" + file.Content
-			m.FileManager.SelectedFile = file
-		}
-
-		line += file.FileNameWithoutExtension()
-		if m.DirectoryManager.SelectedCategory == "tasks" {
-			list, activeList, completedList, inactiveList = BuildTaskFilesView(m, line, index, file, style, activeList, completedList, inactiveList)
-		} else {
-			list = joinVertical(list, style.Render(line))
-		}
-	}
-
-	if m.IsAddTaskView() {
-		itemDetails = m.NewTaskInput.View()
-	} else {
-		markdown := renderMarkdown(itemDetails)
-		log.Info("Viewport widthxheight %d x %d", m.Viewport.Width, m.Viewport.Height)
-		m.Viewport.SetContent(markdown)
-		itemDetails = m.Viewport.View()
-	}
-
-	return list, itemDetails
 }
 
 func listContainerStyle(width int, height int, isItemDetailsFocus bool) lipgloss.Style {

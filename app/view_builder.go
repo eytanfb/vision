@@ -116,7 +116,7 @@ func buildTaskForFileView(m *Model, task Task, date string, view string, cursor 
 	return view
 }
 
-func BuildTaskFilesView(m *Model, line string, index int, file FileInfo, style lipgloss.Style, activeList string, completedList string, inactiveList string) (string, string, string, string) {
+func buildTaskFilesView(m *Model, line string, index int, file FileInfo, style lipgloss.Style, activeList string, completedList string, inactiveList string) (string, string, string, string) {
 	isInactive := m.TaskManager.TaskCollection.IsInactive(file.Name)
 
 	completed, total := m.TaskManager.TaskCollection.Progress(file.Name)
@@ -179,4 +179,45 @@ func summaryTitleStyle(width int) lipgloss.Style {
 	summaryStyle := lipgloss.NewStyle().Align(lipgloss.Left).Width(width - 40).Bold(true).Foreground(lipgloss.Color("#9A9CCD"))
 
 	return summaryStyle
+}
+
+func BuildFilesView(m *Model) (string, string) {
+	list := ""
+	itemDetails := ""
+	completedList := ""
+	activeList := ""
+	inactiveList := ""
+
+	for index, file := range m.FileManager.Files {
+		line := ""
+		style := lipgloss.NewStyle()
+
+		if index == m.FileManager.FilesCursor {
+			style = style.Bold(true).Foreground(lipgloss.Color("#CB48B7"))
+			itemDetails = file.FileNameWithoutExtension() + "\n" + file.Content
+			m.FileManager.SelectedFile = file
+		}
+
+		line += file.FileNameWithoutExtension()
+		if m.DirectoryManager.SelectedCategory == "tasks" {
+			list, activeList, completedList, inactiveList = buildTaskFilesView(m, line, index, file, style, activeList, completedList, inactiveList)
+		} else {
+			list = joinVertical(list, style.Render(line))
+		}
+	}
+
+	if m.IsAddTaskView() {
+		itemDetails = m.NewTaskInput.View()
+	} else {
+		markdown := renderMarkdown(itemDetails)
+		m.Viewport.SetContent(markdown)
+		itemDetails = m.Viewport.View()
+	}
+
+	return list, itemDetails
+}
+
+func buildFileListAndItemDetails(m *Model) (string, string) {
+	list, itemDetails := BuildFilesView(m)
+	return list, itemDetails
 }
