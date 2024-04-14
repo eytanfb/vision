@@ -20,22 +20,48 @@ func BuildSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, wi
 }
 
 func BuildKanbanSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, width int, date string) string {
-	view := ""
+	activeList := ""
+	completedList := ""
+	inactiveList := ""
+
+	boardWidth := (m.ViewManager.DetailsViewWidth - 45) / 3
 
 	for _, key := range keys {
-		category := key
 		tasks := tasksByFile[key]
 
-		view = buildTaskFileView(m, category, width, date, view, tasks)
+		for _, task := range tasks {
+			if task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) {
+				continue
+			}
+
+			view := TaskView{
+				task:   task,
+				date:   date,
+				weekly: m.ViewManager.IsWeeklyView,
+				width:  width,
+			}.RenderedText()
+
+			if task.Completed {
+				completedList = joinVertical(completedList, kanbanTaskStyle(boardWidth).Render(view))
+			} else if task.Started {
+				activeList = joinVertical(activeList, kanbanTaskStyle(boardWidth).Render(view))
+			} else if task.Scheduled {
+				inactiveList = joinVertical(inactiveList, kanbanTaskStyle(boardWidth).Render(view))
+			}
+		}
 	}
 
-	return view
-}
+	boardContainerStyle := lipgloss.NewStyle().Width(boardWidth).Height(m.ViewManager.DetailsViewHeight - 2).Border(lipgloss.NormalBorder())
 
-func kanbanListView(tasks []Task, date string, boardNumber int) string {
-	view := ""
+	inactiveTitle := kanbanBoardTitleStyle(inactiveFileColor).Render("Inactive")
+	activeTitle := kanbanBoardTitleStyle(white).Render("Active")
+	completedTitle := kanbanBoardTitleStyle(completedFileColor).Render("Complete")
 
-	return view
+	activeBoard := boardContainerStyle.Render(joinVertical(activeTitle, activeList))
+	completedBoard := boardContainerStyle.Render(joinVertical(completedTitle, completedList))
+	inactiveBoard := boardContainerStyle.Render(joinVertical(inactiveTitle, inactiveList))
+
+	return joinHorizontal(inactiveBoard, activeBoard, completedBoard)
 }
 
 func BuildTasksForFileView(m *Model, tasks []Task, date string, cursor int) string {

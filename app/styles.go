@@ -110,6 +110,14 @@ func taskStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().MarginLeft(2).Width(width)
 }
 
+func kanbanTaskStyle(width int) lipgloss.Style {
+	return lipgloss.NewStyle().Width(width).MarginBottom(1)
+}
+
+func kanbanBoardTitleStyle(color lipgloss.Color) lipgloss.Style {
+	return lipgloss.NewStyle().Bold(true).Underline(true).Foreground(color)
+}
+
 func datesContainerStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().MarginLeft(2).Width(width)
 }
