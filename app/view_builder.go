@@ -7,75 +7,111 @@ import (
 )
 
 func BuildSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, width int, date string) string {
-	titleStyle := summaryTitleStyle(width)
-	progressTextStyle := titleStyle
-
 	view := ""
 	for _, key := range keys {
 		category := key
 		tasks := tasksByFile[key]
-		progressText := buildProgressText(m, category)
-		taskTitle := category[0 : len(category)-len(".md")]
-		tasksView := ""
-		incompleteTaskCount := len(m.TaskManager.TaskCollection.IncompleteTasks(category, date))
-
-		for _, task := range tasks {
-			if task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) {
-				continue
-			}
-
-			tasksString := TaskView{
-				task:   task,
-				date:   date,
-				weekly: m.ViewManager.IsWeeklyView,
-				width:  m.ViewManager.DetailsViewWidth - 25,
-			}.RenderedText()
-
-			tasksView = joinVertical(tasksView, tasksString)
-		}
-
-		rightAlignedProgressText := progressTextStyle.Copy().Width(35).Align(lipgloss.Right).Render(progressText)
-		taskTitle += " (" + fmt.Sprintf("%d", incompleteTaskCount) + " tasks remaining)"
-		taskTitleView := joinHorizontal(titleStyle.Render(taskTitle), rightAlignedProgressText)
-		tasksView = joinVertical(taskTitleContainer(width).Render(taskTitleView), tasksView)
-		view = joinVertical(view, tasksView)
+		view = buildTaskFileView(m, category, width, date, view, tasks)
 	}
 
 	return view
 }
 
+func buildTaskFileView(m *Model, category string, width int, date string, view string, tasks []Task) string {
+	tasksView := ""
+
+	for _, task := range tasks {
+		tasksView = buildTaskView(m, task, date, tasksView)
+	}
+
+	tasksView = joinVertical(buildTaskTitleView(m, category, width, date), tasksView)
+	view = joinVertical(view, tasksView)
+
+	return view
+}
+
+func buildTaskTitleView(m *Model, category string, width int, date string) string {
+	titleStyle := summaryTitleStyle(width)
+
+	taskTitle := joinHorizontal(buildTaskTitle(m, category, date, titleStyle), buildRightAlignedProgressText(m, category, titleStyle))
+
+	taskTitleView := taskTitleContainer(width).Render(taskTitle)
+
+	return taskTitleView
+}
+
+func buildTaskTitle(m *Model, category string, date string, titleStyle lipgloss.Style) string {
+	taskTitle := category[0 : len(category)-len(".md")]
+	taskTitle += " (" + fmt.Sprintf("%d", incompleteTaskCount(m, category, date)) + " tasks remaining)"
+	return titleStyle.Render(taskTitle)
+}
+
+func incompleteTaskCount(m *Model, category string, date string) int {
+	return len(m.TaskManager.TaskCollection.IncompleteTasks(category, date))
+}
+
+func buildRightAlignedProgressText(m *Model, category string, titleStyle lipgloss.Style) string {
+	progressTextStyle := titleStyle
+
+	progressText := buildProgressText(m, category)
+
+	return progressTextStyle.Copy().Width(35).Align(lipgloss.Right).Render(progressText)
+}
+
+func buildTaskView(m *Model, task Task, date string, tasksView string) string {
+	if task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) {
+		return ""
+	}
+
+	tasksString := TaskView{
+		task:   task,
+		date:   date,
+		weekly: m.ViewManager.IsWeeklyView,
+		width:  m.ViewManager.DetailsViewWidth - 25,
+	}.RenderedText()
+
+	return joinVertical(tasksView, tasksString)
+}
+
 func BuildTasksForFileView(m *Model, tasks []Task, date string, cursor int) string {
 	view := ""
+
+	for index, task := range tasks {
+		view = buildTaskForFileView(m, task, date, view, cursor, index)
+	}
+
+	return view
+}
+
+func buildTaskForFileView(m *Model, task Task, date string, view string, cursor int, index int) string {
 	background := "#474747"
 	offset := 15
 
-	for index, task := range tasks {
-		if task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) {
-			continue
-		}
-
-		taskStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.DetailsViewWidth - offset)
-		datesContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.DetailsViewWidth - offset)
-		dateStyle := lipgloss.NewStyle().Background(lipgloss.Color(background)).Foreground(lipgloss.Color("#9A9CCD")).PaddingRight(2)
-
-		tasksString := TaskView{
-			task:   task,
-			date:   date,
-			weekly: true,
-			width:  m.ViewManager.DetailsViewWidth - offset,
-		}.RenderedText()
-
-		tasksString = taskStyle.Render(tasksString)
-
-		if index == cursor {
-			datesString := dateStyle.Render(task.HumanizedString())
-
-			tasksString = joinVertical(tasksString, "\n", datesContainerStyle.Render(datesString))
-			tasksString = lipgloss.NewStyle().Background(lipgloss.Color(background)).Width(m.ViewManager.DetailsViewWidth - offset).PaddingTop(1).PaddingBottom(1).MarginTop(1).MarginBottom(1).Render(tasksString)
-		}
-
-		view = joinVertical(view, tasksString)
+	if task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) {
+		return ""
 	}
+
+	taskStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.DetailsViewWidth - offset)
+	datesContainerStyle := lipgloss.NewStyle().MarginLeft(2).Width(m.ViewManager.DetailsViewWidth - offset)
+	dateStyle := lipgloss.NewStyle().Background(lipgloss.Color(background)).Foreground(lipgloss.Color("#9A9CCD")).PaddingRight(2)
+
+	tasksString := TaskView{
+		task:   task,
+		date:   date,
+		weekly: true,
+		width:  m.ViewManager.DetailsViewWidth - offset,
+	}.RenderedText()
+
+	tasksString = taskStyle.Render(tasksString)
+
+	if index == cursor {
+		datesString := dateStyle.Render(task.HumanizedString())
+
+		tasksString = joinVertical(tasksString, "\n", datesContainerStyle.Render(datesString))
+		tasksString = lipgloss.NewStyle().Background(lipgloss.Color(background)).Width(m.ViewManager.DetailsViewWidth - offset).PaddingTop(1).PaddingBottom(1).MarginTop(1).MarginBottom(1).Render(tasksString)
+	}
+
+	view = joinVertical(view, tasksString)
 
 	return view
 }
