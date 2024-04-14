@@ -80,6 +80,41 @@ func BuildTasksForFileView(m *Model, tasks []Task, date string, cursor int) stri
 	return view
 }
 
+func BuildTaskFilesView(m *Model, line string, index int, file FileInfo, style lipgloss.Style, activeList string, completedList string, inactiveList string) (string, string, string, string) {
+	isInactive := m.TaskManager.TaskCollection.IsInactive(file.Name)
+
+	completed, total := m.TaskManager.TaskCollection.Progress(file.Name)
+	text := fmt.Sprintf("%d/%d", completed, total)
+	var completedText string
+
+	if total > 0 && completed == total {
+		if index != m.FileManager.FilesCursor {
+			style = style.Copy().Foreground(lipgloss.Color("#4DA165"))
+		}
+		completedList = joinVertical(completedList, style.Render(line))
+	} else if isInactive {
+		if index != m.FileManager.FilesCursor {
+			style = style.Copy().Foreground(lipgloss.Color("#A0A0A0"))
+		}
+		inactiveList = joinVertical(inactiveList, style.Render(line))
+	} else {
+		completedText = lipgloss.NewStyle().Render(text)
+		line = "[" + completedText + "] " + line
+		activeList = joinVertical(activeList, style.Render(line))
+	}
+
+	titleStyle := lipgloss.NewStyle().Bold(true).Underline(true)
+	activeTitle := titleStyle.Render("Active")
+	inactiveTitle := titleStyle.Foreground(lipgloss.Color("#A0A0A0")).Render("Inactive")
+	completeTitle := titleStyle.Foreground(lipgloss.Color("#4DA165")).Render("Complete")
+
+	renderedActiveList := lipgloss.NewStyle().MarginTop(1).MarginBottom(2).Render(activeList)
+	renderedInactiveList := lipgloss.NewStyle().MarginTop(1).MarginBottom(3).Render(inactiveList)
+	renderedCompletedList := lipgloss.NewStyle().MarginTop(1).MarginBottom(1).Render(completedList)
+
+	return joinVertical(activeTitle, renderedActiveList, inactiveTitle, renderedInactiveList, completeTitle, renderedCompletedList), activeList, completedList, inactiveList
+}
+
 func progressBar(completed, total int) string {
 	percentage := float64(completed) / float64(total)
 	numberOfBars := int(percentage * 10)

@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 
@@ -207,15 +206,6 @@ func RenderTasks(m *Model) string {
 	return joinVertical(itemDetailsContainerStyle.Render(tasksView))
 }
 
-func writeTaskString(task Task, index int, cursor int) string {
-	viewCursor := "  "
-	if index == cursor {
-		viewCursor = "❯ "
-	}
-
-	return viewCursor + task.String() + "\n\n"
-}
-
 func sidebarStyle(width, height int) lipgloss.Style {
 	return lipgloss.NewStyle().Width(width).Height(height).Padding(1).Border(lipgloss.NormalBorder())
 }
@@ -326,37 +316,13 @@ func companiesContainerStyle(width int) lipgloss.Style {
 	return style
 }
 
-func buildTasksView(m *Model, line string, index int, list string, file FileInfo, style lipgloss.Style, incompleteList string, completedList string) (string, string, string) {
-	isInactive := m.TaskManager.TaskCollection.IsInactive(file.Name)
-
-	completed, total := m.TaskManager.TaskCollection.Progress(file.Name)
-	text := fmt.Sprintf("%d/%d", completed, total)
-	var completedText string
-
-	if total > 0 && completed == total {
-		if index != m.FileManager.FilesCursor {
-			style = style.Copy().Foreground(lipgloss.Color("#4DA165"))
-		}
-		completedList = joinVertical(completedList, style.Render(line))
-	} else if isInactive {
-		if index != m.FileManager.FilesCursor {
-			style = style.Copy().Foreground(lipgloss.Color("#A0A0A0"))
-		}
-		incompleteList = joinVertical(incompleteList, style.Render(line))
-	} else {
-		completedText = lipgloss.NewStyle().Render(text)
-		line += " " + completedText
-		incompleteList = joinVertical(incompleteList, style.Render(line))
-	}
-
-	return joinVertical(incompleteList, lipgloss.NewStyle().MarginTop(2).Render(completedList)), incompleteList, completedList
-}
-
 func buildFilesView(m *Model) (string, string) {
 	list := ""
 	itemDetails := ""
 	completedList := ""
-	incompleteList := ""
+	activeList := ""
+	inactiveList := ""
+
 	for index, file := range m.FileManager.Files {
 		line := ""
 		style := lipgloss.NewStyle()
@@ -369,7 +335,7 @@ func buildFilesView(m *Model) (string, string) {
 
 		line += file.FileNameWithoutExtension()
 		if m.DirectoryManager.SelectedCategory == "tasks" {
-			list, incompleteList, completedList = buildTasksView(m, line, index, list, file, style, incompleteList, completedList)
+			list, activeList, completedList, inactiveList = BuildTaskFilesView(m, line, index, file, style, activeList, completedList, inactiveList)
 		} else {
 			list = joinVertical(list, style.Render(line))
 		}
