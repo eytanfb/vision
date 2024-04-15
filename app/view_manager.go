@@ -18,6 +18,9 @@ type ViewManager struct {
 	IsAddTaskView     bool
 	IsWeeklyView      bool
 	ShowCompanies     bool
+	KanbanListCursor  int
+	KanbanTaskCursor  int
+	KanbanTasksCount  int
 }
 
 const (

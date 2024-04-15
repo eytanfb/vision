@@ -13,8 +13,9 @@ const (
 	unscheduled status = iota
 	scheduled
 	started
-	completed
 	overdue
+	completed
+	completed_past
 )
 
 type Task struct {
@@ -107,6 +108,7 @@ func (t Task) IsInactive() bool {
 			fmt.Println("Error parsing scheduled date", t.ScheduledDate)
 			return false
 		}
+
 		if scheduledDate.After(time.Now()) {
 			return true
 		}
@@ -162,17 +164,21 @@ func (t Task) IsScheduled() bool {
 func (t Task) StatusAtDate(date string) status {
 	status := unscheduled
 
-	if t.CompletedDate != "" && date == t.CompletedDate {
-		status = completed
+	if t.Completed {
+		if date == t.CompletedDate {
+			return completed
+		} else if date > t.CompletedDate {
+			return completed_past
+		}
 	}
 
-	if status != completed && t.StartDate != "" && date >= t.StartDate {
+	if status != completed && t.Started && date >= t.StartDate {
 		if t.CompletedDate == "" || date < t.CompletedDate {
 			status = started
 		}
 	}
 
-	if status != completed && status != started && t.ScheduledDate != "" && date >= t.ScheduledDate {
+	if status != completed && status != started && t.Scheduled && date >= t.ScheduledDate {
 		if (t.StartDate == "" || date < t.StartDate) && (t.CompletedDate == "" || date < t.CompletedDate) {
 			status = scheduled
 		}

@@ -110,8 +110,16 @@ func taskStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().MarginLeft(2).Width(width)
 }
 
+func kanbanTaskTitleStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Bold(true).Foreground(summaryTitleColor)
+}
+
 func kanbanTaskStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().Width(width).MarginBottom(1)
+}
+
+func highlightedKanbanTaskStyle(width int) lipgloss.Style {
+	return lipgloss.NewStyle().Width(width).Background(highlightedTaskBackgroundColor).MarginBottom(1)
 }
 
 func kanbanBoardTitleStyle(color lipgloss.Color) lipgloss.Style {
@@ -156,4 +164,8 @@ func renderedCompletedListStyle() lipgloss.Style {
 
 func taskItemDetailsContainerStyle(width, height int) lipgloss.Style {
 	return lipgloss.NewStyle().Width(width).Height(height).MarginLeft(2).Border(lipgloss.NormalBorder())
+}
+
+func boardContainerStyle(width, height int) lipgloss.Style {
+	return lipgloss.NewStyle().Width(width).Height(height).Border(lipgloss.NormalBorder())
 }

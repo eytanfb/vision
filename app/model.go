@@ -75,6 +75,9 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 			IsAddTaskView:    false,
 			IsWeeklyView:     false,
 			ShowCompanies:    false,
+			KanbanListCursor: 0,
+			KanbanTaskCursor: 0,
+			KanbanTasksCount: 0,
 		},
 		Viewport:     viewport.Model{},
 		NewTaskInput: textInput,
@@ -156,9 +159,7 @@ func (m *Model) GoToNextCompany() {
 }
 
 func (m *Model) GoToNextCategory() {
-	if !m.ViewManager.HideSidebar {
-		goToNext(&m.DirectoryManager.CategoriesCursor, len(m.DirectoryManager.Categories))
-	}
+	goToNext(&m.DirectoryManager.CategoriesCursor, len(m.DirectoryManager.Categories))
 }
 
 func (m *Model) GoToNextTask() {
@@ -169,6 +170,22 @@ func (m *Model) GoToNextFile() {
 	if !m.ViewManager.HideSidebar {
 		goToNext(&m.FileManager.FilesCursor, len(m.FileManager.Files))
 	}
+}
+
+func (m *Model) GoToNextKanbanTask() {
+	goToNext(&m.ViewManager.KanbanTaskCursor, m.ViewManager.KanbanTasksCount)
+}
+
+func (m *Model) GoToPreviousKanbanTask() {
+	goToPrevious(&m.ViewManager.KanbanTaskCursor)
+}
+
+func (m *Model) GoToNextKanbanList() {
+	goToNext(&m.ViewManager.KanbanListCursor, 3)
+}
+
+func (m *Model) GoToPreviousKanbanList() {
+	goToPrevious(&m.ViewManager.KanbanListCursor)
 }
 
 func (m *Model) GoToPreviousCompany() {

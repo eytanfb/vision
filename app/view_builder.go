@@ -19,10 +19,15 @@ func BuildSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, wi
 	return view
 }
 
+type KanbanItem struct {
+	filename string
+	task     Task
+}
+
 func BuildKanbanSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, width int, date string) string {
-	activeList := ""
-	completedList := ""
-	inactiveList := ""
+	activeList := []KanbanItem{}
+	completedList := []KanbanItem{}
+	inactiveList := []KanbanItem{}
 
 	boardWidth := (m.ViewManager.DetailsViewWidth - 45) / 3
 
@@ -34,32 +39,58 @@ func BuildKanbanSummaryView(m *Model, keys []string, tasksByFile map[string][]Ta
 				continue
 			}
 
-			view := TaskView{
-				task:   task,
-				date:   date,
-				weekly: m.ViewManager.IsWeeklyView,
-				width:  width,
-			}.RenderedText()
-
 			if task.Completed {
-				completedList = joinVertical(completedList, kanbanTaskStyle(boardWidth).Render(view))
-			} else if task.Started {
-				activeList = joinVertical(activeList, kanbanTaskStyle(boardWidth).Render(view))
-			} else if task.Scheduled {
-				inactiveList = joinVertical(inactiveList, kanbanTaskStyle(boardWidth).Render(view))
+				completedList = append(completedList, KanbanItem{filename: key, task: task})
+			} else if task.Started || task.Scheduled {
+				activeList = append(activeList, KanbanItem{filename: key, task: task})
+			} else if task.ScheduledDate == "" {
+				inactiveList = append(inactiveList, KanbanItem{filename: key, task: task})
 			}
 		}
 	}
 
-	boardContainerStyle := lipgloss.NewStyle().Width(boardWidth).Height(m.ViewManager.DetailsViewHeight - 2).Border(lipgloss.NormalBorder())
+	if m.ViewManager.KanbanListCursor == 0 {
+		m.ViewManager.KanbanTasksCount = len(inactiveList)
+	} else if m.ViewManager.KanbanListCursor == 1 {
+		m.ViewManager.KanbanTasksCount = len(activeList)
+	} else if m.ViewManager.KanbanListCursor == 2 {
+		m.ViewManager.KanbanTasksCount = len(completedList)
+	}
 
 	inactiveTitle := kanbanBoardTitleStyle(inactiveFileColor).Render("Inactive")
 	activeTitle := kanbanBoardTitleStyle(white).Render("Active")
 	completedTitle := kanbanBoardTitleStyle(completedFileColor).Render("Complete")
 
-	activeBoard := boardContainerStyle.Render(joinVertical(activeTitle, activeList))
-	completedBoard := boardContainerStyle.Render(joinVertical(completedTitle, completedList))
-	inactiveBoard := boardContainerStyle.Render(joinVertical(inactiveTitle, inactiveList))
+	renderedActiveList := ""
+	for index, item := range activeList {
+		if m.ViewManager.KanbanListCursor == 1 && index == m.ViewManager.KanbanTaskCursor {
+			renderedActiveList = joinVertical(renderedActiveList, highlightedKanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedText()))
+		} else {
+			renderedActiveList = joinVertical(renderedActiveList, kanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedText()))
+		}
+	}
+
+	renderedCompletedList := ""
+	for index, item := range completedList {
+		if m.ViewManager.KanbanListCursor == 2 && index == m.ViewManager.KanbanTaskCursor {
+			renderedCompletedList = joinVertical(renderedCompletedList, highlightedKanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedText()))
+		} else {
+			renderedCompletedList = joinVertical(renderedCompletedList, kanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedText()))
+		}
+	}
+
+	renderedInactiveList := ""
+	for index, item := range inactiveList {
+		if m.ViewManager.KanbanListCursor == 0 && index == m.ViewManager.KanbanTaskCursor {
+			renderedInactiveList = joinVertical(renderedInactiveList, highlightedKanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedText()))
+		} else {
+			renderedInactiveList = joinVertical(renderedInactiveList, kanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedText()))
+		}
+	}
+
+	activeBoard := boardContainerStyle(boardWidth, m.ViewManager.DetailsViewHeight-2).Render(joinVertical(activeTitle, renderedActiveList))
+	completedBoard := boardContainerStyle(boardWidth, m.ViewManager.DetailsViewHeight-2).Render(joinVertical(completedTitle, renderedCompletedList))
+	inactiveBoard := boardContainerStyle(boardWidth, m.ViewManager.Height-2).Render(joinVertical(inactiveTitle, renderedInactiveList))
 
 	return joinHorizontal(inactiveBoard, activeBoard, completedBoard)
 }

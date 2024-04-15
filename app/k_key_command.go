@@ -29,7 +29,11 @@ func moveUp(m *Model) {
 			m.Viewport.GotoTop()
 		}
 	} else if m.IsCategoryView() {
-		m.GoToPreviousCategory()
+		if !m.ViewManager.HideSidebar {
+			m.GoToPreviousCategory()
+		} else {
+			m.GoToPreviousKanbanTask()
+		}
 	} else if m.IsCompanyView() {
 		m.GoToPreviousCompany()
 	}

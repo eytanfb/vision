@@ -46,22 +46,32 @@ func (tc *TaskCollection) FilteredByDates(startDate, endDate string) map[string]
 
 func (tc *TaskCollection) FilteredForDay(date string) map[string][]Task {
 	filteredTasks := make(map[string][]Task)
+
 	for filename, tasks := range tc.TasksByFile {
 		var filtered []Task
+		isOnlyUnscheduled := true
+
 		for _, task := range tasks {
 			status := task.StatusAtDate(date)
 
 			if status == scheduled {
+				isOnlyUnscheduled = false
 				filtered = append(filtered, task)
 			} else if status == started {
+				isOnlyUnscheduled = false
 				filtered = append(filtered, task)
 			} else if status == completed {
+				isOnlyUnscheduled = false
 				filtered = append(filtered, task)
 			} else if status == overdue {
+				isOnlyUnscheduled = false
+				filtered = append(filtered, task)
+			} else if status == unscheduled {
 				filtered = append(filtered, task)
 			}
 		}
-		if len(filtered) > 0 {
+
+		if len(filtered) > 0 && !isOnlyUnscheduled {
 			filteredTasks[filename] = filtered
 		}
 	}
@@ -81,11 +91,13 @@ func (tc *TaskCollection) Progress(filename string) (int, int) {
 
 func (tc *TaskCollection) IsInactive(filename string) bool {
 	tasks := tc.TasksByFile[filename]
+
 	for _, task := range tasks {
 		if !task.IsInactive() {
 			return false
 		}
 	}
+
 	return true
 }
 
