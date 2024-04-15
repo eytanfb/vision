@@ -1,9 +1,11 @@
 package app
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -21,10 +23,10 @@ type FileManager struct {
 }
 
 func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileInfo {
-	log.Info("Fetching files")
 	var files []FileInfo
 	companyFolderPath := dm.CurrentFolderPath()
 	categoryPath := strings.ToLower(dm.SelectedCategory)
+	log.Info("Fetching files for category: " + categoryPath)
 
 	path := notesPath() + "/" + companyFolderPath + "/" + categoryPath
 	log.Info("Path: " + path)
@@ -53,7 +55,9 @@ func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileI
 		}
 	}
 
+	log.Info("Files count: " + fmt.Sprintf("%d", len(files)))
 	fm.FetchTasks(dm, tm)
+	fm.Files = files
 
 	return files
 }
@@ -68,7 +72,7 @@ func (fm *FileManager) FetchTasks(dm *DirectoryManager, tm *TaskManager) []Task 
 
 	files := readFilesInDirecory(path, "updatedAt", tm)
 	for _, file := range files {
-		tasks := tm.ExtractTasks(file.Name, file.Content)
+		tasks := tm.ExtractTasks(dm.SelectedCompany.DisplayName, file.Name, file.Content)
 		tm.TaskCollection.Add(file.Name, tasks)
 	}
 
@@ -114,6 +118,62 @@ func (fm *FileManager) ResetCache() {
 	fm.FileCache = make(map[string][]FileInfo)
 }
 
+func (fm *FileManager) UpdateTask(task Task, status string) {
+	filename := task.FileName
+	text := task.Text
+
+	filePath := notesPath() + "/" + task.Company + "/tasks/" + filename
+	file, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	lines := strings.Split(string(file), "\n")
+	for i, line := range lines {
+		if strings.Contains(line, text) {
+			if status == "scheduled" {
+				line := lines[i]
+				regex := regexp.MustCompile(`🛫\s+\d{4}-\d{2}-\d{2}`)
+				lines[i] = regex.ReplaceAllString(line, "")
+				lines[i] = strings.ReplaceAll(lines[i], "- [x]", "- [ ]")
+
+				if !strings.Contains(line, ScheduledIcon) {
+					lines[i] = lines[i] + " " + ScheduledIcon + " " + time.Now().Format("2006-01-02")
+				}
+
+				break
+			} else if status == "completed" {
+				line = strings.ReplaceAll(line, "- [ ]", "- [x]")
+				lines[i] = line + " " + CompletedIcon + " " + time.Now().Format("2006-01-02")
+
+				break
+			} else if status == "started" {
+				line := lines[i]
+				regex := regexp.MustCompile(`✅\s+\d{4}-\d{2}-\d{2}`)
+				lines[i] = regex.ReplaceAllString(line, "")
+
+				if !strings.Contains(line, StartedIcon) {
+					lines[i] = lines[i] + " " + StartedIcon + " " + time.Now().Format("2006-01-02")
+				}
+
+				break
+			} else if status == "unscheduled" {
+				line := lines[i]
+				regex := regexp.MustCompile(`⏳\s+\d{4}-\d{2}-\d{2}`)
+				lines[i] = regex.ReplaceAllString(line, "")
+
+				break
+			}
+		}
+	}
+
+	newContent := strings.Join(lines, "\n")
+	err = os.WriteFile(filePath, []byte(newContent), 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 // If it does exist, it will be overwritten.
 func copyFile(src, dst string) error {
 	sourceFile, err := os.Open(src)
@@ -134,6 +194,14 @@ func copyFile(src, dst string) error {
 	}
 
 	return destFile.Sync()
+}
+
+func (fm *FileManager) SelectFile(filename string) {
+	for _, file := range fm.Files {
+		if file.Name == filename {
+			fm.SelectedFile = file
+		}
+	}
 }
 
 func (fm FileManager) currentFile() FileInfo {

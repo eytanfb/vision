@@ -64,33 +64,39 @@ func BuildKanbanSummaryView(m *Model, keys []string, tasksByFile map[string][]Ta
 	renderedActiveList := ""
 	for index, item := range activeList {
 		if m.ViewManager.KanbanListCursor == 1 && index == m.ViewManager.KanbanTaskCursor {
-			renderedActiveList = joinVertical(renderedActiveList, highlightedKanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedText()))
+			renderedActiveList = joinVertical(renderedActiveList, highlightedKanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedKanbanText()))
+			m.FileManager.SelectFile(item.filename)
+			m.SelectTask(item.task)
 		} else {
-			renderedActiveList = joinVertical(renderedActiveList, kanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedText()))
+			renderedActiveList = joinVertical(renderedActiveList, kanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedKanbanText()))
 		}
 	}
 
 	renderedCompletedList := ""
 	for index, item := range completedList {
 		if m.ViewManager.KanbanListCursor == 2 && index == m.ViewManager.KanbanTaskCursor {
-			renderedCompletedList = joinVertical(renderedCompletedList, highlightedKanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedText()))
+			renderedCompletedList = joinVertical(renderedCompletedList, highlightedKanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedKanbanText()))
+			m.FileManager.SelectFile(item.filename)
+			m.SelectTask(item.task)
 		} else {
-			renderedCompletedList = joinVertical(renderedCompletedList, kanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedText()))
+			renderedCompletedList = joinVertical(renderedCompletedList, kanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedKanbanText()))
 		}
 	}
 
 	renderedInactiveList := ""
 	for index, item := range inactiveList {
 		if m.ViewManager.KanbanListCursor == 0 && index == m.ViewManager.KanbanTaskCursor {
-			renderedInactiveList = joinVertical(renderedInactiveList, highlightedKanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedText()))
+			renderedInactiveList = joinVertical(renderedInactiveList, highlightedKanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedKanbanText()))
+			m.FileManager.SelectFile(item.filename)
+			m.SelectTask(item.task)
 		} else {
-			renderedInactiveList = joinVertical(renderedInactiveList, kanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedText()))
+			renderedInactiveList = joinVertical(renderedInactiveList, kanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedKanbanText()))
 		}
 	}
 
-	activeBoard := boardContainerStyle(boardWidth, m.ViewManager.DetailsViewHeight-2).Render(joinVertical(activeTitle, renderedActiveList))
-	completedBoard := boardContainerStyle(boardWidth, m.ViewManager.DetailsViewHeight-2).Render(joinVertical(completedTitle, renderedCompletedList))
-	inactiveBoard := boardContainerStyle(boardWidth, m.ViewManager.Height-2).Render(joinVertical(inactiveTitle, renderedInactiveList))
+	activeBoard := boardContainerStyle(boardWidth, m.ViewManager.DetailsViewHeight-2, m.ViewManager.KanbanListCursor == 1).Render(joinVertical(activeTitle, renderedActiveList))
+	completedBoard := boardContainerStyle(boardWidth, m.ViewManager.DetailsViewHeight-2, m.ViewManager.KanbanListCursor == 2).Render(joinVertical(completedTitle, renderedCompletedList))
+	inactiveBoard := boardContainerStyle(boardWidth, m.ViewManager.DetailsViewHeight-2, m.ViewManager.KanbanListCursor == 0).Render(joinVertical(inactiveTitle, renderedInactiveList))
 
 	return joinHorizontal(inactiveBoard, activeBoard, completedBoard)
 }

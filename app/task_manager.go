@@ -14,6 +14,7 @@ type TaskManager struct {
 	WeeklySummaryStartDate string
 	WeeklySummaryEndDate   string
 	DailySummaryDate       string
+	SelectedTask           Task
 }
 
 type TaskCollectionSummary struct {
@@ -32,13 +33,13 @@ type TaskCollectionWeeklySummary struct {
 	UnscheduledTasks []Task
 }
 
-func (tm *TaskManager) ExtractTasks(name string, content string) []Task {
+func (tm *TaskManager) ExtractTasks(company string, name string, content string) []Task {
 	var tasks []Task
 
 	fileTasks := utils.ExtractTasksFromText(content)
 
 	for _, fileTask := range fileTasks {
-		task := createTaskFromFileTask(name, fileTask)
+		task := createTaskFromFileTask(company, name, fileTask)
 		tasks = append(tasks, task)
 	}
 
@@ -226,7 +227,27 @@ func (tm *TaskManager) FridayOfWeekFromDay(day string) string {
 	return friday.Format("2006-01-02")
 }
 
-func createTaskFromFileTask(name string, task utils.FileTask) Task {
+func (tm *TaskManager) SelectTask(task Task) {
+	tm.SelectedTask = task
+}
+
+func (tm *TaskManager) UpdateTaskToUnscheduled(fm FileManager, task Task) {
+	fm.UpdateTask(task, "unscheduled")
+}
+
+func (tm *TaskManager) UpdateTaskToScheduled(fm FileManager, task Task) {
+	fm.UpdateTask(task, "scheduled")
+}
+
+func (tm *TaskManager) UpdateTaskToStarted(fm FileManager, task Task) {
+	fm.UpdateTask(task, "started")
+}
+
+func (tm *TaskManager) UpdateTaskToCompleted(fm FileManager, task Task) {
+	fm.UpdateTask(task, "completed")
+}
+
+func createTaskFromFileTask(company string, name string, task utils.FileTask) Task {
 	completedDate := extractCompletedDateFromText(task.Text)
 	startDate := extractStartDateFromText(task.Text)
 	scheduledDate := extractScheduledDateFromText(task.Text)
@@ -245,6 +266,7 @@ func createTaskFromFileTask(name string, task utils.FileTask) Task {
 		Started:       started,
 		Scheduled:     scheduled,
 		FileName:      name,
+		Company:       company,
 	}
 }
 

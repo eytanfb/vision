@@ -8,7 +8,7 @@ func (j EnterKeyCommand) Execute(m *Model) error {
 		input := m.NewTaskInput.Value()
 
 		if m.ViewManager.IsTaskDetailsFocus() {
-			m.FileManager.CreateTask(company, input)
+			//m.FileManager.CreateTask(company, input)
 			EscKeyCommand{}.Execute(m)
 		} else {
 			m.FileManager.CreateTask(company, input)

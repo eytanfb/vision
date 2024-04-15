@@ -41,7 +41,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 			Companies:        companies,
 			Categories:       cfg.Categories,
 			SelectedCompany:  defaultCompany,
-			SelectedCategory: "",
+			SelectedCategory: "tasks",
 			CompaniesCursor:  0,
 			CategoriesCursor: 0,
 		},
@@ -111,32 +111,36 @@ func SetArgs(m *Model, args []string) {
 	}
 }
 
-func (m Model) Init() tea.Cmd {
+func (m *Model) Init() tea.Cmd {
 	return nil
 }
 
-func (m Model) IsCompanyView() bool {
+func (m *Model) IsCompanyView() bool {
 	return m.ViewManager.IsCompanyView()
 }
 
-func (m Model) IsCategoryView() bool {
+func (m *Model) IsCategoryView() bool {
 	return m.ViewManager.IsCategoryView()
 }
 
-func (m Model) IsDetailsView() bool {
+func (m *Model) IsDetailsView() bool {
 	return m.ViewManager.IsDetailsView()
 }
 
-func (m Model) IsAddTaskView() bool {
+func (m *Model) IsAddTaskView() bool {
 	return m.ViewManager.IsAddTaskView
 }
 
-func (m Model) IsTaskDetailsFocus() bool {
+func (m *Model) IsTaskDetailsFocus() bool {
 	return m.ViewManager.IsTaskDetailsFocus()
 }
 
-func (m Model) IsItemDetailsFocus() bool {
+func (m *Model) IsItemDetailsFocus() bool {
 	return m.ViewManager.IsItemDetailsFocus()
+}
+
+func (m *Model) IsKanbanView() bool {
+	return m.IsCategoryView() && m.ViewManager.HideSidebar
 }
 
 func (m *Model) GoToCompany(companyName string) {
@@ -239,6 +243,10 @@ func (m *Model) Select() {
 	m.ViewManager.Select(&m.FileManager, &m.DirectoryManager, &m.TaskManager)
 }
 
+func (m *Model) SelectTask(task Task) {
+	m.TaskManager.SelectTask(task)
+}
+
 func (m *Model) LoseDetailsFocus() {
 	if !m.ViewManager.HideSidebar {
 		m.ViewManager.ItemDetailsFocus = false
@@ -251,14 +259,10 @@ func (m *Model) GainDetailsFocus() {
 }
 
 func (m *Model) ShowTasks() {
-	//fileTasks := utils.ExtractTasksFromText(m.FileManager.CurrentFileContent())
-	//taskCollection := CreateTaskCollectionFromFileTasks(fileTasks)
-	//m.TaskManager.TaskCollection = taskCollection
-	m.ViewManager.TaskDetailsFocus = true
 	m.ViewManager.TaskDetailsFocus = true
 }
 
-func (m Model) GetCurrentCursor() int {
+func (m *Model) GetCurrentCursor() int {
 	if m.IsCompanyView() {
 		return m.DirectoryManager.CompaniesCursor
 	} else if m.IsCategoryView() {
@@ -269,26 +273,26 @@ func (m Model) GetCurrentCursor() int {
 	return 0
 }
 
-func (m Model) HasFiles() bool {
+func (m *Model) HasFiles() bool {
 	return len(m.FileManager.Files) > 0
 }
 
-func (m Model) GetCurrentCompanyName() string {
+func (m *Model) GetCurrentCompanyName() string {
 	return m.DirectoryManager.CurrentCompanyName()
 }
 
-func (m Model) GetCurrentFilePath() string {
+func (m *Model) GetCurrentFilePath() string {
 	return m.FileManager.GetCurrentFilePath(m.DirectoryManager.CurrentCompanyName(), m.DirectoryManager.SelectedCategory)
 }
 
-func (m Model) CompanyNames() []string {
+func (m *Model) CompanyNames() []string {
 	return m.DirectoryManager.CompanyNames()
 }
 
-func (m Model) CategoryNames() []string {
+func (m *Model) CategoryNames() []string {
 	return m.DirectoryManager.Categories
 }
 
-func (m Model) FetchFiles() []FileInfo {
+func (m *Model) FetchFiles() []FileInfo {
 	return m.FileManager.FetchFiles(&m.DirectoryManager, &m.TaskManager)
 }

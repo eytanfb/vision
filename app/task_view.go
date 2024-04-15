@@ -33,6 +33,12 @@ func (tv TaskView) RenderedText() string {
 	return joinHorizontal(icon, renderedText, renderedStatusText)
 }
 
+func (tv TaskView) RenderedKanbanText() string {
+	text := tv.RenderedText()
+
+	return joinVertical(tv.task.FileName, text)
+}
+
 func (tv TaskView) statusIcon(status status) string {
 	icon := ""
 

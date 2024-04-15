@@ -10,20 +10,18 @@ import (
 type OKeyCommand struct{}
 
 func (j OKeyCommand) Execute(m *Model) error {
-	if !m.IsDetailsView() {
-		return nil
+	if m.IsDetailsView() || m.IsKanbanView() {
+		filePath := m.FileManager.SelectedFile.FullPath
+		homeDir, _ := os.UserHomeDir()
+		notesPath := homeDir + "/Notes"
+		//obsidian: //open?vault=Disk-X&file={file$}
+		obsidianPath := constructObsidianURL(filePath, notesPath)
+
+		cmd := exec.Command("open", "-a", "Obsidian", obsidianPath)
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Run()
 	}
-
-	filePath := m.FileManager.SelectedFile.FullPath
-	homeDir, _ := os.UserHomeDir()
-	notesPath := homeDir + "/Notes"
-	//obsidian: //open?vault=Disk-X&file={file$}
-	obsidianPath := constructObsidianURL(filePath, notesPath)
-
-	cmd := exec.Command("open", "-a", "Obsidian", obsidianPath)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Run()
 
 	return nil
 }

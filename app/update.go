@@ -3,7 +3,6 @@ package app
 import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/log"
 )
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -41,19 +40,15 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	case tea.WindowSizeMsg:
-		log.Info("msg.Width", msg.Width)
-		log.Info("msg.Height", msg.Height)
 		m.ViewManager.SetWidth(msg.Width)
 		m.ViewManager.SetHeight(msg.Height)
 
 		if !m.ViewManager.Ready {
 			m.Viewport = viewport.New(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight)
 			m.ViewManager.Ready = true
-			log.Info("Setting up viewport width and height to", m.Viewport.Width, m.Viewport.Height)
 		} else {
 			m.Viewport.Width = m.ViewManager.DetailsViewWidth
 			m.Viewport.Height = m.ViewManager.DetailsViewHeight
-			log.Info("Updating viewport width and height to", m.Viewport.Width, m.Viewport.Height)
 		}
 	}
 

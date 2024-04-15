@@ -8,6 +8,13 @@ import (
 type UppercaseDKeyCommand struct{}
 
 func (j UppercaseDKeyCommand) Execute(m *Model) error {
+	if m.IsCategoryView() && m.ViewManager.HideSidebar {
+		m.TaskManager.UpdateTaskToStarted(m.FileManager, m.TaskManager.SelectedTask)
+		m.FileManager.FetchTasks(&m.DirectoryManager, &m.TaskManager)
+
+		return nil
+	}
+
 	if !m.IsCategoryView() || m.ViewManager.IsWeeklyView {
 		return nil
 	}

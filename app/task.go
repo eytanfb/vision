@@ -19,6 +19,7 @@ const (
 )
 
 type Task struct {
+	Company       string
 	IsDone        bool
 	Text          string
 	StartDate     string

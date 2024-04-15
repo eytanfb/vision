@@ -166,6 +166,12 @@ func taskItemDetailsContainerStyle(width, height int) lipgloss.Style {
 	return lipgloss.NewStyle().Width(width).Height(height).MarginLeft(2).Border(lipgloss.NormalBorder())
 }
 
-func boardContainerStyle(width, height int) lipgloss.Style {
-	return lipgloss.NewStyle().Width(width).Height(height).Border(lipgloss.NormalBorder())
+func boardContainerStyle(width int, height int, selected bool) lipgloss.Style {
+	style := lipgloss.NewStyle().Width(width).Height(height).Border(lipgloss.NormalBorder())
+
+	if selected {
+		style = style.Copy().BorderForeground(lipgloss.Color("63"))
+	}
+
+	return style
 }
