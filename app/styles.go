@@ -30,6 +30,7 @@ var (
 	highlightedTextStyle    = lipgloss.NewStyle().Foreground(highlightedTextColor).Bold(true)
 	renderedStatusTextStyle = lipgloss.NewStyle().Width(15).Align(lipgloss.Right)
 	iconStyle               = lipgloss.NewStyle().MarginRight(1)
+	kanbanTaskTitleStyle    = lipgloss.NewStyle().Bold(true).Foreground(summaryTitleColor)
 )
 
 func navbarTextStyle(color string) lipgloss.Style {
@@ -108,10 +109,6 @@ func progressTextStyle(style lipgloss.Style) lipgloss.Style {
 
 func taskStyle(width int) lipgloss.Style {
 	return lipgloss.NewStyle().MarginLeft(2).Width(width)
-}
-
-func kanbanTaskTitleStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Bold(true).Foreground(summaryTitleColor)
 }
 
 func kanbanTaskStyle(width int) lipgloss.Style {

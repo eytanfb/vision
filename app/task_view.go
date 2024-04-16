@@ -36,7 +36,9 @@ func (tv TaskView) RenderedText() string {
 func (tv TaskView) RenderedKanbanText() string {
 	text := tv.RenderedText()
 
-	return joinVertical(tv.task.FileName, text)
+	title := kanbanTaskTitleStyle.Render(tv.task.FileName)
+
+	return joinVertical(title, text)
 }
 
 func (tv TaskView) statusIcon(status status) string {
