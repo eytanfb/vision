@@ -21,15 +21,13 @@ func BuildSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, wi
 
 type KanbanItem struct {
 	filename string
-	task     Task
+	tasks    []Task
 }
 
 func BuildKanbanSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, width int, date string) string {
 	activeList := []KanbanItem{}
 	completedList := []KanbanItem{}
 	inactiveList := []KanbanItem{}
-
-	boardWidth := (m.ViewManager.DetailsViewWidth - 45) / 3
 
 	for _, key := range keys {
 		tasks := tasksByFile[key]
@@ -40,65 +38,109 @@ func BuildKanbanSummaryView(m *Model, keys []string, tasksByFile map[string][]Ta
 			}
 
 			if task.Completed {
-				completedList = append(completedList, KanbanItem{filename: key, task: task})
+				completedList = addTaskOrCreateKanbanItem(completedList, key, task)
 			} else if task.Started || task.Scheduled {
-				activeList = append(activeList, KanbanItem{filename: key, task: task})
+				activeList = addTaskOrCreateKanbanItem(activeList, key, task)
 			} else if task.ScheduledDate == "" {
-				inactiveList = append(inactiveList, KanbanItem{filename: key, task: task})
+				inactiveList = addTaskOrCreateKanbanItem(inactiveList, key, task)
 			}
 		}
 	}
 
-	if m.ViewManager.KanbanListCursor == 0 {
-		m.ViewManager.KanbanTasksCount = len(inactiveList)
-	} else if m.ViewManager.KanbanListCursor == 1 {
-		m.ViewManager.KanbanTasksCount = len(activeList)
-	} else if m.ViewManager.KanbanListCursor == 2 {
-		m.ViewManager.KanbanTasksCount = len(completedList)
-	}
+	setKanbanTasksCounts(inactiveList, activeList, completedList, m)
 
 	inactiveTitle := kanbanBoardTitleStyle(inactiveFileColor).Render("Inactive")
 	activeTitle := kanbanBoardTitleStyle(white).Render("Active")
 	completedTitle := kanbanBoardTitleStyle(completedFileColor).Render("Complete")
 
-	renderedActiveList := ""
-	for index, item := range activeList {
-		if m.ViewManager.KanbanListCursor == 1 && index == m.ViewManager.KanbanTaskCursor {
-			renderedActiveList = joinVertical(renderedActiveList, highlightedKanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedKanbanText()))
-			m.FileManager.SelectFile(item.filename)
-			m.SelectTask(item.task)
-		} else {
-			renderedActiveList = joinVertical(renderedActiveList, kanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedKanbanText()))
-		}
-	}
-
-	renderedCompletedList := ""
-	for index, item := range completedList {
-		if m.ViewManager.KanbanListCursor == 2 && index == m.ViewManager.KanbanTaskCursor {
-			renderedCompletedList = joinVertical(renderedCompletedList, highlightedKanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedKanbanText()))
-			m.FileManager.SelectFile(item.filename)
-			m.SelectTask(item.task)
-		} else {
-			renderedCompletedList = joinVertical(renderedCompletedList, kanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedKanbanText()))
-		}
-	}
-
-	renderedInactiveList := ""
-	for index, item := range inactiveList {
-		if m.ViewManager.KanbanListCursor == 0 && index == m.ViewManager.KanbanTaskCursor {
-			renderedInactiveList = joinVertical(renderedInactiveList, highlightedKanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedKanbanText()))
-			m.FileManager.SelectFile(item.filename)
-			m.SelectTask(item.task)
-		} else {
-			renderedInactiveList = joinVertical(renderedInactiveList, kanbanTaskStyle(boardWidth).Render(TaskView{task: item.task, date: date, weekly: m.ViewManager.IsWeeklyView, width: boardWidth}.RenderedKanbanText()))
-		}
-	}
-
-	activeBoard := boardContainerStyle(boardWidth, m.ViewManager.DetailsViewHeight-2, m.ViewManager.KanbanListCursor == 1).Render(joinVertical(activeTitle, renderedActiveList))
-	completedBoard := boardContainerStyle(boardWidth, m.ViewManager.DetailsViewHeight-2, m.ViewManager.KanbanListCursor == 2).Render(joinVertical(completedTitle, renderedCompletedList))
-	inactiveBoard := boardContainerStyle(boardWidth, m.ViewManager.DetailsViewHeight-2, m.ViewManager.KanbanListCursor == 0).Render(joinVertical(inactiveTitle, renderedInactiveList))
+	activeBoard := renderBoard(activeTitle, activeList, m, m.ViewManager.KanbanListCursor == 1)
+	completedBoard := renderBoard(completedTitle, completedList, m, m.ViewManager.KanbanListCursor == 2)
+	inactiveBoard := renderBoard(inactiveTitle, inactiveList, m, m.ViewManager.KanbanListCursor == 0)
 
 	return joinHorizontal(inactiveBoard, activeBoard, completedBoard)
+}
+
+func addTaskOrCreateKanbanItem(list []KanbanItem, filename string, task Task) []KanbanItem {
+	for i, item := range list {
+		if item.filename == filename {
+			list[i].tasks = append(list[i].tasks, task)
+			return list
+		}
+	}
+
+	return append(list, KanbanItem{filename: filename, tasks: []Task{task}})
+}
+
+func setKanbanTasksCounts(inactiveList, activeList, completedList []KanbanItem, m *Model) {
+	if m.ViewManager.KanbanListCursor == 0 {
+		tasksCount := 0
+		for _, item := range inactiveList {
+			tasksCount += len(item.tasks)
+		}
+		m.ViewManager.KanbanTasksCount = tasksCount
+	} else if m.ViewManager.KanbanListCursor == 1 {
+		tasksCount := 0
+		for _, item := range activeList {
+			tasksCount += len(item.tasks)
+		}
+		m.ViewManager.KanbanTasksCount = tasksCount
+	} else if m.ViewManager.KanbanListCursor == 2 {
+		tasksCount := 0
+		for _, item := range completedList {
+			tasksCount += len(item.tasks)
+		}
+		m.ViewManager.KanbanTasksCount = tasksCount
+	}
+}
+
+func renderKanbanList(m *Model, kanbanList []KanbanItem, boardWidth int, selectedList bool) string {
+	renderedKanbanList := ""
+	index := m.ViewManager.KanbanTaskCursor
+
+	for _, kanbanItem := range kanbanList {
+		tasks := kanbanItem.tasks
+		filename := kanbanItem.filename
+
+		renderedKanbanList = joinVertical(renderedKanbanList, renderFilename(filename, boardWidth))
+
+		for _, task := range tasks {
+			selected := false
+
+			if selectedList && index == 0 {
+				selected = true
+				m.FileManager.SelectFile(filename)
+				m.SelectTask(task)
+			}
+
+			renderedKanbanList = joinVertical(renderedKanbanList, renderKanbanTask(task, boardWidth, m.TaskManager.DailySummaryDate, selected, m.ViewManager.IsWeeklyView))
+
+			index--
+		}
+	}
+
+	return renderedKanbanList
+}
+
+func renderBoard(title string, list []KanbanItem, m *Model, selectedBoard bool) string {
+	boardWidth := (m.ViewManager.DetailsViewWidth - 45) / 3
+
+	renderedList := renderKanbanList(m, list, boardWidth, selectedBoard)
+
+	return boardContainerStyle(boardWidth, m.ViewManager.DetailsViewHeight-2, selectedBoard).Render(joinVertical(title, renderedList))
+}
+
+func renderFilename(filename string, boardWidth int) string {
+	return kanbanTaskTitleStyle.Render(filename)
+}
+
+func renderKanbanTask(task Task, boardWidth int, date string, selected bool, weekly bool) string {
+	style := kanbanTaskStyle(boardWidth)
+
+	if selected {
+		style = highlightedKanbanTaskStyle(boardWidth)
+	}
+
+	return style.Render(TaskView{task: task, date: date, weekly: weekly, width: boardWidth}.RenderedKanbanText())
 }
 
 func BuildTasksForFileView(m *Model, tasks []Task, date string, cursor int) string {
