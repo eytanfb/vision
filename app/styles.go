@@ -74,8 +74,16 @@ func summaryContainerStyle(width, height int) lipgloss.Style {
 	return contentContainerStyle(width, height)
 }
 
+func summaryContainerStyleNoBorder(width, height int) lipgloss.Style {
+	return contentContainerStyleNoBorder(width, height)
+}
+
 func contentContainerStyle(width, height int) lipgloss.Style {
 	return lipgloss.NewStyle().Width(width).Height(height).Border(lipgloss.NormalBorder()).MarginLeft(2)
+}
+
+func contentContainerStyleNoBorder(width, height int) lipgloss.Style {
+	return lipgloss.NewStyle().Width(width).Height(height).MarginLeft(2)
 }
 
 func taskSummaryContainerStyle(width, height int) lipgloss.Style {

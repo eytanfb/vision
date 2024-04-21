@@ -69,6 +69,7 @@ func renderList(m *Model, items []string) string {
 
 	if m.ViewManager.HideSidebar {
 		sidebar = ""
+		summary = summaryContainerStyleNoBorder(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight).Render(summaryView)
 	}
 
 	return joinHorizontal(sidebar, summary)
