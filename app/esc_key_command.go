@@ -8,6 +8,11 @@ func (j EscKeyCommand) Execute(m *Model) error {
 		m.NewTaskInput.Blur()
 		return nil
 	}
+	if m.IsFilterView() {
+		m.ViewManager.IsFilterView = false
+		m.FilterInput.Blur()
+		return nil
+	}
 	if m.ViewManager.IsTaskDetailsFocus() {
 		FKeyCommand{}.Execute(m)
 		return nil

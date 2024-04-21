@@ -17,6 +17,7 @@ type Model struct {
 	ViewManager      ViewManager
 	Viewport         viewport.Model
 	NewTaskInput     textinput.Model
+	FilterInput      textinput.Model
 	Errors           []string
 }
 
@@ -31,6 +32,8 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 	}
 
 	textInput := textinput.New()
+	filterInput := textinput.New()
+	filterInput.Placeholder = "Filter..."
 
 	monday := time.Now().AddDate(0, 0, -int(time.Now().Weekday())+1).Format("2006-01-02")
 	friday := time.Now().AddDate(0, 0, 5-int(time.Now().Weekday())).Format("2006-01-02")
@@ -81,6 +84,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 		},
 		Viewport:     viewport.Model{},
 		NewTaskInput: textInput,
+		FilterInput:  filterInput,
 	}
 
 	SetArgs(&m, args)
@@ -129,6 +133,10 @@ func (m *Model) IsDetailsView() bool {
 
 func (m *Model) IsAddTaskView() bool {
 	return m.ViewManager.IsAddTaskView
+}
+
+func (m *Model) IsFilterView() bool {
+	return m.ViewManager.IsFilterView
 }
 
 func (m *Model) IsTaskDetailsFocus() bool {

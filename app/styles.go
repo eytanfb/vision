@@ -173,3 +173,7 @@ func boardContainerStyle(width int, height int, selected bool) lipgloss.Style {
 
 	return style
 }
+
+func filterInputStyle(color string) lipgloss.Style {
+	return lipgloss.NewStyle().MarginLeft(1).Foreground(lipgloss.Color(color))
+}

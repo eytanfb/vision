@@ -16,7 +16,14 @@ func (j EnterKeyCommand) Execute(m *Model) error {
 		}
 
 		return nil
+	} else if m.IsFilterView() {
+		m.ViewManager.IsFilterView = false
+		m.TaskManager.TaskCollection.FilterValue = m.FilterInput.Value()
+		m.TaskManager.TasksCursor = 0
+
+		return nil
 	}
+
 	m.Select()
 
 	return nil

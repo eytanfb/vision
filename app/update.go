@@ -22,14 +22,19 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmd
 			}
 			return m, tea.Quit
-		} else if m.IsAddTaskView() {
+		} else if m.IsAddTaskView() || m.IsFilterView() {
 			if key == "esc" {
 				KeyCommandFactory{}.CreateKeyCommand("esc").Execute(m)
 			} else if key == "enter" {
 				KeyCommandFactory{}.CreateKeyCommand("enter").Execute(m)
 			}
 
-			m.NewTaskInput, cmd = m.NewTaskInput.Update(msg)
+			if m.IsFilterView() {
+				m.FilterInput, cmd = m.FilterInput.Update(msg)
+				m.TaskManager.TaskCollection.FilterValue = m.FilterInput.Value()
+			} else {
+				m.NewTaskInput, cmd = m.NewTaskInput.Update(msg)
+			}
 		} else {
 			keyCommandFactory := KeyCommandFactory{}
 			keyCommand := keyCommandFactory.CreateKeyCommand(key)

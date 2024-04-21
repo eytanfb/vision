@@ -1,11 +1,47 @@
 package app
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/log"
 )
 
 type TaskCollection struct {
 	TasksByFile map[string][]Task
+	FilterValue string
+}
+
+func (tc *TaskCollection) GetTasksByFile() map[string][]Task {
+	if tc.FilterValue == "" {
+		return tc.TasksByFile
+	}
+
+	filteredTasks := make(map[string][]Task)
+
+	for filename, tasks := range tc.TasksByFile {
+		var filtered []Task
+
+		if includesLowercase(filename, tc.FilterValue) {
+			filteredTasks[filename] = tasks
+			continue
+		}
+
+		for _, task := range tasks {
+			if includesLowercase(task.Text, tc.FilterValue) {
+				filtered = append(filtered, task)
+			}
+		}
+
+		if len(filtered) > 0 {
+			filteredTasks[filename] = filtered
+		}
+	}
+
+	return filteredTasks
+}
+
+func includesLowercase(s, substr string) bool {
+	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }
 
 func (tc *TaskCollection) Add(filename string, tasks []Task) {
@@ -17,16 +53,16 @@ func (tc *TaskCollection) Add(filename string, tasks []Task) {
 }
 
 func (tc *TaskCollection) Size(filename string) int {
-	return len(tc.TasksByFile[filename])
+	return len(tc.GetTasksByFile()[filename])
 }
 
 func (tc *TaskCollection) GetTasks(filename string) []Task {
-	return tc.TasksByFile[filename]
+	return tc.GetTasksByFile()[filename]
 }
 
 func (tc *TaskCollection) FilteredByDates(startDate, endDate string) map[string][]Task {
 	filteredTasks := make(map[string][]Task)
-	for filename, tasks := range tc.TasksByFile {
+	for filename, tasks := range tc.GetTasksByFile() {
 		var filtered []Task
 		for _, task := range tasks {
 			if task.ScheduledDate >= startDate && task.ScheduledDate <= endDate {
@@ -47,7 +83,7 @@ func (tc *TaskCollection) FilteredByDates(startDate, endDate string) map[string]
 func (tc *TaskCollection) FilteredForDay(date string) map[string][]Task {
 	filteredTasks := make(map[string][]Task)
 
-	for filename, tasks := range tc.TasksByFile {
+	for filename, tasks := range tc.GetTasksByFile() {
 		var filtered []Task
 		isOnlyUnscheduled := true
 
@@ -79,7 +115,7 @@ func (tc *TaskCollection) FilteredForDay(date string) map[string][]Task {
 }
 
 func (tc *TaskCollection) Progress(filename string) (int, int) {
-	tasks := tc.TasksByFile[filename]
+	tasks := tc.GetTasksByFile()[filename]
 	var completed int
 	for _, task := range tasks {
 		if task.Completed {
@@ -90,7 +126,7 @@ func (tc *TaskCollection) Progress(filename string) (int, int) {
 }
 
 func (tc *TaskCollection) IsInactive(filename string) bool {
-	tasks := tc.TasksByFile[filename]
+	tasks := tc.GetTasksByFile()[filename]
 
 	for _, task := range tasks {
 		if !task.IsInactive() {
@@ -102,7 +138,7 @@ func (tc *TaskCollection) IsInactive(filename string) bool {
 }
 
 func (tc *TaskCollection) IsCompleted(filename string) bool {
-	tasks := tc.TasksByFile[filename]
+	tasks := tc.GetTasksByFile()[filename]
 
 	if len(tasks) == 0 {
 		return false
@@ -205,7 +241,7 @@ func (tc *TaskCollection) GetScheduledTasks() []Task {
 func (tc *TaskCollection) allTasks() []Task {
 	log.Info("Getting all tasks")
 	var allTasks []Task
-	for _, tasks := range tc.TasksByFile {
+	for _, tasks := range tc.GetTasksByFile() {
 		allTasks = append(allTasks, tasks...)
 	}
 	log.Info("All tasks count: ", len(allTasks))
@@ -221,7 +257,7 @@ func (tc *TaskCollection) Flush() {
 }
 
 func (tc *TaskCollection) IncompleteTasks(filename string, date string) []Task {
-	tasks := tc.TasksByFile[filename]
+	tasks := tc.GetTasksByFile()[filename]
 
 	var incompleteTasks []Task
 

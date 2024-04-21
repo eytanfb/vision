@@ -24,7 +24,7 @@ func ViewHandler(m *Model) string {
 		}
 	}
 
-	return joinVertical(renderNavbar(m), content, renderErrors(m))
+	return joinVertical(renderNavbar(m), renderFilterInput(m), content, renderErrors(m))
 }
 
 func renderErrors(m *Model) string {
@@ -209,6 +209,14 @@ func renderNavbar(m *Model) string {
 	view := container.Render(navbarView)
 
 	return view
+}
+
+func renderFilterInput(m *Model) string {
+	if m.ViewManager.IsFilterView {
+		m.FilterInput.Focus()
+	}
+
+	return filterInputStyle(m.DirectoryManager.SelectedCompany.Color).Render(m.FilterInput.View())
 }
 
 func renderTasks(m *Model) string {

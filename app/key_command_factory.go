@@ -60,6 +60,8 @@ func (kcf KeyCommandFactory) CreateKeyCommand(key string) KeyCommand {
 		return SKeyCommand{}
 	case "S":
 		return UppercaseSKeyCommand{}
+	case "/":
+		return SlashKeyCommand{}
 	}
 	return NilKeyCommand{}
 }

@@ -17,6 +17,7 @@ type ViewManager struct {
 	SummaryViewHeight int
 	IsAddTaskView     bool
 	IsWeeklyView      bool
+	IsFilterView      bool
 	ShowCompanies     bool
 	KanbanListCursor  int
 	KanbanTaskCursor  int

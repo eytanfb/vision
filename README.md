@@ -2,7 +2,6 @@
 
 ## Ideas
 
-- [ ] On kanban display, group tasks so filename is only shown once
 - [ ] Filter by any text
 - [ ] Be able to tag filter, when /{{folder}}/{{filter}} limit search to folder
 - [ ] For now, only filter from same company
@@ -12,6 +11,7 @@
 - [ ] Think of a way to include personal projects here
 - [ ] Make file paths configurable, have a notes folder env variable
 - [ ] Check to see if there can be a way to pull track info from radio
+- [x] On kanban display, group tasks so filename is only shown once
 - [x] Better task display on tasks
 - [x] Task management
 - [x] Single click Daily Standup Slack text generator
