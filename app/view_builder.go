@@ -25,6 +25,17 @@ type KanbanItem struct {
 }
 
 func BuildKanbanSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, width int, date string) string {
+	inactiveList, activeList, completedList := makeKanbanLists(m, keys, tasksByFile)
+	setKanbanTasksCounts(inactiveList, activeList, completedList, m)
+
+	activeBoard := renderBoard("Active", activeList, m, m.ViewManager.KanbanListCursor == 1)
+	completedBoard := renderBoard("Completed", completedList, m, m.ViewManager.KanbanListCursor == 2)
+	inactiveBoard := renderBoard("Inactive", inactiveList, m, m.ViewManager.KanbanListCursor == 0)
+
+	return joinHorizontal(inactiveBoard, activeBoard, completedBoard)
+}
+
+func makeKanbanLists(m *Model, keys []string, tasksByFile map[string][]Task) ([]KanbanItem, []KanbanItem, []KanbanItem) {
 	activeList := []KanbanItem{}
 	completedList := []KanbanItem{}
 	inactiveList := []KanbanItem{}
@@ -47,17 +58,7 @@ func BuildKanbanSummaryView(m *Model, keys []string, tasksByFile map[string][]Ta
 		}
 	}
 
-	setKanbanTasksCounts(inactiveList, activeList, completedList, m)
-
-	inactiveTitle := kanbanBoardTitleStyle(inactiveFileColor).Render("Inactive")
-	activeTitle := kanbanBoardTitleStyle(white).Render("Active")
-	completedTitle := kanbanBoardTitleStyle(completedFileColor).Render("Complete")
-
-	activeBoard := renderBoard(activeTitle, activeList, m, m.ViewManager.KanbanListCursor == 1)
-	completedBoard := renderBoard(completedTitle, completedList, m, m.ViewManager.KanbanListCursor == 2)
-	inactiveBoard := renderBoard(inactiveTitle, inactiveList, m, m.ViewManager.KanbanListCursor == 0)
-
-	return joinHorizontal(inactiveBoard, activeBoard, completedBoard)
+	return inactiveList, activeList, completedList
 }
 
 func addTaskOrCreateKanbanItem(list []KanbanItem, filename string, task Task) []KanbanItem {
@@ -124,9 +125,22 @@ func renderKanbanList(m *Model, kanbanList []KanbanItem, boardWidth int, selecte
 func renderBoard(title string, list []KanbanItem, m *Model, selectedBoard bool) string {
 	boardWidth := (m.ViewManager.DetailsViewWidth - 45) / 3
 
+	renderedTitle := kanbanBoardTitleStyle(colorForTitle(title)).Render(title)
 	renderedList := renderKanbanList(m, list, boardWidth, selectedBoard)
 
-	return boardContainerStyle(boardWidth, m.ViewManager.DetailsViewHeight-2, selectedBoard).Render(joinVertical(title, renderedList))
+	return boardContainerStyle(boardWidth, m.ViewManager.DetailsViewHeight-2, selectedBoard).Render(joinVertical(renderedTitle, renderedList))
+}
+
+func colorForTitle(title string) lipgloss.Color {
+	if title == "Inactive" {
+		return inactiveFileColor
+	} else if title == "Active" {
+		return activeFileColor
+	} else if title == "Completed" {
+		return completedFileColor
+	}
+
+	return white
 }
 
 func renderFilename(filename string, boardWidth int) string {

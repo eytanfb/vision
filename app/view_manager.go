@@ -24,22 +24,25 @@ type ViewManager struct {
 }
 
 const (
-	CompaniesView  = "companies"
-	CategoriesView = "categories"
-	DetailsView    = "details"
+	CompaniesView      = "companies"
+	CategoriesView     = "categories"
+	DetailsView        = "details"
+	heightOffset       = 12
+	detailsWidthOffset = 9
+	navbarWidthOffset  = 5
 )
 
 func (vm *ViewManager) SetWidth(width int) {
 	vm.Width = width
-	vm.DetailsViewWidth = width - vm.SidebarWidth - 9
-	vm.NavbarWidth = width - 5
+	vm.DetailsViewWidth = width - vm.SidebarWidth - detailsWidthOffset
+	vm.NavbarWidth = width - navbarWidthOffset
 }
 
 func (vm *ViewManager) SetHeight(height int) {
 	vm.Height = height
-	vm.SidebarHeight = height - 12
-	vm.SummaryViewHeight = height - 12
-	vm.DetailsViewHeight = height - 12
+	vm.SidebarHeight = height - heightOffset
+	vm.SummaryViewHeight = height - heightOffset
+	vm.DetailsViewHeight = height - heightOffset
 }
 
 func (vm ViewManager) IsCompanyView() bool {

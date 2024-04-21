@@ -12,6 +12,7 @@ var (
 	overdueColor                   = lipgloss.Color("#EC4E20")
 	completedFileColor             = lipgloss.Color("#4DA165")
 	inactiveFileColor              = lipgloss.Color("#A0A0A0")
+	activeFileColor                = lipgloss.Color("#FFFFFF")
 	highlightedTextColor           = lipgloss.Color("#CB48B7")
 	summaryTitleColor              = lipgloss.Color("#9A9CCD")
 )
