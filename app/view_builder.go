@@ -123,12 +123,12 @@ func renderKanbanList(m *Model, kanbanList []KanbanItem, boardWidth int, selecte
 }
 
 func renderBoard(title string, list []KanbanItem, m *Model, selectedBoard bool) string {
-	boardWidth := (m.ViewManager.DetailsViewWidth - 45) / 3
+	boardWidth := (m.ViewManager.DetailsViewWidth - 6) / 3
 
 	renderedTitle := kanbanBoardTitleStyle(colorForTitle(title)).Render(title)
 	renderedList := renderKanbanList(m, list, boardWidth, selectedBoard)
 
-	return boardContainerStyle(boardWidth, m.ViewManager.DetailsViewHeight-2, selectedBoard).Render(joinVertical(renderedTitle, renderedList))
+	return boardContainerStyle(boardWidth, m.ViewManager.DetailsViewHeight, selectedBoard).Render(joinVertical(renderedTitle, renderedList))
 }
 
 func colorForTitle(title string) lipgloss.Color {
