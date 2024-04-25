@@ -2,6 +2,7 @@
 
 ## Ideas
 
+- [ ] Redo daily and weekly summary
 - [ ] Filter by any text
 - [ ] Be able to tag filter, when /{{folder}}/{{filter}} limit search to folder
 - [ ] For now, only filter from same company

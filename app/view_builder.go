@@ -45,6 +45,7 @@ func makeKanbanLists(m *Model, keys []string, tasksByFile map[string][]Task) ([]
 
 		for _, task := range tasks {
 			if task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) {
+				inactiveList = addTaskOrCreateKanbanItem(inactiveList, key, task)
 				continue
 			}
 
