@@ -3,6 +3,8 @@
 ## Ideas
 
 - [ ] Redo daily and weekly summary
+- [ ] Simple calendar view
+- [ ] On KANBAN view, make sure viewport works and doesn't go above the height
 - [ ] Filter by any text
 - [ ] Be able to tag filter, when /{{folder}}/{{filter}} limit search to folder
 - [ ] For now, only filter from same company
