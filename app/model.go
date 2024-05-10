@@ -33,7 +33,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 
 	textInput := textinput.New()
 	filterInput := textinput.New()
-	filterInput.Placeholder = "Filter..."
+	filterInput.Placeholder = "Filter... (/ to start)"
 
 	monday := time.Now().AddDate(0, 0, -int(time.Now().Weekday())+1).Format("2006-01-02")
 	friday := time.Now().AddDate(0, 0, 5-int(time.Now().Weekday())).Format("2006-01-02")

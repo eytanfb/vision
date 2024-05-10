@@ -2,18 +2,18 @@
 
 ## Ideas
 
+- [ ] Need to create a search results view
+- [ ] On KANBAN view, make sure viewport works and doesn't go above the height
 - [ ] Redo daily and weekly summary
 - [ ] Simple calendar view
-- [ ] On KANBAN view, make sure viewport works and doesn't go above the height
 - [ ] Filter by any text
 - [ ] Be able to tag filter, when /{{folder}}/{{filter}} limit search to folder
-- [ ] For now, only filter from same company
-- [ ] Need to create a search results view
 - [ ] Have a way to load all data for all companies
 - [ ] Task retrospective view if done, maybe with a timeline explanation
 - [ ] Think of a way to include personal projects here
 - [ ] Make file paths configurable, have a notes folder env variable
 - [ ] Check to see if there can be a way to pull track info from radio
+- [x] For now, only filter from same company
 - [x] On kanban display, group tasks so filename is only shown once
 - [x] Better task display on tasks
 - [x] Task management
