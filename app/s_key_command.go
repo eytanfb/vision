@@ -1,15 +1,22 @@
 package app
 
+import "github.com/charmbracelet/log"
+
 type SKeyCommand struct{}
 
 func (j SKeyCommand) Execute(m *Model) error {
-	if m.TaskManager.SelectedTask.Scheduled {
-		m.TaskManager.UpdateTaskToStarted(m.FileManager, m.TaskManager.SelectedTask)
-	} else {
-		m.TaskManager.UpdateTaskToScheduled(m.FileManager, m.TaskManager.SelectedTask)
-	}
+	if m.ViewManager.HideSidebar {
+		log.Info("SKeyCommand: Show sidebar")
+		if m.TaskManager.SelectedTask.Scheduled {
+			log.Info("SKeyCommand: Update task to started")
+			m.TaskManager.UpdateTaskToStarted(m.FileManager, m.TaskManager.SelectedTask)
+		} else {
+			log.Info("SKeyCommand: Update task to scheduled")
+			m.TaskManager.UpdateTaskToScheduled(m.FileManager, m.TaskManager.SelectedTask)
+		}
 
-	m.FileManager.FetchTasks(&m.DirectoryManager, &m.TaskManager)
+		m.FileManager.FetchFiles(&m.DirectoryManager, &m.TaskManager)
+	}
 
 	return nil
 }

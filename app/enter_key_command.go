@@ -7,15 +7,15 @@ func (j EnterKeyCommand) Execute(m *Model) error {
 		company := m.GetCurrentCompanyName()
 		input := m.NewTaskInput.Value()
 
-		if m.ViewManager.IsTaskDetailsFocus() {
-			//m.FileManager.CreateTask(company, input)
-			EscKeyCommand{}.Execute(m)
-		} else {
-			m.FileManager.CreateTask(company, input)
-			EscKeyCommand{}.Execute(m)
-		}
+		m.FileManager.CreateTask(company, input)
+		return EscKeyCommand{}.Execute(m)
+	} else if m.IsAddSubTaskView() {
+		company := m.GetCurrentCompanyName()
+		input := m.NewTaskInput.Value()
+		selectedFile := m.FileManager.SelectedFile
 
-		return nil
+		m.FileManager.CreateSubTask(company, selectedFile, input)
+		return EscKeyCommand{}.Execute(m)
 	} else if m.IsFilterView() {
 		m.ViewManager.IsFilterView = false
 		m.TaskManager.TaskCollection.FilterValue = m.FilterInput.Value()

@@ -114,6 +114,29 @@ func (fm FileManager) CreateTask(company string, taskName string) {
 	}
 }
 
+func (fm FileManager) CreateSubTask(company string, file FileInfo, taskName string) {
+	filePath := filepath.Join(notesPath(), "/", company, "/tasks/", file.Name)
+
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	lines := strings.Split(string(content), "\n")
+	for i, line := range lines {
+		if strings.Contains(line, "### Sub-tasks") {
+			lines = append(lines[:i+2], append([]string{"- [ ] " + taskName}, lines[i+2:]...)...)
+			break
+		}
+	}
+
+	newContent := strings.Join(lines, "\n")
+	err = os.WriteFile(filePath, []byte(newContent), 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func (fm *FileManager) ResetCache() {
 	fm.FileCache = make(map[string][]FileInfo)
 }

@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/log"
 )
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -14,6 +15,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		key := msg.String()
+		log.Info("Key pressed: ", key)
 		if key == "ctrl+c" {
 			return m, tea.Quit
 		} else if key == "q" {
@@ -22,7 +24,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmd
 			}
 			return m, tea.Quit
-		} else if m.IsAddTaskView() || m.IsFilterView() {
+		} else if m.IsAddTaskView() || m.IsFilterView() || m.IsAddSubTaskView() {
 			if key == "esc" {
 				KeyCommandFactory{}.CreateKeyCommand("esc").Execute(m)
 			} else if key == "enter" {

@@ -79,7 +79,7 @@ func buildSummaryView(m *Model, hiddenSidebar bool) string {
 	summaryView := ""
 	period := "daily"
 
-	if m.IsAddTaskView() {
+	if m.IsAddTaskView() || m.IsAddSubTaskView() {
 		summaryView = m.NewTaskInput.View()
 	} else {
 		if m.ViewManager.IsWeeklyView {

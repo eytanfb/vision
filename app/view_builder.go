@@ -200,7 +200,7 @@ func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
 		list = ""
 	}
 
-	if m.IsAddTaskView() {
+	if m.IsAddTaskView() || m.IsAddSubTaskView() {
 		itemDetails = m.NewTaskInput.View()
 	} else {
 		markdown := renderMarkdown(itemDetails)

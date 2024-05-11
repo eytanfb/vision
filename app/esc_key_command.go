@@ -3,21 +3,30 @@ package app
 type EscKeyCommand struct{}
 
 func (j EscKeyCommand) Execute(m *Model) error {
+	goToPreviousView := true
+
 	if m.IsAddTaskView() {
 		m.ViewManager.IsAddTaskView = false
 		m.NewTaskInput.Blur()
-		return nil
-	}
-	if m.IsFilterView() {
+		goToPreviousView = false
+	} else if m.IsAddSubTaskView() {
+		m.ViewManager.IsAddSubTaskView = false
+		m.NewTaskInput.Blur()
+		goToPreviousView = false
+	} else if m.IsFilterView() {
 		m.ViewManager.IsFilterView = false
 		m.FilterInput.Blur()
-		return nil
-	}
-	if m.ViewManager.IsTaskDetailsFocus() {
+		goToPreviousView = false
+	} else if m.ViewManager.IsTaskDetailsFocus() {
 		FKeyCommand{}.Execute(m)
-		return nil
+		goToPreviousView = false
 	}
-	m.GoToPreviousView()
+
+	m.FileManager.FetchFiles(&m.DirectoryManager, &m.TaskManager)
+
+	if goToPreviousView {
+		m.GoToPreviousView()
+	}
 
 	return nil
 }

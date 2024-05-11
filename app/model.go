@@ -32,6 +32,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 	}
 
 	textInput := textinput.New()
+	textInput.Placeholder = "Add a task..."
 	filterInput := textinput.New()
 	filterInput.Placeholder = "Filter... (/ to start)"
 
@@ -76,6 +77,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 			NavbarHeight:     12,
 			DetailsViewWidth: 40,
 			IsAddTaskView:    false,
+			IsAddSubTaskView: false,
 			IsWeeklyView:     false,
 			ShowCompanies:    false,
 			KanbanListCursor: 0,
@@ -133,6 +135,10 @@ func (m *Model) IsDetailsView() bool {
 
 func (m *Model) IsAddTaskView() bool {
 	return m.ViewManager.IsAddTaskView
+}
+
+func (m *Model) IsAddSubTaskView() bool {
+	return m.ViewManager.IsAddSubTaskView
 }
 
 func (m *Model) IsFilterView() bool {
