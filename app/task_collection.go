@@ -271,3 +271,19 @@ func (tc *TaskCollection) IncompleteTasks(filename string, date string) []Task {
 
 	return incompleteTasks
 }
+
+func (tc *TaskCollection) ActiveTasks(filename string, date string) []Task {
+	tasks := tc.GetTasksByFile()[filename]
+
+	var activeTasks []Task
+
+	for _, task := range tasks {
+		status := task.WeeklyStatusAtDate(date)
+
+		if status == scheduled || status == started {
+			activeTasks = append(activeTasks, task)
+		}
+	}
+
+	return activeTasks
+}

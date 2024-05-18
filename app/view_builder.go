@@ -246,13 +246,17 @@ func buildTaskTitleView(m *Model, category string, width int, date string) strin
 
 func buildTaskTitle(m *Model, category string, date string, titleStyle lipgloss.Style) string {
 	taskTitle := category[0 : len(category)-len(".md")]
-	taskTitle += " (" + fmt.Sprintf("%d", incompleteTaskCount(m, category, date)) + " tasks remaining)"
+	taskTitle += " (" + fmt.Sprintf("%d", activeTaskCount(m, category, date)) + " active, " + fmt.Sprintf("%d", incompleteTaskCount(m, category, date)) + " remaining)"
 
 	return titleStyle.Render(taskTitle)
 }
 
 func incompleteTaskCount(m *Model, category string, date string) int {
 	return len(m.TaskManager.TaskCollection.IncompleteTasks(category, date))
+}
+
+func activeTaskCount(m *Model, category string, date string) int {
+	return len(m.TaskManager.TaskCollection.ActiveTasks(category, date))
 }
 
 func buildRightAlignedProgressText(m *Model, category string, titleStyle lipgloss.Style) string {

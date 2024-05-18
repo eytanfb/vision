@@ -97,6 +97,7 @@ func (vm *ViewManager) Select(fm *FileManager, dm *DirectoryManager, tm *TaskMan
 
 func (vm *ViewManager) ToggleHideSidebar() {
 	vm.HideSidebar = !vm.HideSidebar
+
 	if vm.HideSidebar {
 		vm.DetailsViewWidth += vm.SidebarWidth
 		vm.ItemDetailsFocus = true

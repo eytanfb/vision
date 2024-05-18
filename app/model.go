@@ -73,6 +73,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 			ItemDetailsFocus:         false,
 			SidebarWidth:             40,
 			SidebarHeight:            40,
+			HideSidebar:              false,
 			NavbarWidth:              40,
 			NavbarHeight:             12,
 			DetailsViewWidth:         40,
