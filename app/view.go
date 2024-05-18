@@ -127,8 +127,8 @@ func taskSummaryToView(m *Model, period string) string {
 
 	view := BuildSummaryView(m, keys, tasksByFile, m.ViewManager.DetailsViewWidth, summaryDate)
 
-	containerTitle := taskSummaryContainerStyle(m.ViewManager.DetailsViewWidth, containerTitleHeight).Height(2).Render(summaryTitle(m, period))
-	renderedView := taskSummaryContainerStyle(m.ViewManager.DetailsViewWidth, viewHeight).Render(view)
+	containerTitle := taskSummaryContainerStyle(m.ViewManager.DetailsViewWidth, containerTitleHeight).Height(2).PaddingBottom(0).Render(summaryTitle(m, period))
+	renderedView := taskSummaryContainerStyle(m.ViewManager.DetailsViewWidth, viewHeight).PaddingTop(0).Render(view)
 
 	return joinVertical(containerTitle, renderedView)
 }

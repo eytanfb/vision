@@ -20,6 +20,7 @@ func (j EnterKeyCommand) Execute(m *Model) error {
 		m.ViewManager.IsFilterView = false
 		m.TaskManager.TaskCollection.FilterValue = m.FilterInput.Value()
 		m.TaskManager.TasksCursor = 0
+		m.FilterInput.Blur()
 
 		return nil
 	}
