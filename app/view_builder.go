@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 
+	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -120,7 +121,13 @@ func renderKanbanList(m *Model, kanbanList []KanbanItem, boardWidth int, selecte
 		}
 	}
 
-	return renderedKanbanList
+	newViewport := viewport.Model{}
+	newViewport.Width = boardWidth
+	newViewport.Height = m.ViewManager.DetailsViewHeight
+	newViewport.SetContent(renderedKanbanList)
+	newViewport.SetYOffset(m.ViewManager.KanbanTaskCursor / 5 * 3)
+
+	return newViewport.View()
 }
 
 func renderBoard(title string, list []KanbanItem, m *Model, selectedBoard bool) string {

@@ -18,21 +18,33 @@ func (j JKeyCommand) AllowedStates() []string {
 
 func moveDown(m *Model) {
 	if m.IsCategoryView() {
-		if !m.ViewManager.HideSidebar {
-			m.GoToNextCategory()
-		} else {
-			m.GoToNextKanbanTask()
-		}
+		categoryViewBehavior(m)
 	} else if m.IsDetailsView() {
-		if m.IsItemDetailsFocus() {
-			if m.IsTaskDetailsFocus() {
-				m.GoToNextTask()
-			} else {
-				m.Viewport.LineDown(10)
-			}
-		} else {
-			m.GoToNextFile()
-			m.Viewport.GotoTop()
-		}
+		detailsViewBehavior(m)
+	}
+}
+
+func categoryViewBehavior(m *Model) {
+	if !m.ViewManager.HideSidebar {
+		m.GoToNextCategory()
+	} else {
+		m.GoToNextKanbanTask()
+	}
+}
+
+func detailsViewBehavior(m *Model) {
+	if m.IsItemDetailsFocus() {
+		itemDetailsViewBehavior(m)
+	} else {
+		m.GoToNextFile()
+		m.Viewport.GotoTop()
+	}
+}
+
+func itemDetailsViewBehavior(m *Model) {
+	if m.IsTaskDetailsFocus() {
+		m.GoToNextTask()
+	} else {
+		m.Viewport.LineDown(10)
 	}
 }
