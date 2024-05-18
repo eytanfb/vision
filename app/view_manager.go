@@ -1,28 +1,29 @@
 package app
 
 type ViewManager struct {
-	CurrentView       string
-	Width             int
-	Height            int
-	Ready             bool
-	TaskDetailsFocus  bool
-	ItemDetailsFocus  bool
-	HideSidebar       bool
-	NavbarWidth       int
-	NavbarHeight      int
-	SidebarWidth      int
-	SidebarHeight     int
-	DetailsViewWidth  int
-	DetailsViewHeight int
-	SummaryViewHeight int
-	IsAddTaskView     bool
-	IsAddSubTaskView  bool
-	IsWeeklyView      bool
-	IsFilterView      bool
-	ShowCompanies     bool
-	KanbanListCursor  int
-	KanbanTaskCursor  int
-	KanbanTasksCount  int
+	CurrentView              string
+	Width                    int
+	Height                   int
+	Ready                    bool
+	TaskDetailsFocus         bool
+	ItemDetailsFocus         bool
+	HideSidebar              bool
+	NavbarWidth              int
+	NavbarHeight             int
+	SidebarWidth             int
+	SidebarHeight            int
+	DetailsViewWidth         int
+	DetailsViewHeight        int
+	SummaryViewHeight        int
+	IsAddTaskView            bool
+	IsAddSubTaskView         bool
+	IsWeeklyView             bool
+	IsFilterView             bool
+	ShowCompanies            bool
+	KanbanListCursor         int
+	KanbanTaskCursor         int
+	KanbanTasksCount         int
+	KanbanViewLineDownFactor int
 }
 
 const (
@@ -108,4 +109,8 @@ func (vm *ViewManager) ToggleHideSidebar() {
 
 func (vm *ViewManager) ToggleWeeklyView() {
 	vm.IsWeeklyView = !vm.IsWeeklyView
+}
+
+func (vm *ViewManager) KanbanLineDownAmount() int {
+	return vm.KanbanTaskCursor / 1 * vm.KanbanViewLineDownFactor
 }

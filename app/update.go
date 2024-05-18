@@ -56,6 +56,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.Viewport.Width = m.ViewManager.DetailsViewWidth
 			m.Viewport.Height = m.ViewManager.DetailsViewHeight
+
+			if m.ViewManager.DetailsViewHeight > 65 {
+				m.ViewManager.KanbanViewLineDownFactor = 5
+			} else if m.ViewManager.DetailsViewHeight > 45 {
+				m.ViewManager.KanbanViewLineDownFactor = 10
+			} else {
+				m.ViewManager.KanbanViewLineDownFactor = 15
+			}
 		}
 	}
 

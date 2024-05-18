@@ -125,7 +125,10 @@ func renderKanbanList(m *Model, kanbanList []KanbanItem, boardWidth int, selecte
 	newViewport.Width = boardWidth
 	newViewport.Height = m.ViewManager.DetailsViewHeight
 	newViewport.SetContent(renderedKanbanList)
-	newViewport.SetYOffset(m.ViewManager.KanbanTaskCursor / 5 * 3)
+
+	if selectedList {
+		newViewport.LineDown(m.ViewManager.KanbanLineDownAmount())
+	}
 
 	return newViewport.View()
 }
