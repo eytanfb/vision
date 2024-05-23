@@ -301,6 +301,8 @@ func buildTaskForFileView(m *Model, task Task, date string, view string, cursor 
 
 		tasksString = joinVertical(tasksString, "\n", datesContainerStyle(width).Render(datesString))
 		tasksString = tasksStringStyle(width).Render(tasksString)
+		m.TaskManager.SelectedTask = task
+		m.FileManager.SelectFile(task.FileName)
 	}
 
 	view = joinVertical(view, tasksString)
