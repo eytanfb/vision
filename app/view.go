@@ -1,8 +1,10 @@
 package app
 
 import (
+	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/glamour"
 )
@@ -150,7 +152,32 @@ func setWeeklySummaryValues(m *Model) (map[string][]Task, string) {
 }
 
 func summaryTitle(m *Model, period string) string {
-	title := "Daily Tasks for " + m.TaskManager.DailySummaryDate
+	dailySummaryDateText := m.TaskManager.DailySummaryDate
+
+	today := time.Now()
+	tomorrow := today.Add(24 * time.Hour)
+	yesterday := today.Add(-24 * time.Hour)
+	dailySummaryDate, _ := time.Parse("2006-01-02", dailySummaryDateText)
+
+	if dailySummaryDate.Day() == today.Day() && dailySummaryDate.Month() == today.Month() && dailySummaryDate.Year() == today.Year() {
+		dailySummaryDateText = "Today"
+	} else if dailySummaryDate.Day() == tomorrow.Day() && dailySummaryDate.Month() == tomorrow.Month() && dailySummaryDate.Year() == tomorrow.Year() {
+		dailySummaryDateText = "Tomorrow"
+	} else if dailySummaryDate.Day() == yesterday.Day() && dailySummaryDate.Month() == yesterday.Month() && dailySummaryDate.Year() == yesterday.Year() {
+		dailySummaryDateText = "Yesterday"
+	} else if dailySummaryDate.After(today) {
+		diff := dailySummaryDate.Sub(today)
+		diffInDaysString := int(diff.Hours() / 24)
+
+		dailySummaryDateText = fmt.Sprintf("%s (+%d)", dailySummaryDate.Format("Monday, January 2"), diffInDaysString)
+	} else {
+		diff := today.Sub(dailySummaryDate)
+		diffInDaysString := int(diff.Hours() / 24)
+
+		dailySummaryDateText = fmt.Sprintf("%s (-%d)", dailySummaryDate.Format("Monday, January 2"), diffInDaysString)
+	}
+
+	title := "Daily Tasks for " + dailySummaryDateText
 	if period == "weekly" {
 		title = "Weekly Tasks for " + m.TaskManager.WeeklySummaryStartDate + " - " + m.TaskManager.WeeklySummaryEndDate
 	}
