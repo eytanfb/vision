@@ -11,10 +11,12 @@ func (j SKeyCommand) Execute(m *Model) error {
 			log.Info("SKeyCommand: Update task to started")
 			m.TaskManager.UpdateTaskToStarted(m.FileManager, m.TaskManager.SelectedTask)
 			m.ViewManager.KanbanListCursor = 1
+			m.ViewManager.IsKanbanTaskUpdated = true
 		} else {
 			log.Info("SKeyCommand: Update task to scheduled")
 			m.TaskManager.UpdateTaskToScheduled(m.FileManager, m.TaskManager.SelectedTask)
 			m.ViewManager.KanbanListCursor = 1
+			m.ViewManager.IsKanbanTaskUpdated = true
 		}
 
 		m.FileManager.FetchFiles(&m.DirectoryManager, &m.TaskManager)

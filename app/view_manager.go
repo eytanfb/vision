@@ -24,6 +24,7 @@ type ViewManager struct {
 	KanbanTaskCursor         int
 	KanbanTasksCount         int
 	KanbanViewLineDownFactor int
+	IsKanbanTaskUpdated      bool
 }
 
 const (

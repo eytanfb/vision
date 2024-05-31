@@ -99,6 +99,7 @@ func setKanbanTasksCounts(inactiveList, activeList, completedList []KanbanItem, 
 func renderKanbanList(m *Model, kanbanList []KanbanItem, boardWidth int, selectedList bool) string {
 	renderedKanbanList := ""
 	index := m.ViewManager.KanbanTaskCursor
+	totalIndex := 0
 
 	for _, kanbanItem := range kanbanList {
 		tasks := kanbanItem.tasks
@@ -109,7 +110,15 @@ func renderKanbanList(m *Model, kanbanList []KanbanItem, boardWidth int, selecte
 		for _, task := range tasks {
 			selected := false
 
-			if selectedList && index == 0 {
+			if m.ViewManager.IsKanbanTaskUpdated {
+				if m.TaskManager.SelectedTask.textWithoutDates() == task.textWithoutDates() {
+					selected = true
+					m.SelectTask(task)
+					m.FileManager.SelectFile(filename)
+					m.ViewManager.IsKanbanTaskUpdated = false
+					m.ViewManager.KanbanTaskCursor = totalIndex
+				}
+			} else if selectedList && index == 0 {
 				selected = true
 				m.FileManager.SelectFile(filename)
 				m.SelectTask(task)
@@ -118,6 +127,7 @@ func renderKanbanList(m *Model, kanbanList []KanbanItem, boardWidth int, selecte
 			renderedKanbanList = joinVertical(renderedKanbanList, renderKanbanTask(task, boardWidth, m.TaskManager.DailySummaryDate, selected, m.ViewManager.IsWeeklyView))
 
 			index--
+			totalIndex++
 		}
 	}
 
