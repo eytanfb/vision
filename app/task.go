@@ -246,6 +246,22 @@ func (t Task) WeeklyStatusAtDate(date string) status {
 	return status
 }
 
+func (t Task) LastUpdatedAt() string {
+	if t.CompletedDate != "" {
+		return t.CompletedDate
+	}
+
+	if t.StartDate != "" {
+		return t.StartDate
+	}
+
+	if t.ScheduledDate != "" {
+		return t.ScheduledDate
+	}
+
+	return ""
+}
+
 func (t Task) textWithoutDates() string {
 	return removeDatesFromText(t.Text)
 }

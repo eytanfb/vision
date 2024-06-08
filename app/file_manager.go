@@ -316,6 +316,13 @@ func activeCmp(filenames []string, tm *TaskManager) {
 		iCompleted := tm.TaskCollection.IsCompleted(iFilename)
 		jCompleted := tm.TaskCollection.IsCompleted(jFilename)
 
+		if iCompleted && jCompleted {
+			iUpdatedAt := tm.TaskCollection.LastUpdatedAt(iFilename)
+			jUpdatedAt := tm.TaskCollection.LastUpdatedAt(jFilename)
+
+			return iUpdatedAt > jUpdatedAt
+		}
+
 		iInactive := tm.TaskCollection.IsInactive(iFilename)
 		jInactive := tm.TaskCollection.IsInactive(jFilename)
 

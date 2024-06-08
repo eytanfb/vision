@@ -152,6 +152,19 @@ func (tc *TaskCollection) IsCompleted(filename string) bool {
 	return true
 }
 
+func (tc *TaskCollection) LastUpdatedAt(filename string) string {
+	tasks := tc.GetTasksByFile()[filename]
+	var lastUpdated string
+
+	for _, task := range tasks {
+		if task.LastUpdatedAt() > lastUpdated {
+			lastUpdated = task.LastUpdatedAt()
+		}
+	}
+
+	return lastUpdated
+}
+
 func (tc *TaskCollection) GetStartedTasksByDate(startDate, endDate string) []Task {
 	log.Info("Getting started tasks")
 	tasks := tc.allTasks()
