@@ -2,6 +2,8 @@
 
 ## Ideas
 
+- [ ] Be able to speak the notifications using "say"
+- [ ] Integrate Github notifications
 - [ ] Send an email at the end of the week to personal email with all tasks statuses at the end of the week
 - [ ] Redo daily and weekly summary
 - [ ] Simple calendar view
