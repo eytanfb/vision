@@ -2,6 +2,7 @@
 
 ## Ideas
 
+- [ ] Update task file focused task view to include links in the message, and make them navigatable
 - [ ] Be able to speak the notifications using "say"
 - [ ] Integrate Github notifications
 - [ ] Send an email at the end of the week to personal email with all tasks statuses at the end of the week
