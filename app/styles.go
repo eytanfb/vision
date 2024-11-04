@@ -15,6 +15,8 @@ var (
 	activeFileColor                = lipgloss.Color("#FFFFFF")
 	highlightedTextColor           = lipgloss.Color("#CB48B7")
 	summaryTitleColor              = lipgloss.Color("#9A9CCD")
+	suggestionTitleColor           = lipgloss.Color("#9A9CCD")
+	suggestionTextColor            = lipgloss.Color("#9A9CCD")
 )
 
 var (
@@ -32,6 +34,8 @@ var (
 	renderedStatusTextStyle = lipgloss.NewStyle().Width(15).Align(lipgloss.Right)
 	iconStyle               = lipgloss.NewStyle().MarginRight(1)
 	kanbanTaskTitleStyle    = lipgloss.NewStyle().Bold(true).Foreground(summaryTitleColor)
+	suggestionTitleStyle    = lipgloss.NewStyle().Foreground(suggestionTitleColor).Bold(true)
+	suggestionTextStyle     = lipgloss.NewStyle().Foreground(suggestionTextColor)
 )
 
 func navbarTextStyle(color string) lipgloss.Style {

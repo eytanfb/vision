@@ -231,16 +231,27 @@ func (fm *FileManager) PeopleFilenames(dm *DirectoryManager, tm *TaskManager, fi
 	path := notesPath() + "/" + dm.CurrentFolderPath() + "/people"
 
 	files := readFilesInDirecory(path, "default", tm)
-	log.Info("People files count: " + fmt.Sprintf("%d", len(files)))
-	log.Info("Filter value: " + strings.ToLower(filterValue))
 
 	filenames := []string{}
 	for _, file := range files {
-		log.Info("Checking file: " + strings.ToLower(file.Name))
 		if filterValue == "" {
 			filenames = append(filenames, file.Name)
 		} else if strings.Contains(strings.ToLower(file.Name), strings.ToLower(filterValue)) {
-			log.Info("Found file: " + file.Name + " for filter: " + filterValue)
+			filenames = append(filenames, file.Name)
+		}
+	}
+
+	return filenames
+}
+
+func (fm *FileManager) TaskFilenames(dm *DirectoryManager, tm *TaskManager, filterValue string) []string {
+	path := notesPath() + "/" + dm.CurrentFolderPath() + "/tasks"
+
+	files := readFilesInDirecory(path, "default", tm)
+
+	filenames := []string{}
+	for _, file := range files {
+		if len(filterValue) > 2 && strings.Contains(strings.ToLower(file.Name), strings.ToLower(filterValue)) {
 			filenames = append(filenames, file.Name)
 		}
 	}

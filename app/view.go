@@ -88,14 +88,31 @@ func buildSummaryView(m *Model, hiddenSidebar bool) string {
 		if hasUnclosedDoubleSquareBrackets(m.NewTaskInput.Value()) {
 			filterValue := peopleFilterValue(m.NewTaskInput.Value())
 			peopleOptions := m.FileManager.PeopleFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
+			taskOptions := m.FileManager.TaskFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
 
 			peopleOptionsView := ""
 			for _, option := range peopleOptions {
 				person := strings.Split(option, ".md")[0]
-				peopleOptionsView = joinVertical(peopleOptionsView, person)
+				peopleOptionsView = joinVertical(peopleOptionsView, suggestionTextStyle.Render(person))
 			}
 
-			summaryView = joinVertical(summaryView, peopleOptionsView)
+			peopleOptionViewTitle := suggestionTitleStyle.Render("People")
+
+			if peopleOptionsView != "" {
+				summaryView = joinVertical(summaryView, peopleOptionViewTitle, peopleOptionsView, "\n")
+			}
+
+			taskOptionsView := ""
+			for _, option := range taskOptions {
+				task := strings.Split(option, ".md")[0]
+				taskOptionsView = joinVertical(taskOptionsView, suggestionTextStyle.Render(task))
+			}
+
+			taskOptionViewTitle := suggestionTitleStyle.Render("Tasks")
+
+			if taskOptionsView != "" {
+				summaryView = joinVertical(summaryView, taskOptionViewTitle, taskOptionsView)
+			}
 		}
 
 	} else {
