@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/charmbracelet/glamour"
 )
@@ -85,7 +86,7 @@ func buildSummaryView(m *Model, hiddenSidebar bool) string {
 		summaryView = m.NewTaskInput.View()
 
 		if hasUnclosedDoubleSquareBrackets(m.NewTaskInput.Value()) {
-			filterValue := strings.Split(m.NewTaskInput.Value(), "[[")[1]
+			filterValue := peopleFilterValue(m.NewTaskInput.Value())
 			peopleOptions := m.FileManager.PeopleFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
 
 			peopleOptionsView := ""
@@ -266,7 +267,7 @@ func renderTasks(m *Model) string {
 		addTaskView := m.NewTaskInput.View()
 
 		if hasUnclosedDoubleSquareBrackets(m.NewTaskInput.Value()) {
-			filterValue := strings.Split(m.NewTaskInput.Value(), "[[")[1]
+			filterValue := peopleFilterValue(m.NewTaskInput.Value())
 			peopleOptions := m.FileManager.PeopleFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
 
 			peopleOptionsView := ""
@@ -373,6 +374,39 @@ func hasUnclosedDoubleSquareBrackets(input string) bool {
 		}
 	}
 
-	// Check if there's an unmatched opening [[
 	return openBrackets > 0
+}
+
+func peopleFilterValue(input string) string {
+	openBrackets := 0
+	lastOpenIndex := -1
+
+	// Iterate over the string to find the latest unmatched [[
+	for i := 0; i < len(input)-1; i++ {
+		if input[i:i+2] == "[[" {
+			openBrackets++
+			lastOpenIndex = i + 2 // Position right after this [[
+			i++                   // Skip the next character to avoid re-checking
+		} else if input[i:i+2] == "]]" {
+			if openBrackets > 0 {
+				openBrackets-- // Close the most recent unmatched [[
+			}
+			i++ // Skip the next character
+		}
+	}
+
+	// If no unmatched [[ is found, return an empty string
+	if openBrackets == 0 || lastOpenIndex == -1 {
+		return ""
+	}
+
+	// Extract characters after the last unmatched [[
+	var result []rune
+	for _, r := range input[lastOpenIndex:] {
+		if unicode.IsLetter(r) { // Only include alphabetic characters
+			result = append(result, r)
+		}
+	}
+
+	return string(result)
 }
