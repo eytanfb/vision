@@ -227,6 +227,27 @@ func (fm *FileManager) SelectFile(filename string) {
 	}
 }
 
+func (fm *FileManager) PeopleFilenames(dm *DirectoryManager, tm *TaskManager, filterValue string) []string {
+	path := notesPath() + "/" + dm.CurrentFolderPath() + "/people"
+
+	files := readFilesInDirecory(path, "default", tm)
+	log.Info("People files count: " + fmt.Sprintf("%d", len(files)))
+	log.Info("Filter value: " + strings.ToLower(filterValue))
+
+	filenames := []string{}
+	for _, file := range files {
+		log.Info("Checking file: " + strings.ToLower(file.Name))
+		if filterValue == "" {
+			filenames = append(filenames, file.Name)
+		} else if strings.Contains(strings.ToLower(file.Name), strings.ToLower(filterValue)) {
+			log.Info("Found file: " + file.Name + " for filter: " + filterValue)
+			filenames = append(filenames, file.Name)
+		}
+	}
+
+	return filenames
+}
+
 func (fm FileManager) currentFile() FileInfo {
 	return fm.SelectedFile
 }

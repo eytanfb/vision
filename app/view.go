@@ -83,6 +83,20 @@ func buildSummaryView(m *Model, hiddenSidebar bool) string {
 
 	if m.IsAddTaskView() || m.IsAddSubTaskView() {
 		summaryView = m.NewTaskInput.View()
+
+		if hasUnclosedDoubleSquareBrackets(m.NewTaskInput.Value()) {
+			filterValue := strings.Split(m.NewTaskInput.Value(), "[[")[1]
+			peopleOptions := m.FileManager.PeopleFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
+
+			peopleOptionsView := ""
+			for _, option := range peopleOptions {
+				person := strings.Split(option, ".md")[0]
+				peopleOptionsView = joinVertical(peopleOptionsView, person)
+			}
+
+			summaryView = joinVertical(summaryView, peopleOptionsView)
+		}
+
 	} else {
 		if m.ViewManager.IsWeeklyView {
 			period = "weekly"
@@ -251,6 +265,18 @@ func renderTasks(m *Model) string {
 	if m.ViewManager.IsAddTaskView {
 		addTaskView := m.NewTaskInput.View()
 
+		if hasUnclosedDoubleSquareBrackets(m.NewTaskInput.Value()) {
+			filterValue := strings.Split(m.NewTaskInput.Value(), "[[")[1]
+			peopleOptions := m.FileManager.PeopleFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
+
+			peopleOptionsView := ""
+			for _, option := range peopleOptions {
+				peopleOptionsView = joinVertical(peopleOptionsView, option)
+			}
+
+			addTaskView = joinVertical(addTaskView, peopleOptionsView)
+		}
+
 		m.Viewport.SetContent("Add new subtask\n" + addTaskView)
 
 		return contentContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight).Render(m.Viewport.View())
@@ -329,4 +355,24 @@ func createListItem(item string, index int, cursor int) string {
 	line += item + "\n"
 
 	return style.Render(line)
+}
+
+func hasUnclosedDoubleSquareBrackets(input string) bool {
+	openBrackets := 0
+
+	// Iterate over the string
+	for i := 0; i < len(input)-1; i++ {
+		if input[i:i+2] == "[[" {
+			openBrackets++ // Increment for each opening [[
+			i++            // Skip the next character to avoid re-checking
+		} else if input[i:i+2] == "]]" {
+			if openBrackets > 0 {
+				openBrackets-- // Decrement for each closing ]] if there's an opening
+			}
+			i++ // Skip the next character
+		}
+	}
+
+	// Check if there's an unmatched opening [[
+	return openBrackets > 0
 }

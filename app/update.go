@@ -22,7 +22,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.IsAddTaskView() {
 				m.NewTaskInput, cmd = m.NewTaskInput.Update(msg)
 				return m, cmd
+			} else if m.IsAddSubTaskView() {
+				m.NewTaskInput, cmd = m.NewTaskInput.Update(msg)
+				return m, cmd
+			} else if m.IsFilterView() {
+				m.FilterInput, cmd = m.FilterInput.Update(msg)
+				return m, cmd
 			}
+
 			return m, tea.Quit
 		} else if m.IsAddTaskView() || m.IsFilterView() || m.IsAddSubTaskView() {
 			if key == "esc" {
@@ -35,6 +42,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.FilterInput, cmd = m.FilterInput.Update(msg)
 				m.TaskManager.TaskCollection.FilterValue = m.FilterInput.Value()
 			} else {
+				if key == "[" {
+					KeyCommandFactory{}.CreateKeyCommand("[").Execute(m)
+				} else if key == "]" {
+					KeyCommandFactory{}.CreateKeyCommand("]").Execute(m)
+				}
+
 				m.NewTaskInput, cmd = m.NewTaskInput.Update(msg)
 			}
 		} else {
