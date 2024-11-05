@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/lipgloss"
@@ -222,6 +223,36 @@ func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
 
 	if m.IsAddTaskView() || m.IsAddSubTaskView() {
 		itemDetails = m.NewTaskInput.View()
+
+		if hasUnclosedDoubleSquareBrackets(m.NewTaskInput.Value()) {
+			filterValue := peopleFilterValue(m.NewTaskInput.Value())
+			peopleOptions := m.FileManager.PeopleFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
+			taskOptions := m.FileManager.TaskFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
+
+			peopleOptionsView := ""
+			for _, option := range peopleOptions {
+				person := strings.Split(option, ".md")[0]
+				peopleOptionsView = joinVertical(peopleOptionsView, suggestionTextStyle.Render(person))
+			}
+
+			peopleOptionViewTitle := suggestionTitleStyle.Render("People")
+
+			if peopleOptionsView != "" {
+				itemDetails = joinVertical(itemDetails, peopleOptionViewTitle, peopleOptionsView, "\n")
+			}
+
+			taskOptionsView := ""
+			for _, option := range taskOptions {
+				task := strings.Split(option, ".md")[0]
+				taskOptionsView = joinVertical(taskOptionsView, suggestionTextStyle.Render(task))
+			}
+
+			taskOptionViewTitle := suggestionTitleStyle.Render("Tasks")
+
+			if taskOptionsView != "" {
+				itemDetails = joinVertical(itemDetails, taskOptionViewTitle, taskOptionsView)
+			}
+		}
 	} else {
 		markdown := renderMarkdown(itemDetails)
 		m.Viewport.SetContent(markdown)

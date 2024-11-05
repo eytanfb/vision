@@ -8,6 +8,7 @@ import (
 	"unicode"
 
 	"github.com/charmbracelet/glamour"
+	"github.com/charmbracelet/log"
 )
 
 func (m *Model) View() string {
@@ -21,6 +22,7 @@ func ViewHandler(m *Model) string {
 		content = renderList(m, m.CategoryNames())
 	} else if m.IsDetailsView() {
 		if m.IsTaskDetailsFocus() {
+			log.Info("Task details focus")
 			content = renderTasks(m)
 		} else {
 			content = renderFiles(m)
@@ -236,7 +238,7 @@ func renderFiles(m *Model) string {
 
 	list, itemDetails := BuildFilesView(m, m.ViewManager.HideSidebar)
 
-	itemDetailsContainer := filesItemDetailsContainerStyle(m.ViewManager.DetailsViewWidth).Render(itemDetails)
+	itemDetailsContainer := filesItemDetailsContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight).Render(itemDetails)
 
 	if list != "" {
 		listContainer = listContainerStyle.Render(list)
@@ -280,7 +282,7 @@ func renderFilterInput(m *Model) string {
 }
 
 func renderTasks(m *Model) string {
-	if m.ViewManager.IsAddTaskView {
+	if m.ViewManager.IsAddTaskView || m.ViewManager.IsAddSubTaskView {
 		addTaskView := m.NewTaskInput.View()
 
 		if hasUnclosedDoubleSquareBrackets(m.NewTaskInput.Value()) {

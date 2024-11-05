@@ -112,8 +112,8 @@ func listContainerStyle(width int, height int, isItemDetailsFocus bool) lipgloss
 	return style
 }
 
-func filesItemDetailsContainerStyle(width int) lipgloss.Style {
-	return lipgloss.NewStyle().Width(width).MarginLeft(2).Border(lipgloss.NormalBorder())
+func filesItemDetailsContainerStyle(width int, height int) lipgloss.Style {
+	return lipgloss.NewStyle().Width(width).Height(height).MarginLeft(2).Border(lipgloss.NormalBorder())
 }
 
 func progressTextStyle(style lipgloss.Style) lipgloss.Style {
