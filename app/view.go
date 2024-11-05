@@ -83,7 +83,7 @@ func buildSummaryView(m *Model, hiddenSidebar bool) string {
 	period := "daily"
 
 	if m.IsAddTaskView() || m.IsAddSubTaskView() {
-		summaryView = m.NewTaskInput.View()
+		summaryView = m.NewTaskInput.View() + "\n"
 
 		if hasUnclosedDoubleSquareBrackets(m.NewTaskInput.Value()) {
 			filterValue := peopleFilterValue(m.NewTaskInput.Value())
@@ -286,16 +286,34 @@ func renderTasks(m *Model) string {
 		if hasUnclosedDoubleSquareBrackets(m.NewTaskInput.Value()) {
 			filterValue := peopleFilterValue(m.NewTaskInput.Value())
 			peopleOptions := m.FileManager.PeopleFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
+			taskOptions := m.FileManager.TaskFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
 
 			peopleOptionsView := ""
 			for _, option := range peopleOptions {
-				peopleOptionsView = joinVertical(peopleOptionsView, option)
+				person := strings.Split(option, ".md")[0]
+				peopleOptionsView = joinVertical(peopleOptionsView, suggestionTextStyle.Render(person))
 			}
 
-			addTaskView = joinVertical(addTaskView, peopleOptionsView)
+			peopleOptionViewTitle := suggestionTitleStyle.Render("People")
+
+			if peopleOptionsView != "" {
+				addTaskView = joinVertical(addTaskView, peopleOptionViewTitle, peopleOptionsView, "\n")
+			}
+
+			taskOptionsView := ""
+			for _, option := range taskOptions {
+				task := strings.Split(option, ".md")[0]
+				taskOptionsView = joinVertical(taskOptionsView, suggestionTextStyle.Render(task))
+			}
+
+			taskOptionViewTitle := suggestionTitleStyle.Render("Tasks")
+
+			if taskOptionsView != "" {
+				addTaskView = joinVertical(addTaskView, taskOptionViewTitle, taskOptionsView)
+			}
 		}
 
-		m.Viewport.SetContent("Add new subtask\n" + addTaskView)
+		m.Viewport.SetContent("Add new subtask\n" + addTaskView + "\n")
 
 		return contentContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight).Render(m.Viewport.View())
 	}
@@ -420,7 +438,7 @@ func peopleFilterValue(input string) string {
 	// Extract characters after the last unmatched [[
 	var result []rune
 	for _, r := range input[lastOpenIndex:] {
-		if unicode.IsLetter(r) { // Only include alphabetic characters
+		if unicode.IsLetter(r) || unicode.IsSpace(r) { // Only include alphabetic characters
 			result = append(result, r)
 		}
 	}
