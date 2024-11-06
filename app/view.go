@@ -427,5 +427,5 @@ func linkingSuggestionsDisplay(m *Model) string {
 		taskOptionsView = joinVertical(taskOptionViewTitle, taskOptionsView)
 	}
 
-	return joinHorizontal(peopleOptionsView, taskOptionsView)
+	return joinHorizontal(peopleOptionsView, taskOptionSuggestionsContainerStyle().Render(taskOptionsView))
 }
