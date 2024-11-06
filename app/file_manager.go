@@ -278,6 +278,7 @@ func readFilesInDirecory(path string, sortBy string, tm *TaskManager) []FileInfo
 	}
 
 	for _, file := range files {
+		log.Info("File: " + file.Name())
 		if file.IsDir() {
 			continue
 		}

@@ -20,6 +20,13 @@
       "fullPath": "~/Notes/lifeplus",
       "subFolders": ["tasks", "standups", "meetings", "projects", "people", "teams", "estimates", "other", "onboarding"],
       "color": "#A9C23F"
+    },
+    {
+      "displayName": "Personal",
+      "folderPathName": "personal",
+      "fullPath": "~/Notes/personal",
+      "subFolders": ["tasks", "biz_ideas", "job_applications", "suggestions"],
+      "color": "#0AAFC7"
     }
   ]
 }

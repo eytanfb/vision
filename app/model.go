@@ -42,12 +42,12 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 
 	m := Model{
 		DirectoryManager: DirectoryManager{
-			Companies:        companies,
-			Categories:       cfg.Categories,
-			SelectedCompany:  defaultCompany,
-			SelectedCategory: "tasks",
-			CompaniesCursor:  0,
-			CategoriesCursor: 0,
+			Companies:         companies,
+			CompanyCategories: cfg.Categories,
+			SelectedCompany:   defaultCompany,
+			SelectedCategory:  "tasks",
+			CompaniesCursor:   0,
+			CategoriesCursor:  0,
 		},
 		TaskManager: TaskManager{
 			TaskCollection: TaskCollection{
@@ -91,6 +91,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 		FilterInput:  filterInput,
 	}
 
+	m.DirectoryManager.Categories = m.DirectoryManager.CompanyCategories[defaultCompany.FolderPathName]
 	SetArgs(&m, args)
 	m.FetchFiles()
 

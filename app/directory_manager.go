@@ -3,12 +3,13 @@ package app
 import "strings"
 
 type DirectoryManager struct {
-	Companies        []Company
-	Categories       []string
-	SelectedCompany  Company
-	SelectedCategory string
-	CompaniesCursor  int
-	CategoriesCursor int
+	Companies         []Company
+	Categories        []string
+	CompanyCategories map[string][]string
+	SelectedCompany   Company
+	SelectedCategory  string
+	CompaniesCursor   int
+	CategoriesCursor  int
 }
 
 func (dm *DirectoryManager) CurrentFolderPath() string {
@@ -36,6 +37,7 @@ func (dm *DirectoryManager) SelectCompany(companyName string) bool {
 		if strings.ToLower(company.DisplayName) == companyName {
 			dm.SelectedCompany = company
 			dm.CompaniesCursor = index
+			dm.Categories = dm.CompanyCategories[company.FolderPathName]
 			return true
 		}
 	}

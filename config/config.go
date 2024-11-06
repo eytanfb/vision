@@ -16,7 +16,7 @@ type Company struct {
 
 type Config struct {
 	Companies      []Company `json:"companies"`
-	Categories     []string
+	Categories     map[string][]string
 	DefaultCompany string
 }
 
@@ -38,8 +38,9 @@ func LoadConfig(path string) (*Config, error) {
 		return nil, fmt.Errorf("could not decode file at %s: %w", path, err)
 	}
 
-	config.Categories = LoadCategories(&config)
+	config.Categories = LoadCompanyCategories(&config)
 
+	//defaultCompany := os.Getenv("VISION_DEFAULT_COMPANY")
 	defaultCompany := os.Getenv("VISION_DEFAULT_COMPANY")
 	if defaultCompany == "" {
 		defaultCompany = "clerky"
@@ -50,16 +51,18 @@ func LoadConfig(path string) (*Config, error) {
 	return &config, nil
 }
 
-func LoadCategories(config *Config) []string {
-	categoryList := []string{}
+func LoadCompanyCategories(config *Config) map[string][]string {
+	companyCategoryMap := make(map[string][]string)
 
 	for _, company := range config.Companies {
+		categoryList := []string{}
 		for _, subFolder := range company.SubFolders {
 			categoryList = append(categoryList, subFolder)
 		}
+		companyCategoryMap[company.FolderPathName] = uniqueStrings(categoryList)
 	}
 
-	return uniqueStrings(categoryList)
+	return companyCategoryMap
 }
 
 func uniqueStrings(input []string) []string {
