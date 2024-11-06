@@ -251,7 +251,9 @@ func (fm *FileManager) TaskFilenames(dm *DirectoryManager, tm *TaskManager, filt
 
 	filenames := []string{}
 	for _, file := range files {
-		if len(filterValue) > 2 && strings.Contains(strings.ToLower(file.Name), strings.ToLower(filterValue)) {
+		if filterValue == "" {
+			filenames = append(filenames, file.Name)
+		} else if strings.Contains(strings.ToLower(file.Name), strings.ToLower(filterValue)) {
 			filenames = append(filenames, file.Name)
 		}
 	}
