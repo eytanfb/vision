@@ -278,10 +278,42 @@ func readFilesInDirecory(path string, sortBy string, tm *TaskManager) []FileInfo
 	}
 
 	for _, file := range files {
-		log.Info("File: " + file.Name())
+		fullPath := filepath.Join(path, file.Name())
+
 		if file.IsDir() {
+			subFiles, err := os.ReadDir(fullPath)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			var subFileNames []string
+			for _, subFile := range subFiles {
+				if strings.HasPrefix(subFile.Name(), ".") {
+					continue
+				}
+
+				subFileNames = append(subFileNames, "- "+subFile.Name())
+			}
+
+			fileInfo, err := file.Info()
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			newFileInfo := FileInfo{
+				Name:      file.Name(),
+				Content:   strings.Join(subFileNames, "\n"),
+				UpdatedAt: fileInfo.ModTime(),
+				FullPath:  fullPath,
+				IsDir:     true,
+			}
+
+			fileInfos = append(fileInfos, newFileInfo)
+
 			continue
 		}
+
+		log.Info("File: " + file.Name())
 
 		if !strings.HasSuffix(file.Name(), ".md") {
 			continue
@@ -291,7 +323,6 @@ func readFilesInDirecory(path string, sortBy string, tm *TaskManager) []FileInfo
 			continue
 		}
 
-		fullPath := filepath.Join(path, file.Name())
 		content, err := os.ReadFile(fullPath)
 		if err != nil {
 			log.Fatal(err)
@@ -307,6 +338,7 @@ func readFilesInDirecory(path string, sortBy string, tm *TaskManager) []FileInfo
 			Content:   string(content),
 			UpdatedAt: fileInfo.ModTime(),
 			FullPath:  fullPath,
+			IsDir:     false,
 		}
 
 		fileInfos = append(fileInfos, newFileInfo)

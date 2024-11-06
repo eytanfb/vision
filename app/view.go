@@ -8,7 +8,6 @@ import (
 	"unicode"
 
 	"github.com/charmbracelet/glamour"
-	"github.com/charmbracelet/log"
 )
 
 func (m *Model) View() string {
@@ -22,7 +21,6 @@ func ViewHandler(m *Model) string {
 		content = renderList(m, m.CategoryNames())
 	} else if m.IsDetailsView() {
 		if m.IsTaskDetailsFocus() {
-			log.Info("Task details focus")
 			content = renderTasks(m)
 		} else {
 			content = renderFiles(m)
