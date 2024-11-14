@@ -88,10 +88,12 @@ func buildSummaryView(m *Model, hiddenSidebar bool) string {
 		summaryView = m.NewTaskInput.View() + "\n"
 
 		if hasUnclosedDoubleSquareBrackets(m.NewTaskInput.Value()) {
+			m.ViewManager.IsSuggestionsActive = true
 			optionsView := linkingSuggestionsDisplay(m)
 			summaryView = joinVertical(summaryView, optionsView)
+		} else {
+			m.ViewManager.IsSuggestionsActive = false
 		}
-
 	} else {
 		if m.ViewManager.IsWeeklyView {
 			period = "weekly"
@@ -261,8 +263,11 @@ func renderTasks(m *Model) string {
 		addTaskView := m.NewTaskInput.View()
 
 		if hasUnclosedDoubleSquareBrackets(m.NewTaskInput.Value()) {
+			m.ViewManager.IsSuggestionsActive = true
 			optionsView := linkingSuggestionsDisplay(m)
 			addTaskView = joinVertical(addTaskView, optionsView)
+		} else {
+			m.ViewManager.IsSuggestionsActive = false
 		}
 
 		m.Viewport.SetContent("Add new subtask\n" + addTaskView + "\n")
@@ -400,12 +405,21 @@ func peopleFilterValue(input string) string {
 
 func linkingSuggestionsDisplay(m *Model) string {
 	filterValue := peopleFilterValue(m.NewTaskInput.Value())
+	m.FileManager.SuggestionsFilterValue = filterValue
+
 	peopleOptions := m.FileManager.PeopleFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
 	taskOptions := m.FileManager.TaskFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
 
 	peopleOptionsView := ""
-	for _, option := range peopleOptions {
+	for index, option := range peopleOptions {
 		person := strings.Split(option, ".md")[0]
+
+		suggestionTextStyle := suggestionTextStyle
+
+		if m.ViewManager.SuggestionsListsCursor == 0 && index == m.ViewManager.SuggestionCursor {
+			suggestionTextStyle = selectedSuggestionTextStyle
+		}
+
 		peopleOptionsView = joinVertical(peopleOptionsView, suggestionTextStyle.Render(person))
 	}
 
@@ -416,8 +430,15 @@ func linkingSuggestionsDisplay(m *Model) string {
 	}
 
 	taskOptionsView := ""
-	for _, option := range taskOptions {
+	for index, option := range taskOptions {
 		task := strings.Split(option, ".md")[0]
+
+		suggestionTextStyle := suggestionTextStyle
+
+		if m.ViewManager.SuggestionsListsCursor == 1 && index == m.ViewManager.SuggestionCursor {
+			suggestionTextStyle = selectedSuggestionTextStyle
+		}
+
 		taskOptionsView = joinVertical(taskOptionsView, suggestionTextStyle.Render(task))
 	}
 

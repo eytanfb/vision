@@ -1,8 +1,34 @@
 package app
 
+import "strings"
+
 type EnterKeyCommand struct{}
 
 func (j EnterKeyCommand) Execute(m *Model) error {
+	if m.IsSuggestionsActive() {
+		acceptedSuggestion := m.FileManager.GetActiveSuggestion(m.ViewManager.SuggestionsListsCursor, m.ViewManager.SuggestionCursor)
+
+		if acceptedSuggestion != "" {
+			currentValue := m.NewTaskInput.Value()
+			filterValue := m.FileManager.SuggestionsFilterValue
+
+			if filterValue == "" {
+				filterValue = "[["
+			}
+
+			newValue := strings.Replace(currentValue, filterValue, acceptedSuggestion, 1)
+
+			if filterValue == "[[" {
+				newValue = "[[" + newValue
+			}
+
+			m.NewTaskInput.SetValue(newValue + "]]")
+			m.NewTaskInput.SetCursor(len(m.NewTaskInput.Value()))
+		}
+
+		return EscKeyCommand{}.Execute(m)
+	}
+
 	if m.IsAddTaskView() {
 		company := m.GetCurrentCompanyName()
 		input := m.NewTaskInput.Value()

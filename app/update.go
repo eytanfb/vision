@@ -50,6 +50,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				m.NewTaskInput, cmd = m.NewTaskInput.Update(msg)
 			}
+
+			if key == "tab" {
+				KeyCommandFactory{}.CreateKeyCommand("tab").Execute(m)
+			} else if key == "shift+tab" {
+				ShiftTabKeyCommand{}.Execute(m)
+			}
 		} else {
 			keyCommandFactory := KeyCommandFactory{}
 			keyCommand := keyCommandFactory.CreateKeyCommand(key)

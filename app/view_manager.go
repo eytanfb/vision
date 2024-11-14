@@ -25,6 +25,9 @@ type ViewManager struct {
 	KanbanTasksCount         int
 	KanbanViewLineDownFactor int
 	IsKanbanTaskUpdated      bool
+	SuggestionsListsCursor   int
+	SuggestionCursor         int
+	IsSuggestionsActive      bool
 }
 
 const (
@@ -115,4 +118,61 @@ func (vm *ViewManager) ToggleWeeklyView() {
 
 func (vm *ViewManager) KanbanLineDownAmount() int {
 	return vm.KanbanTaskCursor / 1 * vm.KanbanViewLineDownFactor
+}
+
+func (vm *ViewManager) NextSuggestion(fm *FileManager) {
+	activeSuggestionsList := fm.PeopleSuggestions
+
+	if vm.SuggestionsListsCursor == 1 {
+		activeSuggestionsList = fm.TaskSuggestions
+	}
+
+	if vm.SuggestionCursor < len(activeSuggestionsList)-1 {
+		vm.SuggestionCursor++
+	} else {
+		if vm.SuggestionsListsCursor == 1 {
+			vm.SuggestionsListsCursor = 0
+		} else {
+			vm.SuggestionsListsCursor = 1
+		}
+		vm.SuggestionCursor = 0
+	}
+}
+
+func (vm *ViewManager) PreviousSuggestion(fm *FileManager) {
+	activeSuggestionsList := fm.PeopleSuggestions
+
+	if vm.SuggestionsListsCursor == 1 {
+		activeSuggestionsList = fm.TaskSuggestions
+	}
+
+	if vm.SuggestionCursor > 0 {
+		vm.SuggestionCursor--
+	} else {
+		if vm.SuggestionsListsCursor == 1 {
+			vm.SuggestionsListsCursor = 0
+			activeSuggestionsList = fm.PeopleSuggestions
+		} else {
+			vm.SuggestionsListsCursor = 1
+			activeSuggestionsList = fm.TaskSuggestions
+		}
+
+		vm.SuggestionCursor = len(activeSuggestionsList) - 1
+	}
+}
+
+func (vm *ViewManager) NextSuggestionsList(fm *FileManager) {
+	if vm.SuggestionsListsCursor < 1 {
+		vm.SuggestionsListsCursor++
+	} else {
+		vm.SuggestionsListsCursor = 0
+	}
+}
+
+func (vm *ViewManager) PreviousSuggestionsList(fm *FileManager) {
+	if vm.SuggestionsListsCursor > 0 {
+		vm.SuggestionsListsCursor--
+	} else {
+		vm.SuggestionsListsCursor = 1
+	}
 }

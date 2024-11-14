@@ -5,6 +5,13 @@ type EscKeyCommand struct{}
 func (j EscKeyCommand) Execute(m *Model) error {
 	goToPreviousView := true
 
+	if m.IsSuggestionsActive() {
+		m.ViewManager.IsSuggestionsActive = false
+		m.ViewManager.SuggestionsListsCursor = -1
+		m.ViewManager.SuggestionCursor = -1
+		return nil
+	}
+
 	if m.IsAddTaskView() {
 		m.ViewManager.IsAddTaskView = false
 		m.NewTaskInput.Blur()

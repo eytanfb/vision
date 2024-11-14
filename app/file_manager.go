@@ -15,11 +15,14 @@ import (
 )
 
 type FileManager struct {
-	FilesCursor  int
-	Files        []FileInfo
-	FileCache    map[string][]FileInfo
-	TaskCache    map[string]map[string][]Task
-	SelectedFile FileInfo
+	FilesCursor            int
+	Files                  []FileInfo
+	FileCache              map[string][]FileInfo
+	TaskCache              map[string]map[string][]Task
+	SelectedFile           FileInfo
+	TaskSuggestions        []string
+	PeopleSuggestions      []string
+	SuggestionsFilterValue string
 }
 
 func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileInfo {
@@ -241,6 +244,7 @@ func (fm *FileManager) PeopleFilenames(dm *DirectoryManager, tm *TaskManager, fi
 		}
 	}
 
+	fm.PeopleSuggestions = filenames
 	return filenames
 }
 
@@ -258,7 +262,27 @@ func (fm *FileManager) TaskFilenames(dm *DirectoryManager, tm *TaskManager, filt
 		}
 	}
 
+	fm.TaskSuggestions = filenames
 	return filenames
+}
+
+func (fm *FileManager) GetActiveSuggestionsList(suggestionsListCursor int) []string {
+	if suggestionsListCursor == 0 {
+		return fm.PeopleSuggestions
+	} else if suggestionsListCursor == 1 {
+		return fm.TaskSuggestions
+	}
+
+	return []string{}
+}
+
+func (fm *FileManager) GetActiveSuggestion(suggestionsListCursor int, suggestionCursor int) string {
+	activeSuggestionsList := fm.GetActiveSuggestionsList(suggestionsListCursor)
+	if suggestionCursor < 0 || suggestionCursor >= len(activeSuggestionsList) {
+		return ""
+	}
+
+	return strings.Split(activeSuggestionsList[suggestionCursor], ".md")[0]
 }
 
 func (fm FileManager) currentFile() FileInfo {

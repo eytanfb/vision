@@ -59,10 +59,12 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 			DailySummaryDate:       today,
 		},
 		FileManager: FileManager{
-			FilesCursor: 0,
-			Files:       []FileInfo{},
-			FileCache:   make(map[string][]FileInfo),
-			TaskCache:   make(map[string]map[string][]Task),
+			FilesCursor:       0,
+			Files:             []FileInfo{},
+			FileCache:         make(map[string][]FileInfo),
+			TaskCache:         make(map[string]map[string][]Task),
+			PeopleSuggestions: []string{},
+			TaskSuggestions:   []string{},
 		},
 		ViewManager: ViewManager{
 			CurrentView:              CategoriesView,
@@ -85,6 +87,9 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 			KanbanTaskCursor:         0,
 			KanbanTasksCount:         0,
 			KanbanViewLineDownFactor: 3,
+			SuggestionsListsCursor:   -1,
+			SuggestionCursor:         -1,
+			IsSuggestionsActive:      false,
 		},
 		Viewport:     viewport.Model{},
 		NewTaskInput: textInput,
@@ -157,6 +162,10 @@ func (m *Model) IsItemDetailsFocus() bool {
 
 func (m *Model) IsKanbanView() bool {
 	return m.IsCategoryView() && m.ViewManager.HideSidebar
+}
+
+func (m *Model) IsSuggestionsActive() bool {
+	return m.ViewManager.IsSuggestionsActive
 }
 
 func (m *Model) GoToCompany(companyName string) {

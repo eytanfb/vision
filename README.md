@@ -2,6 +2,7 @@
 
 ## Ideas
 
+- [ ] Find a way to be able to order the tasks in the active lists
 - [ ] add filtered gmail notifications (circleci, helpscout, github reviews etc.)
 - [ ] Update task file focused task view to include links in the message, and make them navigatable
 - [ ] Be able to speak the notifications using "say"

@@ -225,6 +225,7 @@ func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
 		itemDetails = m.NewTaskInput.View()
 
 		if hasUnclosedDoubleSquareBrackets(m.NewTaskInput.Value()) {
+			m.ViewManager.IsSuggestionsActive = true
 			filterValue := peopleFilterValue(m.NewTaskInput.Value())
 			peopleOptions := m.FileManager.PeopleFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
 			taskOptions := m.FileManager.TaskFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
@@ -252,6 +253,8 @@ func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
 			if taskOptionsView != "" {
 				itemDetails = joinVertical(itemDetails, taskOptionViewTitle, taskOptionsView)
 			}
+		} else {
+			m.ViewManager.IsSuggestionsActive = false
 		}
 	} else {
 		markdown := renderMarkdown(itemDetails)

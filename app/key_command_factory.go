@@ -64,6 +64,10 @@ func (kcf KeyCommandFactory) CreateKeyCommand(key string) KeyCommand {
 		return UppercaseSKeyCommand{}
 	case "/":
 		return SlashKeyCommand{}
+	case "tab":
+		return TabKeyCommand{}
+	case "shift + tab":
+		return ShiftTabKeyCommand{}
 	}
 	return NilKeyCommand{}
 }

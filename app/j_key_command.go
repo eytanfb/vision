@@ -17,7 +17,9 @@ func (j JKeyCommand) AllowedStates() []string {
 }
 
 func moveDown(m *Model) {
-	if m.IsCategoryView() {
+	if m.IsSuggestionsActive() {
+		m.ViewManager.NextSuggestion(&m.FileManager)
+	} else if m.IsCategoryView() {
 		categoryViewBehavior(m)
 	} else if m.IsDetailsView() {
 		detailsViewBehavior(m)
