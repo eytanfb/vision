@@ -23,6 +23,7 @@ type FileManager struct {
 	TaskSuggestions        []string
 	PeopleSuggestions      []string
 	SuggestionsFilterValue string
+	FileExtension          string
 }
 
 func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileInfo {
@@ -50,7 +51,7 @@ func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileI
 	if categoryPath == "standups" {
 		lastStandup := files[0] // The first one is the most recent
 		todayInFormat := time.Now().Format("2006-01-02")
-		todayInFormat += ".md"
+		todayInFormat += fm.FileExtension
 
 		if lastStandup.Name != todayInFormat && isWorkingDay() {
 			fm.CreateStandup(companyFolderPath)
@@ -98,7 +99,7 @@ func (fm FileManager) CurrentFileContent() string {
 func (fm FileManager) CreateStandup(company string) {
 	todayInFormat := time.Now().Format("2006-01-02")
 
-	filePath := notesPath() + "/" + company + "/standups/" + todayInFormat + ".md"
+	filePath := notesPath() + "/" + company + "/standups/" + todayInFormat + fm.FileExtension
 	templatePath := notesPath() + "/obsidian/templates/" + company + "_standup.md"
 
 	err := copyFile(templatePath, filePath)
@@ -108,7 +109,7 @@ func (fm FileManager) CreateStandup(company string) {
 }
 
 func (fm FileManager) CreateTask(company string, taskName string) {
-	filePath := notesPath() + "/" + company + "/tasks/" + taskName + ".md"
+	filePath := notesPath() + "/" + company + "/tasks/" + taskName + fm.FileExtension
 	templatePath := notesPath() + "/obsidian/templates/" + company + "_task.md"
 
 	err := copyFile(templatePath, filePath)
@@ -282,7 +283,7 @@ func (fm *FileManager) GetActiveSuggestion(suggestionsListCursor int, suggestion
 		return ""
 	}
 
-	return strings.Split(activeSuggestionsList[suggestionCursor], ".md")[0]
+	return strings.Split(activeSuggestionsList[suggestionCursor], fm.FileExtension)[0]
 }
 
 func (fm FileManager) currentFile() FileInfo {
@@ -306,7 +307,7 @@ func readFilesInDirecory(path string, sortBy string, tm *TaskManager) []FileInfo
 			continue
 		}
 
-		if !strings.HasSuffix(file.Name(), ".md") {
+		if !strings.HasSuffix(file.Name(), tm.FileExtension) {
 			continue
 		}
 

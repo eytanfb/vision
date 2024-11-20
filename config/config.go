@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+
+	"github.com/charmbracelet/log"
 )
 
 type Company struct {
@@ -15,9 +17,10 @@ type Company struct {
 }
 
 type Config struct {
-	Companies      []Company `json:"companies"`
-	Categories     []string
-	DefaultCompany string
+	Companies              []Company `json:"companies"`
+	Categories             []string
+	DefaultCompany         string
+	PreferredFileExtension string
 }
 
 func LoadConfig(path string) (*Config, error) {
@@ -46,6 +49,14 @@ func LoadConfig(path string) (*Config, error) {
 	}
 
 	config.DefaultCompany = defaultCompany
+
+	config.PreferredFileExtension = ".md"
+
+	if os.Getenv("VISION_FILE_EXTENSION") != "" {
+		config.PreferredFileExtension = os.Getenv("VISION_FILE_EXTENSION")
+	}
+
+	log.Info("setting preferred file extension to: " + config.PreferredFileExtension)
 
 	return &config, nil
 }

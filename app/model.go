@@ -57,6 +57,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 			WeeklySummaryStartDate: monday,
 			WeeklySummaryEndDate:   friday,
 			DailySummaryDate:       today,
+			FileExtension:          cfg.PreferredFileExtension,
 		},
 		FileManager: FileManager{
 			FilesCursor:       0,
@@ -65,6 +66,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 			TaskCache:         make(map[string]map[string][]Task),
 			PeopleSuggestions: []string{},
 			TaskSuggestions:   []string{},
+			FileExtension:     cfg.PreferredFileExtension,
 		},
 		ViewManager: ViewManager{
 			CurrentView:              CategoriesView,

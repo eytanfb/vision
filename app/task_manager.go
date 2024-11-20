@@ -15,6 +15,7 @@ type TaskManager struct {
 	WeeklySummaryEndDate   string
 	DailySummaryDate       string
 	SelectedTask           Task
+	FileExtension          string
 }
 
 type TaskCollectionSummary struct {
@@ -68,7 +69,7 @@ func (tm *TaskManager) SummaryForSlack(companyName string) string {
 		category := key
 		tasks := previousDaySummary[key]
 
-		taskTitle := category[0 : len(category)-len(".md")]
+		taskTitle := category[0 : len(category)-len(tm.FileExtension)]
 		slackMessage.WriteString("• " + taskTitle + "\n")
 
 		for _, task := range tasks {
@@ -89,7 +90,7 @@ func (tm *TaskManager) SummaryForSlack(companyName string) string {
 		category := key
 		tasks := summary[key]
 
-		taskTitle := category[0 : len(category)-len(".md")]
+		taskTitle := category[0 : len(category)-len(tm.FileExtension)]
 		slackMessage.WriteString("• " + taskTitle + "\n")
 
 		for _, task := range tasks {
@@ -118,7 +119,7 @@ func (tm *TaskManager) WeeklySummaryForSlack(companyName string) string {
 		category := key
 		tasks := summary[key]
 
-		taskTitle := category[0 : len(category)-len(".md")]
+		taskTitle := category[0 : len(category)-len(tm.FileExtension)]
 		slackMessage.WriteString("• " + taskTitle + "\n")
 
 		for _, task := range tasks {
@@ -139,7 +140,7 @@ func (tm *TaskManager) WeeklySummaryForSlack(companyName string) string {
 		category := key
 		tasks := summary[key]
 
-		taskTitle := category[0 : len(category)-len(".md")]
+		taskTitle := category[0 : len(category)-len(tm.FileExtension)]
 		slackMessage.WriteString("• " + taskTitle + "\n")
 
 		for _, task := range tasks {

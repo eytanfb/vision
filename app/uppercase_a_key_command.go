@@ -10,7 +10,7 @@ func (j UppercaseAKeyCommand) Execute(m *Model) error {
 	m.ViewManager.IsAddSubTaskView = true
 	m.NewTaskInput.Reset()
 
-	prompt := m.FileManager.SelectedFile.FileNameWithoutExtension() + "\n"
+	prompt := m.FileManager.SelectedFile.FileNameWithoutExtension(m.FileManager.FileExtension) + "\n"
 
 	m.NewTaskInput.Prompt = prompt
 	m.NewTaskInput.Placeholder = "> Add a subtask..."

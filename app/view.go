@@ -412,7 +412,7 @@ func linkingSuggestionsDisplay(m *Model) string {
 
 	peopleOptionsView := ""
 	for index, option := range peopleOptions {
-		person := strings.Split(option, ".md")[0]
+		person := strings.Split(option, m.FileManager.FileExtension)[0]
 
 		suggestionTextStyle := suggestionTextStyle
 
@@ -431,7 +431,7 @@ func linkingSuggestionsDisplay(m *Model) string {
 
 	taskOptionsView := ""
 	for index, option := range taskOptions {
-		task := strings.Split(option, ".md")[0]
+		task := strings.Split(option, m.FileManager.FileExtension)[0]
 
 		suggestionTextStyle := suggestionTextStyle
 

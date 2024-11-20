@@ -205,7 +205,7 @@ func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
 			m.FileManager.SelectedFile = file
 		}
 
-		line := file.FileNameWithoutExtension()
+		line := file.FileNameWithoutExtension(m.FileManager.FileExtension)
 
 		if m.DirectoryManager.SelectedCategory == "tasks" {
 			if index > 9 {
@@ -232,7 +232,7 @@ func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
 
 			peopleOptionsView := ""
 			for _, option := range peopleOptions {
-				person := strings.Split(option, ".md")[0]
+				person := strings.Split(option, m.FileManager.FileExtension)[0]
 				peopleOptionsView = joinVertical(peopleOptionsView, suggestionTextStyle.Render(person))
 			}
 
@@ -244,7 +244,7 @@ func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
 
 			taskOptionsView := ""
 			for _, option := range taskOptions {
-				task := strings.Split(option, ".md")[0]
+				task := strings.Split(option, m.FileManager.FileExtension)[0]
 				taskOptionsView = joinVertical(taskOptionsView, suggestionTextStyle.Render(task))
 			}
 
@@ -289,7 +289,7 @@ func buildTaskTitleView(m *Model, category string, width int, date string) strin
 }
 
 func buildTaskTitle(m *Model, category string, date string, titleStyle lipgloss.Style) string {
-	taskTitle := category[0 : len(category)-len(".md")]
+	taskTitle := category[0 : len(category)-len(m.FileManager.FileExtension)]
 	taskTitle += " (" + fmt.Sprintf("%d", activeTaskCount(m, category, date)) + " active, " + fmt.Sprintf("%d", incompleteTaskCount(m, category, date)) + " remaining)"
 
 	return titleStyle.Render(taskTitle)
