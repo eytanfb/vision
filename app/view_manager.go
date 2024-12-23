@@ -28,6 +28,7 @@ type ViewManager struct {
 	SuggestionsListsCursor   int
 	SuggestionCursor         int
 	IsSuggestionsActive      bool
+	IsCalendarView           bool
 }
 
 const (

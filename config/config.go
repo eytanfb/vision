@@ -45,7 +45,7 @@ func LoadConfig(path string) (*Config, error) {
 
 	defaultCompany := os.Getenv("VISION_DEFAULT_COMPANY")
 	if defaultCompany == "" {
-		defaultCompany = "clerky"
+		defaultCompany = "lifeplus"
 	}
 
 	config.DefaultCompany = defaultCompany

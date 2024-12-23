@@ -9,7 +9,7 @@ func TestTaskManager_ExtractTasksCreatesTastsFromInput(t *testing.T) {
 	content := "- [ ] Task 1\n- [ ] Task 2\n- [ ] Task 3\n"
 
 	tm := TaskManager{}
-	tasks := tm.ExtractTasks(file, content)
+	tasks := tm.ExtractTasks(file, content, "test_project")
 
 	if len(tasks) != 3 {
 		t.Errorf("Expected 3 tasks, got %d", len(tasks))
@@ -21,7 +21,7 @@ func TestTaskManager_ExtractTasksReturnsEmptyArrayForEmptyInput(t *testing.T) {
 	content := ""
 
 	tm := TaskManager{}
-	tasks := tm.ExtractTasks(file, content)
+	tasks := tm.ExtractTasks(file, content, "test_project")
 
 	if len(tasks) != 0 {
 		t.Errorf("Expected 0 tasks, got %d", len(tasks))

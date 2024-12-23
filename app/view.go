@@ -125,6 +125,15 @@ func kanbanSummaryView(m *Model, period string) string {
 }
 
 func taskSummaryToView(m *Model, period string) string {
+	if m.ViewManager.IsCalendarView {
+		calendarView := NewCalendarView(
+			m.TaskManager.TaskCollection.allTasks(),
+			m.ViewManager.DetailsViewWidth,
+			m.ViewManager.DetailsViewHeight,
+		)
+		return calendarView.View()
+	}
+
 	tasksByFile, summaryDate := setDailySummaryValues(m)
 
 	if period == "weekly" {

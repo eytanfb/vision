@@ -9,13 +9,13 @@
 - [ ] Integrate Github notifications
 - [ ] Send an email at the end of the week to personal email with all tasks statuses at the end of the week
 - [ ] Redo daily and weekly summary
-- [ ] Simple calendar view
 - [ ] Be able to tag filter, when /{{folder}}/{{filter}} limit search to folder
 - [ ] Have a way to load all data for all companies
 - [ ] Task retrospective view if done, maybe with a timeline explanation
 - [ ] Think of a way to include personal projects here
 - [ ] Make file paths configurable, have a notes folder env variable
 - [ ] Check to see if there can be a way to pull track info from radio
+- [x] Simple calendar view
 - [x] Filter by any text
 - [x] On KANBAN view, make sure viewport works and doesn't go above the height
 - [x] For now, only filter from same company
