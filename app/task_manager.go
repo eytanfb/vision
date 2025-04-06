@@ -248,10 +248,19 @@ func (tm *TaskManager) UpdateTaskToCompleted(fm FileManager, task Task) {
 	fm.UpdateTask(task, "completed")
 }
 
+func (tm *TaskManager) UpdateTaskToPriority(fm FileManager, task Task) {
+	fm.UpdateTask(task, "priority")
+}
+
+func (tm *TaskManager) UpdateTaskToUnpriority(fm FileManager, task Task) {
+	fm.UpdateTask(task, "unpriority")
+}
+
 func createTaskFromFileTask(company string, name string, task utils.FileTask) Task {
 	completedDate := extractCompletedDateFromText(task.Text)
 	startDate := extractStartDateFromText(task.Text)
 	scheduledDate := extractScheduledDateFromText(task.Text)
+	priority := extractPriorityFromText(task.Text)
 	completed := completedDate != ""
 	started := startDate != ""
 	scheduled := scheduledDate != ""
@@ -262,6 +271,7 @@ func createTaskFromFileTask(company string, name string, task utils.FileTask) Ta
 		StartDate:     startDate,
 		ScheduledDate: scheduledDate,
 		CompletedDate: completedDate,
+		Priority:      priority,
 		LineNumber:    task.LineNumber,
 		Completed:     completed,
 		Started:       started,

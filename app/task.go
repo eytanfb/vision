@@ -14,6 +14,7 @@ const (
 	scheduled
 	started
 	overdue
+	priority
 	completed
 	completed_past
 )
@@ -30,12 +31,14 @@ type Task struct {
 	Started       bool
 	Scheduled     bool
 	FileName      string
+	Priority      string
 }
 
 const (
 	StartedIcon   = "🛫 "
 	CompletedIcon = "✅ "
 	ScheduledIcon = "⏳"
+	PriorityIcon  = "🔺 "
 )
 
 func (t Task) String() string {
@@ -276,6 +279,10 @@ func extractScheduledDateFromText(text string) string {
 
 func extractCompletedDateFromText(text string) string {
 	return extractDateFromText(text, CompletedIcon)
+}
+
+func extractPriorityFromText(text string) string {
+	return extractDateFromText(text, PriorityIcon)
 }
 
 func extractDateFromText(text string, icon string) string {

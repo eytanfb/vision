@@ -160,6 +160,8 @@ func colorForTitle(title string) lipgloss.Color {
 		return activeFileColor
 	} else if title == "Completed" {
 		return completedFileColor
+	} else if title == "Priority" {
+		return priorityTextColor
 	}
 
 	return white

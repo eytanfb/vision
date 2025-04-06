@@ -18,6 +18,7 @@ var (
 	suggestionTitleColor           = lipgloss.Color("#9A9CCD")
 	suggestionTextColor            = lipgloss.Color("#9A9CCD")
 	selectedSuggestionTextColor    = lipgloss.Color("#CB48B7")
+	priorityTextColor              = lipgloss.Color("#EC4E20")
 )
 
 var (
@@ -28,6 +29,7 @@ var (
 	startedTextStyle            = lipgloss.NewStyle().Foreground(startedColor)
 	completedTextStyle          = lipgloss.NewStyle().Foreground(completedColor)
 	overdueTextStyle            = lipgloss.NewStyle().Foreground(overdueColor)
+	priorityTextStyle           = lipgloss.NewStyle().Foreground(priorityTextColor)
 	taskFileTitleStyle          = lipgloss.NewStyle().Foreground(white).Bold(true).Underline(true)
 	completedFileStyle          = lipgloss.NewStyle().Foreground(completedFileColor)
 	inactiveFileStyle           = lipgloss.NewStyle().Foreground(inactiveFileColor)

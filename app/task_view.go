@@ -16,6 +16,7 @@ type TaskView struct {
 
 func (tv TaskView) RenderedText() string {
 	status := tv.task.StatusAtDate(tv.date)
+	priority := tv.task.Priority
 
 	if tv.weekly {
 		status = tv.task.WeeklyStatusAtDate(tv.date)
@@ -24,6 +25,10 @@ func (tv TaskView) RenderedText() string {
 	icon := tv.statusIcon(status)
 	text := tv.task.Summary()
 	textStyle := tv.textStyle(status)
+
+	if priority != "" {
+		textStyle = priorityTextStyle
+	}
 
 	statusText := tv.statusText(status)
 
@@ -43,13 +48,13 @@ func (tv TaskView) statusIcon(status status) string {
 	icon := ""
 
 	if status == completed {
-		icon = "✅"
+		icon = "✅ "
 	} else if status == started {
-		icon = "🛫"
+		icon = "🛫 "
 	} else if status == scheduled {
-		icon = "⏳"
+		icon = "⏳ "
 	} else if status == overdue {
-		icon = "🚨"
+		icon = "🚨 "
 	}
 
 	return iconStyle.Render(icon)
@@ -86,6 +91,10 @@ func (tv TaskView) textStyle(status status) lipgloss.Style {
 		textStyle = scheduledTextStyle
 	} else if status == overdue {
 		textStyle = overdueTextStyle
+	}
+
+	if status == priority {
+		textStyle = priorityTextStyle
 	}
 
 	return textStyle.Width(tv.width)

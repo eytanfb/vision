@@ -191,6 +191,30 @@ func (fm *FileManager) UpdateTask(task Task, status string) {
 
 				break
 			}
+
+			if status == "priority" {
+				line := lines[i]
+				regex := regexp.MustCompile(`\s+\d{4}-\d{2}-\d{2}`)
+				lines[i] = regex.ReplaceAllString(line, "")
+
+				if !strings.Contains(line, PriorityIcon) {
+					checkboxRegex := regexp.MustCompile(`- \[[ x]\]`)
+					if loc := checkboxRegex.FindStringIndex(line); loc != nil {
+						prefix := line[:loc[1]]
+						suffix := line[loc[1]:]
+						lines[i] = prefix + PriorityIcon + suffix
+					}
+				}
+
+				break
+			} else if status == "unpriority" {
+				line := lines[i]
+				if strings.Contains(line, PriorityIcon) {
+					lines[i] = strings.ReplaceAll(lines[i], PriorityIcon, "")
+				}
+
+				break
+			}
 		}
 	}
 
@@ -321,16 +345,30 @@ func readFilesInDirecory(path string, sortBy string, tm *TaskManager) []FileInfo
 			log.Fatal(err)
 		}
 
+		// Extract title from YAML frontmatter if it exists
+		contentStr := string(content)
+		title := extractTitleFromYAML(contentStr)
+
+		// Create display name with title if available
+		displayName := ""
+		if title != "" {
+			displayName = title
+		}
+
+		// Remove YAML frontmatter
+		contentStr = removeYAMLFrontmatter(contentStr)
+
 		fileInfo, err := file.Info()
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		newFileInfo := FileInfo{
-			Name:      file.Name(),
-			Content:   string(content),
-			UpdatedAt: fileInfo.ModTime(),
-			FullPath:  fullPath,
+			Name:        file.Name(),
+			DisplayName: displayName,
+			Content:     contentStr,
+			UpdatedAt:   fileInfo.ModTime(),
+			FullPath:    fullPath,
 		}
 
 		fileInfos = append(fileInfos, newFileInfo)
@@ -345,6 +383,71 @@ func readFilesInDirecory(path string, sortBy string, tm *TaskManager) []FileInfo
 	}
 
 	return fileInfos
+}
+
+// extractTitleFromYAML extracts the title field from YAML frontmatter if it exists
+func extractTitleFromYAML(content string) string {
+	if !strings.HasPrefix(strings.TrimSpace(content), "---") {
+		return ""
+	}
+
+	lines := strings.Split(content, "\n")
+	if len(lines) < 3 {
+		return ""
+	}
+
+	// Look for title field in YAML frontmatter
+	for i := 1; i < len(lines); i++ {
+		line := strings.TrimSpace(lines[i])
+		if line == "---" {
+			// End of YAML frontmatter
+			break
+		}
+
+		if strings.HasPrefix(line, "title:") {
+			// Extract title value
+			titleParts := strings.SplitN(line, ":", 2)
+			if len(titleParts) == 2 {
+				title := strings.TrimSpace(titleParts[1])
+				title = strings.ReplaceAll(title, "[[", "")
+				title = strings.ReplaceAll(title, "]]", "")
+				return title
+			}
+		}
+	}
+
+	return ""
+}
+
+// removeYAMLFrontmatter removes YAML frontmatter from content if it exists
+func removeYAMLFrontmatter(content string) string {
+	// Check if content starts with "---" which indicates YAML frontmatter
+	if strings.HasPrefix(strings.TrimSpace(content), "---") {
+		// Split the content by lines
+		lines := strings.Split(content, "\n")
+		if len(lines) < 2 {
+			return content
+		}
+
+		// Skip the first line (which is "---")
+		foundClosingMarker := false
+		endIndex := 0
+
+		// Look for the closing "---" marker
+		for i := 1; i < len(lines); i++ {
+			if strings.TrimSpace(lines[i]) == "---" {
+				foundClosingMarker = true
+				endIndex = i
+				break
+			}
+		}
+
+		// If we found a closing marker, return everything after it
+		if foundClosingMarker && endIndex < len(lines)-1 {
+			return strings.Join(lines[endIndex+1:], "\n")
+		}
+	}
+	return content
 }
 
 func sortedFiles(fileInfos []FileInfo, tm *TaskManager) []FileInfo {

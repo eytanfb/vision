@@ -70,6 +70,8 @@ func (kcf KeyCommandFactory) CreateKeyCommand(key string) KeyCommand {
 		return ShiftTabKeyCommand{}
 	case "c":
 		return CKeyCommand{}
+	case "p":
+		return PKeyCommand{}
 	}
 	return NilKeyCommand{}
 }
