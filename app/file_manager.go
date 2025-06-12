@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"vision/mindmap"
 
 	"github.com/charmbracelet/log"
 )
@@ -24,6 +25,16 @@ type FileManager struct {
 	PeopleSuggestions      []string
 	SuggestionsFilterValue string
 	FileExtension          string
+	Updater                mindmap.MindMapUpdaterInterface
+}
+
+func NewFileManager() *FileManager {
+	return &FileManager{
+		FileCache:     make(map[string][]FileInfo),
+		TaskCache:     make(map[string]map[string][]Task),
+		FileExtension: ".md",
+		Updater:       mindmap.NewNullUpdater(),
+	}
 }
 
 func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileInfo {
@@ -116,6 +127,9 @@ func (fm FileManager) CreateTask(company string, taskName string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	log.Info("Calling MindMapUpdater.AppendTask", "taskName", taskName)
+	fm.Updater.AppendTask(taskName, taskName)
 }
 
 func (fm FileManager) CreateSubTask(company string, file FileInfo, taskName string) {
@@ -139,6 +153,10 @@ func (fm FileManager) CreateSubTask(company string, file FileInfo, taskName stri
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	parentTaskID := strings.TrimSuffix(file.Name, fm.FileExtension)
+	log.Info("Calling MindMapUpdater.AppendSubtask", "parentTaskID", parentTaskID, "taskName", taskName)
+	fm.Updater.AppendSubtask(parentTaskID, taskName, taskName)
 }
 
 func (fm *FileManager) ResetCache() {
@@ -146,8 +164,8 @@ func (fm *FileManager) ResetCache() {
 }
 
 func (fm *FileManager) UpdateTask(task Task, status string) {
-	filename := task.FileName
-	text := task.Text
+	filename := task.FileName // This is the parent task's filename
+	text := task.Text         // This is the subtask text
 
 	filePath := notesPath() + "/" + task.Company + "/tasks/" + filename
 	file, err := os.ReadFile(filePath)
@@ -222,6 +240,24 @@ func (fm *FileManager) UpdateTask(task Task, status string) {
 	err = os.WriteFile(filePath, []byte(newContent), 0644)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if status == "scheduled" || status == "started" || status == "completed" || status == "unscheduled" {
+		// Clean the task text before sending to mind map updater
+		cleanText := task.textWithoutDates()
+		cleanText = strings.TrimSpace(cleanText)
+
+		// Use the filename (without extension) as the parent task ID
+		parentTaskID := strings.TrimSuffix(filename, fm.FileExtension)
+		log.Info("Calling MindMapUpdater.AppendSubtask and UpdateSubtaskStatus",
+			"parentTaskID", parentTaskID,
+			"taskName", cleanText,
+			"status", status)
+
+		// First ensure the subtask exists under the parent
+		fm.Updater.AppendSubtask(parentTaskID, cleanText, cleanText)
+		// Then update its status
+		fm.Updater.UpdateSubtaskStatus(parentTaskID, cleanText, status)
 	}
 }
 

@@ -1,13 +1,16 @@
 package app
 
 import (
+	"os/exec"
 	"strings"
 	"time"
 	"vision/config"
+	"vision/mindmap"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/log"
 )
 
 type Model struct {
@@ -15,6 +18,7 @@ type Model struct {
 	TaskManager      TaskManager
 	FileManager      FileManager
 	ViewManager      ViewManager
+	MindMapUpdater   mindmap.MindMapUpdaterInterface
 	Viewport         viewport.Model
 	NewTaskInput     textinput.Model
 	FilterInput      textinput.Model
@@ -39,6 +43,17 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 	monday := time.Now().AddDate(0, 0, -int(time.Now().Weekday())+1).Format("2006-01-02")
 	friday := time.Now().AddDate(0, 0, 5-int(time.Now().Weekday())).Format("2006-01-02")
 	today := time.Now().Format("2006-01-02")
+
+	// Check if h-m-m exists in PATH
+	var mindMapUpdater mindmap.MindMapUpdaterInterface
+	_, err := exec.LookPath("h-m-m")
+	if err != nil {
+		log.Info("h-m-m not found in PATH, using NullMindMapUpdater")
+		mindMapUpdater = mindmap.NewNullUpdater()
+	} else {
+		log.Info("h-m-m found in PATH, using MindMapUpdater")
+		mindMapUpdater = mindmap.NewUpdater(notesPath() + "/personal/daily_mind_maps")
+	}
 
 	m := Model{
 		DirectoryManager: DirectoryManager{
@@ -68,6 +83,7 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 			TaskSuggestions:   []string{},
 			FileExtension:     cfg.PreferredFileExtension,
 		},
+		MindMapUpdater: mindMapUpdater,
 		ViewManager: ViewManager{
 			CurrentView:              CategoriesView,
 			Width:                    0,
@@ -97,6 +113,14 @@ func InitialModel(cfg *config.Config, args []string) tea.Model {
 		NewTaskInput: textInput,
 		FilterInput:  filterInput,
 	}
+
+	// Initialize today's mind-map if using real updater
+	if _, ok := mindMapUpdater.(*mindmap.NullMindMapUpdater); !ok {
+		mindMapUpdater.InitializeDailyMindMap(time.Now())
+	}
+
+	// Provide updater reference to FileManager
+	m.FileManager.Updater = mindMapUpdater
 
 	SetArgs(&m, args)
 	m.FetchFiles()
