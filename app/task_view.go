@@ -26,7 +26,7 @@ func (tv TaskView) RenderedText() string {
 	text := tv.task.Summary()
 	textStyle := tv.textStyle(status)
 
-	if priority != "" {
+	if priority != "" && status != completed {
 		textStyle = priorityTextStyle
 	}
 
