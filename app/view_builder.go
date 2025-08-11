@@ -208,7 +208,7 @@ func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
 		line := file.FileNameWithoutExtension(m.FileManager.FileExtension)
 
 		if m.DirectoryManager.SelectedCategory == "tasks" {
-			if index > 9 {
+			if index > 15 {
 				break
 			}
 			list, activeList, completedList, inactiveList = buildTaskFilesView(m, line, index, file, style, activeList, completedList, inactiveList)

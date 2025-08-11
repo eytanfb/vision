@@ -1,6 +1,9 @@
 package app
 
-import "strings"
+import (
+	"strings"
+	"vision/utils"
+)
 
 type EnterKeyCommand struct{}
 
@@ -40,7 +43,10 @@ func (j EnterKeyCommand) Execute(m *Model) error {
 		input := m.NewTaskInput.Value()
 		selectedFile := m.FileManager.SelectedFile
 
-		m.FileManager.CreateSubTask(company, selectedFile, input)
+		// Parse hashtags to Obsidian date format before creating subtask
+		processedInput := utils.ParseHashtagsToObsidianDates(input)
+
+		m.FileManager.CreateSubTask(company, selectedFile, processedInput)
 		return EscKeyCommand{}.Execute(m)
 	} else if m.IsFilterView() {
 		m.ViewManager.IsFilterView = false
