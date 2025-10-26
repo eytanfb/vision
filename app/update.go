@@ -76,12 +76,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Viewport.Width = m.ViewManager.DetailsViewWidth
 			m.Viewport.Height = m.ViewManager.DetailsViewHeight
 
-			if m.ViewManager.DetailsViewHeight > 65 {
-				m.ViewManager.KanbanViewLineDownFactor = 5
-			} else if m.ViewManager.DetailsViewHeight > 45 {
-				m.ViewManager.KanbanViewLineDownFactor = 10
-			} else {
-				m.ViewManager.KanbanViewLineDownFactor = 15
+			// Adjust scroll speed based on terminal height
+			switch {
+			case m.ViewManager.DetailsViewHeight > largeTerminalHeight:
+				m.ViewManager.KanbanViewLineDownFactor = largeTerminalScrollFactor
+			case m.ViewManager.DetailsViewHeight > mediumTerminalHeight:
+				m.ViewManager.KanbanViewLineDownFactor = mediumTerminalScrollFactor
+			default:
+				m.ViewManager.KanbanViewLineDownFactor = smallTerminalScrollFactor
 			}
 		}
 	}

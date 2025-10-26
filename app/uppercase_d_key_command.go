@@ -9,7 +9,9 @@ type UppercaseDKeyCommand struct{}
 
 func (j UppercaseDKeyCommand) Execute(m *Model) error {
 	if m.IsCategoryView() && m.ViewManager.HideSidebar {
-		m.TaskManager.UpdateTaskToStarted(m.FileManager, m.TaskManager.SelectedTask)
+		if err := m.TaskManager.UpdateTaskToStarted(&m.FileManager, m.TaskManager.SelectedTask); err != nil {
+			m.Errors = append(m.Errors, err.Error())
+		}
 		m.FileManager.FetchTasks(&m.DirectoryManager, &m.TaskManager)
 
 		return nil

@@ -7,11 +7,15 @@ type UppercaseSKeyCommand struct{}
 func (j UppercaseSKeyCommand) Execute(m *Model) error {
 	if m.IsCategoryView() && m.ViewManager.HideSidebar {
 		if m.TaskManager.SelectedTask.Started {
-			m.TaskManager.UpdateTaskToScheduled(m.FileManager, m.TaskManager.SelectedTask)
+			if err := m.TaskManager.UpdateTaskToScheduled(&m.FileManager, m.TaskManager.SelectedTask); err != nil {
+				m.Errors = append(m.Errors, err.Error())
+			}
 			m.ViewManager.KanbanListCursor = 1
 			m.ViewManager.IsKanbanTaskUpdated = true
 		} else {
-			m.TaskManager.UpdateTaskToUnscheduled(m.FileManager, m.TaskManager.SelectedTask)
+			if err := m.TaskManager.UpdateTaskToUnscheduled(&m.FileManager, m.TaskManager.SelectedTask); err != nil {
+				m.Errors = append(m.Errors, err.Error())
+			}
 			m.ViewManager.KanbanListCursor = 0
 			m.ViewManager.IsKanbanTaskUpdated = true
 			log.Info("Updating task to unscheduled ", m.ViewManager.IsKanbanTaskUpdated)

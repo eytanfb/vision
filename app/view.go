@@ -309,41 +309,54 @@ func renderMarkdown(content string) string {
 	return markdown
 }
 
+type fileSortKey struct {
+	filename   string
+	percentage int
+	isInactive bool
+	isComplete bool
+}
+
 func viewSort(filenames []string, m *Model) {
-	sort.Slice(filenames, func(i, j int) bool {
-		iInactive := m.TaskManager.TaskCollection.IsInactive(filenames[i])
-		jInactive := m.TaskManager.TaskCollection.IsInactive(filenames[j])
+	// Pre-calculate all sort keys once - O(n) instead of O(n log n) Progress() calls
+	sortKeys := make([]fileSortKey, len(filenames))
+	for i, filename := range filenames {
+		completed, total := m.TaskManager.TaskCollection.Progress(filename)
 
-		if iInactive {
-			return false
+		var percentage int
+		if total > 0 {
+			percentage = int(float64(completed)/float64(total)*100)
 		}
 
-		if jInactive {
-			return true
+		sortKeys[i] = fileSortKey{
+			filename:   filename,
+			percentage: percentage,
+			isInactive: m.TaskManager.TaskCollection.IsInactive(filename),
+			isComplete: total > 0 && completed == total,
 		}
-		iCompletedTasks, iTotalTasks := m.TaskManager.TaskCollection.Progress(filenames[i])
-		jCompletedTasks, jTotalTasks := m.TaskManager.TaskCollection.Progress(filenames[j])
+	}
 
-		iPercentage := float64(iCompletedTasks) / float64(iTotalTasks)
-		jPercentage := float64(jCompletedTasks) / float64(jTotalTasks)
-
-		iRoundedUp := int(iPercentage*10) * 10
-		jRoundedUp := int(jPercentage*10) * 10
-
-		if iRoundedUp == 100 {
-			return false
+	// Sort using pre-calculated keys - O(n log n) comparisons only
+	sort.Slice(sortKeys, func(i, j int) bool {
+		// Inactive files go last
+		if sortKeys[i].isInactive != sortKeys[j].isInactive {
+			return !sortKeys[i].isInactive
 		}
-
-		if jRoundedUp == 100 {
-			return true
+		// Complete files go last
+		if sortKeys[i].isComplete != sortKeys[j].isComplete {
+			return !sortKeys[i].isComplete
 		}
-
-		if iRoundedUp == jRoundedUp {
-			return filenames[i] < filenames[j]
+		// Sort by percentage descending
+		if sortKeys[i].percentage != sortKeys[j].percentage {
+			return sortKeys[i].percentage > sortKeys[j].percentage
 		}
-
-		return iRoundedUp > jRoundedUp
+		// Alphabetical tiebreaker
+		return sortKeys[i].filename < sortKeys[j].filename
 	})
+
+	// Copy back to original slice
+	for i := range sortKeys {
+		filenames[i] = sortKeys[i].filename
+	}
 }
 
 func createListItem(item string, index int, cursor int) string {
