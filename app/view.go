@@ -324,7 +324,7 @@ func viewSort(filenames []string, m *Model) {
 
 		var percentage int
 		if total > 0 {
-			percentage = int(float64(completed)/float64(total)*100)
+			percentage = int(float64(completed) / float64(total) * 100)
 		}
 
 		sortKeys[i] = fileSortKey{

@@ -116,6 +116,91 @@ Each command group contains:
 3. Command wrapper types implementing the Command interface
 4. Execute(), Description(), and Contexts() methods for each wrapper
 
+### Message-Passing Architecture (Phase 2.2)
+
+The application follows Bubble Tea's message-passing pattern (Elm Architecture):
+
+**Core Files:**
+- **app/messages.go**: Custom message type definitions for all state changes
+- **app/tea_commands.go**: Command generator functions that return tea.Cmd
+- **app/update.go**: Message handlers for processing state changes
+
+**Message Categories:**
+- **View Navigation**: ViewChangedMsg, CompanySelectedMsg, CategorySelectedMsg, SidebarToggledMsg
+- **File Operations**: FileSelectedMsg, FileLoadedMsg, FileCreatedMsg, FilesRefreshedMsg
+- **Task Operations**: TaskSelectedMsg, TaskUpdatedMsg, TasksRefreshedMsg, TaskCreatedMsg
+- **External Operations**: EditorClosedMsg, StandupGeneratedMsg, ClipboardCopiedMsg
+- **Input Modes**: FilterModeEnteredMsg, AddTaskModeEnteredMsg, AddSubTaskModeEnteredMsg
+- **Errors**: ErrorOccurredMsg
+
+**Command Pattern:**
+Commands return `tea.Cmd` instead of mutating state directly:
+```go
+// Command returns tea.Cmd
+func (cmd DKeyCommand) Execute(m *Model) tea.Cmd {
+    return m.updateTaskCmd(task, "completed")
+}
+
+// Command generator creates message
+func (m *Model) updateTaskCmd(task Task, action string) tea.Cmd {
+    return func() tea.Msg {
+        err := m.TaskManager.UpdateTaskToCompleted(&m.FileManager, task)
+        return TaskUpdatedMsg{Task: task, Action: action, Err: err}
+    }
+}
+
+// Update() handles message
+case TaskUpdatedMsg:
+    if msg.Err != nil {
+        m.Errors = append(m.Errors, msg.Err.Error())
+    }
+    return m, m.refreshTasksCmd()
+```
+
+**Benefits:**
+- Async-ready architecture for non-blocking operations
+- Clear separation between actions and state mutations
+- Better testability (message handlers tested independently)
+- Foundation for undo/redo and time-travel debugging
+
+### Non-Blocking External Commands (Phase 2.3)
+
+All external command executions use `tea.ExecProcess` for non-blocking execution:
+
+**External Commands:**
+- **vim editor** (e key): Opens file, returns EditorClosedMsg, auto-reloads tasks
+- **Obsidian app** (o key): Opens file in Obsidian, returns ErrorOccurredMsg on failure
+- **gh dash** (g key): Opens GitHub dashboard, returns ErrorOccurredMsg on failure
+
+**Pattern:**
+```go
+func (fo FileOperations) OpenInVim(m *Model) tea.Cmd {
+    c := exec.Command("vim", "-u", "~/.dotfiles/.vimrc", filePath)
+
+    return tea.ExecProcess(c, func(err error) tea.Msg {
+        if err != nil {
+            return EditorClosedMsg{Err: err}
+        }
+        return EditorClosedMsg{}  // Triggers task reload
+    })
+}
+
+// In Update()
+case EditorClosedMsg:
+    if msg.Err != nil {
+        m.Errors = append(m.Errors, "Editor error: "+msg.Err.Error())
+        return m, nil
+    }
+    m.FileManager.FetchTasks(&m.DirectoryManager, &m.TaskManager)
+    return m, nil
+```
+
+**Benefits:**
+- UI remains responsive while external programs are open
+- Automatic file/task reload after editing
+- Proper error handling for external command failures
+- Foundation for loading indicators
+
 ### Task Parsing
 
 Tasks are extracted from markdown files using special date annotations:

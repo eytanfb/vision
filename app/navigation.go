@@ -1,7 +1,6 @@
 package app
 
 import (
-	"os"
 	"os/exec"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -122,13 +121,21 @@ func (nc NavigationCommands) MoveRight(m *Model) tea.Cmd {
 	return nc.selectItem(m)
 }
 
-// OpenGitHubDash handles g key - opens GitHub dashboard
+// OpenGitHubDash handles g key - opens GitHub dashboard using non-blocking tea.ExecProcess
 func (nc NavigationCommands) OpenGitHubDash(m *Model) tea.Cmd {
-	cmd := exec.Command("gh", "dash")
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Run()
-	return nil
+	c := exec.Command("gh", "dash")
+
+	// Use tea.ExecProcess for non-blocking execution
+	return tea.ExecProcess(c, func(err error) tea.Msg {
+		if err != nil {
+			return ErrorOccurredMsg{
+				Err:     err,
+				Context: "opening GitHub dashboard",
+			}
+		}
+		// Dashboard closed successfully
+		return nil
+	})
 }
 
 // NextSuggestion handles tab key - move to next suggestion

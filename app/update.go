@@ -92,6 +92,21 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.ViewManager.KanbanViewLineDownFactor = smallTerminalScrollFactor
 			}
 		}
+
+	// Handle custom messages from Phase 2.2 and 2.3
+	case EditorClosedMsg:
+		if msg.Err != nil {
+			m.Errors = append(m.Errors, "Editor error: "+msg.Err.Error())
+			return m, nil
+		}
+		// Reload file and tasks after editing
+		log.Info("Editor closed, reloading tasks")
+		m.FileManager.FetchTasks(&m.DirectoryManager, &m.TaskManager)
+		return m, nil
+
+	case ErrorOccurredMsg:
+		m.Errors = append(m.Errors, msg.Context+": "+msg.Err.Error())
+		return m, nil
 	}
 
 	cmds = append(cmds, cmd)

@@ -28,20 +28,26 @@ func (fo FileOperations) HandleKey(key string, m *Model) tea.Cmd {
 	return nil
 }
 
-// OpenInVim opens the current file in Vim
+// OpenInVim opens the current file in Vim using non-blocking tea.ExecProcess
 func (fo FileOperations) OpenInVim(m *Model) tea.Cmd {
 	if m.IsDetailsView() || m.IsKanbanView() {
 		log.Info("Opening file in vim", m.FileManager.SelectedFile.Name)
 		filePath := m.FileManager.SelectedFile.FullPath
-		cmd := exec.Command("vim", "-u", "~/.dotfiles/.vimrc", filePath)
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Run()
+
+		c := exec.Command("vim", "-u", "~/.dotfiles/.vimrc", filePath)
+
+		// Use tea.ExecProcess for non-blocking execution
+		return tea.ExecProcess(c, func(err error) tea.Msg {
+			if err != nil {
+				return EditorClosedMsg{Err: err}
+			}
+			return EditorClosedMsg{}
+		})
 	}
 	return nil
 }
 
-// OpenInObsidian opens the current file in Obsidian
+// OpenInObsidian opens the current file in Obsidian using non-blocking tea.ExecProcess
 func (fo FileOperations) OpenInObsidian(m *Model) tea.Cmd {
 	if m.IsDetailsView() || m.IsKanbanView() {
 		filePath := m.FileManager.SelectedFile.FullPath
@@ -49,10 +55,19 @@ func (fo FileOperations) OpenInObsidian(m *Model) tea.Cmd {
 		notesPath := homeDir + "/Notes"
 		obsidianPath := constructObsidianURL(filePath, notesPath)
 
-		cmd := exec.Command("open", "-a", "Obsidian", obsidianPath)
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Run()
+		c := exec.Command("open", "-a", "Obsidian", obsidianPath)
+
+		// Use tea.ExecProcess for non-blocking execution
+		return tea.ExecProcess(c, func(err error) tea.Msg {
+			if err != nil {
+				return ErrorOccurredMsg{
+					Err:     err,
+					Context: "opening in Obsidian",
+				}
+			}
+			// Obsidian opened successfully, no need to reload file
+			return nil
+		})
 	}
 	return nil
 }
