@@ -32,12 +32,26 @@ type ViewManager struct {
 }
 
 const (
-	CompaniesView      = "companies"
-	CategoriesView     = "categories"
-	DetailsView        = "details"
-	heightOffset       = 12
+	CompaniesView  = "companies"
+	CategoriesView = "categories"
+	DetailsView    = "details"
+
+	// Layout spacing and offsets (in characters/lines)
+	// Height components: navbar (3) + filter (2) + status bar (1) + padding (2) + borders (4) = 12
+	heightOffset = 12
+	// Width components: sidebar border (4) + padding (5) = 9
 	detailsWidthOffset = 9
-	navbarWidthOffset  = 5
+	// Navbar: left/right padding (5) = 5
+	navbarWidthOffset = 5
+
+	// Terminal size thresholds for optimal scrolling
+	largeTerminalHeight  = 65 // Full HD monitors
+	mediumTerminalHeight = 45 // Laptop screens
+
+	// Scroll speed factors (higher = slower scrolling)
+	largeTerminalScrollFactor  = 5  // Fast scroll for large screens
+	mediumTerminalScrollFactor = 10 // Medium scroll
+	smallTerminalScrollFactor  = 15 // Slow scroll for small screens
 )
 
 func (vm *ViewManager) SetWidth(width int) {

@@ -232,28 +232,28 @@ func (tm *TaskManager) SelectTask(task Task) {
 	tm.SelectedTask = task
 }
 
-func (tm *TaskManager) UpdateTaskToUnscheduled(fm FileManager, task Task) {
-	fm.UpdateTask(task, "unscheduled")
+func (tm *TaskManager) UpdateTaskToUnscheduled(fm *FileManager, task Task) error {
+	return fm.UpdateTask(task, "unscheduled")
 }
 
-func (tm *TaskManager) UpdateTaskToScheduled(fm FileManager, task Task) {
-	fm.UpdateTask(task, "scheduled")
+func (tm *TaskManager) UpdateTaskToScheduled(fm *FileManager, task Task) error {
+	return fm.UpdateTask(task, "scheduled")
 }
 
-func (tm *TaskManager) UpdateTaskToStarted(fm FileManager, task Task) {
-	fm.UpdateTask(task, "started")
+func (tm *TaskManager) UpdateTaskToStarted(fm *FileManager, task Task) error {
+	return fm.UpdateTask(task, "started")
 }
 
-func (tm *TaskManager) UpdateTaskToCompleted(fm FileManager, task Task) {
-	fm.UpdateTask(task, "completed")
+func (tm *TaskManager) UpdateTaskToCompleted(fm *FileManager, task Task) error {
+	return fm.UpdateTask(task, "completed")
 }
 
-func (tm *TaskManager) UpdateTaskToPriority(fm FileManager, task Task) {
-	fm.UpdateTask(task, "priority")
+func (tm *TaskManager) UpdateTaskToPriority(fm *FileManager, task Task) error {
+	return fm.UpdateTask(task, "priority")
 }
 
-func (tm *TaskManager) UpdateTaskToUnpriority(fm FileManager, task Task) {
-	fm.UpdateTask(task, "unpriority")
+func (tm *TaskManager) UpdateTaskToUnpriority(fm *FileManager, task Task) error {
+	return fm.UpdateTask(task, "unpriority")
 }
 
 func createTaskFromFileTask(company string, name string, task utils.FileTask) Task {

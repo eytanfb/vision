@@ -4,7 +4,9 @@ type DKeyCommand struct{}
 
 func (j DKeyCommand) Execute(m *Model) error {
 	if m.IsCategoryView() && m.ViewManager.HideSidebar {
-		m.TaskManager.UpdateTaskToCompleted(m.FileManager, m.TaskManager.SelectedTask)
+		if err := m.TaskManager.UpdateTaskToCompleted(&m.FileManager, m.TaskManager.SelectedTask); err != nil {
+			m.Errors = append(m.Errors, err.Error())
+		}
 		m.FileManager.FetchTasks(&m.DirectoryManager, &m.TaskManager)
 	}
 

@@ -36,7 +36,9 @@ func (j EnterKeyCommand) Execute(m *Model) error {
 		company := m.GetCurrentCompanyName()
 		input := m.NewTaskInput.Value()
 
-		m.FileManager.CreateTask(company, input)
+		if err := m.FileManager.CreateTask(company, input); err != nil {
+			m.Errors = append(m.Errors, err.Error())
+		}
 		return EscKeyCommand{}.Execute(m)
 	} else if m.IsAddSubTaskView() {
 		company := m.GetCurrentCompanyName()
@@ -46,7 +48,9 @@ func (j EnterKeyCommand) Execute(m *Model) error {
 		// Parse hashtags to Obsidian date format before creating subtask
 		processedInput := utils.ParseHashtagsToObsidianDates(input)
 
-		m.FileManager.CreateSubTask(company, selectedFile, processedInput)
+		if err := m.FileManager.CreateSubTask(company, selectedFile, processedInput); err != nil {
+			m.Errors = append(m.Errors, err.Error())
+		}
 		return EscKeyCommand{}.Execute(m)
 	} else if m.IsFilterView() {
 		m.ViewManager.IsFilterView = false

@@ -14,11 +14,15 @@ func (j PKeyCommand) Execute(m *Model) error {
 
 		if !strings.Contains(selectedTask.Text, "🔺") {
 			log.Info("Adding priority marker to task")
-			m.TaskManager.UpdateTaskToPriority(m.FileManager, selectedTask)
+			if err := m.TaskManager.UpdateTaskToPriority(&m.FileManager, selectedTask); err != nil {
+				m.Errors = append(m.Errors, err.Error())
+			}
 			m.FileManager.FetchTasks(&m.DirectoryManager, &m.TaskManager)
 		} else {
 			log.Info("Removing priority marker from task")
-			m.TaskManager.UpdateTaskToUnpriority(m.FileManager, selectedTask)
+			if err := m.TaskManager.UpdateTaskToUnpriority(&m.FileManager, selectedTask); err != nil {
+				m.Errors = append(m.Errors, err.Error())
+			}
 			m.FileManager.FetchTasks(&m.DirectoryManager, &m.TaskManager)
 		}
 	}

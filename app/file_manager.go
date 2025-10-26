@@ -65,8 +65,11 @@ func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileI
 		todayInFormat += fm.FileExtension
 
 		if lastStandup.Name != todayInFormat && isWorkingDay() {
-			fm.CreateStandup(companyFolderPath)
-			files = readFilesInDirecory(path, sorting, tm)
+			if err := fm.CreateStandup(companyFolderPath); err != nil {
+				log.Warn("Failed to create standup", "error", err)
+			} else {
+				files = readFilesInDirecory(path, sorting, tm)
+			}
 		}
 	}
 
@@ -107,7 +110,7 @@ func (fm FileManager) CurrentFileContent() string {
 	return fm.CurrentFile().Content
 }
 
-func (fm FileManager) CreateStandup(company string) {
+func (fm FileManager) CreateStandup(company string) error {
 	todayInFormat := time.Now().Format("2006-01-02")
 
 	filePath := notesPath() + "/" + company + "/standups/" + todayInFormat + fm.FileExtension
@@ -115,29 +118,31 @@ func (fm FileManager) CreateStandup(company string) {
 
 	err := copyFile(templatePath, filePath)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to create standup: %w", err)
 	}
+	return nil
 }
 
-func (fm FileManager) CreateTask(company string, taskName string) {
+func (fm FileManager) CreateTask(company string, taskName string) error {
 	filePath := notesPath() + "/" + company + "/tasks/" + taskName + fm.FileExtension
 	templatePath := notesPath() + "/obsidian/templates/" + company + "_task.md"
 
 	err := copyFile(templatePath, filePath)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to create task: %w", err)
 	}
 
 	log.Info("Calling MindMapUpdater.AppendTask", "taskName", taskName)
 	fm.Updater.AppendTask(taskName, taskName)
+	return nil
 }
 
-func (fm FileManager) CreateSubTask(company string, file FileInfo, taskName string) {
+func (fm FileManager) CreateSubTask(company string, file FileInfo, taskName string) error {
 	filePath := filepath.Join(notesPath(), "/", company, "/tasks/", file.Name)
 
 	content, err := os.ReadFile(filePath)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to read file for subtask: %w", err)
 	}
 
 	lines := strings.Split(string(content), "\n")
@@ -151,26 +156,27 @@ func (fm FileManager) CreateSubTask(company string, file FileInfo, taskName stri
 	newContent := strings.Join(lines, "\n")
 	err = os.WriteFile(filePath, []byte(newContent), 0644)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to write subtask: %w", err)
 	}
 
 	parentTaskID := strings.TrimSuffix(file.Name, fm.FileExtension)
 	log.Info("Calling MindMapUpdater.AppendSubtask", "parentTaskID", parentTaskID, "taskName", taskName)
 	fm.Updater.AppendSubtask(parentTaskID, taskName, taskName)
+	return nil
 }
 
 func (fm *FileManager) ResetCache() {
 	fm.FileCache = make(map[string][]FileInfo)
 }
 
-func (fm *FileManager) UpdateTask(task Task, status string) {
+func (fm *FileManager) UpdateTask(task Task, status string) error {
 	filename := task.FileName // This is the parent task's filename
 	text := task.Text         // This is the subtask text
 
 	filePath := notesPath() + "/" + task.Company + "/tasks/" + filename
 	file, err := os.ReadFile(filePath)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to read task file: %w", err)
 	}
 
 	lines := strings.Split(string(file), "\n")
@@ -239,7 +245,7 @@ func (fm *FileManager) UpdateTask(task Task, status string) {
 	newContent := strings.Join(lines, "\n")
 	err = os.WriteFile(filePath, []byte(newContent), 0644)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to write updated task: %w", err)
 	}
 
 	if status == "scheduled" || status == "started" || status == "completed" || status == "unscheduled" {
@@ -259,6 +265,7 @@ func (fm *FileManager) UpdateTask(task Task, status string) {
 		// Then update its status
 		fm.Updater.UpdateSubtaskStatus(parentTaskID, cleanText, status)
 	}
+	return nil
 }
 
 // If it does exist, it will be overwritten.
@@ -359,7 +366,8 @@ func readFilesInDirecory(path string, sortBy string, tm *TaskManager) []FileInfo
 
 	files, err := os.ReadDir(path)
 	if err != nil {
-		log.Fatal(err)
+		log.Warn("Failed to read directory", "path", path, "error", err)
+		return fileInfos // Return empty slice instead of crashing
 	}
 
 	for _, file := range files {
@@ -378,7 +386,8 @@ func readFilesInDirecory(path string, sortBy string, tm *TaskManager) []FileInfo
 		fullPath := filepath.Join(path, file.Name())
 		content, err := os.ReadFile(fullPath)
 		if err != nil {
-			log.Fatal(err)
+			log.Warn("Failed to read file", "path", fullPath, "error", err)
+			continue // Skip this file instead of crashing
 		}
 
 		// Extract title from YAML frontmatter if it exists
@@ -396,7 +405,8 @@ func readFilesInDirecory(path string, sortBy string, tm *TaskManager) []FileInfo
 
 		fileInfo, err := file.Info()
 		if err != nil {
-			log.Fatal(err)
+			log.Warn("Failed to get file info", "path", fullPath, "error", err)
+			continue // Skip this file instead of crashing
 		}
 
 		newFileInfo := FileInfo{

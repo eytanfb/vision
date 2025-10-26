@@ -98,7 +98,7 @@ func setKanbanTasksCounts(inactiveList, activeList, completedList []KanbanItem, 
 }
 
 func renderKanbanList(m *Model, kanbanList []KanbanItem, boardWidth int, selectedList bool) string {
-	renderedKanbanList := ""
+	var renderedItems []string
 	index := m.ViewManager.KanbanTaskCursor
 	totalIndex := 0
 
@@ -106,31 +106,27 @@ func renderKanbanList(m *Model, kanbanList []KanbanItem, boardWidth int, selecte
 		tasks := kanbanItem.tasks
 		filename := kanbanItem.filename
 
-		renderedKanbanList = joinVertical(renderedKanbanList, renderFilename(filename, boardWidth))
+		// Add filename header
+		renderedItems = append(renderedItems, renderFilename(filename, boardWidth))
 
 		for _, task := range tasks {
+			// Pure view logic - only check state, never mutate
 			selected := false
 
-			if m.ViewManager.IsKanbanTaskUpdated {
-				if m.TaskManager.SelectedTask.textWithoutDates() == task.textWithoutDates() {
-					selected = true
-					m.SelectTask(task)
-					m.FileManager.SelectFile(filename)
-					m.ViewManager.IsKanbanTaskUpdated = false
-					m.ViewManager.KanbanTaskCursor = totalIndex
-				}
-			} else if selectedList && index == 0 {
+			if selectedList && index == 0 {
 				selected = true
-				m.FileManager.SelectFile(filename)
-				m.SelectTask(task)
 			}
 
-			renderedKanbanList = joinVertical(renderedKanbanList, renderKanbanTask(task, boardWidth, m.TaskManager.DailySummaryDate, selected, m.ViewManager.IsWeeklyView))
+			// Collect rendered task
+			renderedItems = append(renderedItems, renderKanbanTask(task, boardWidth, m.TaskManager.DailySummaryDate, selected, m.ViewManager.IsWeeklyView))
 
 			index--
 			totalIndex++
 		}
 	}
+
+	// Join all items once
+	renderedKanbanList := joinVertical(renderedItems...)
 
 	newViewport := viewport.Model{}
 	newViewport.Width = boardWidth
@@ -190,7 +186,7 @@ func BuildTasksForFileView(m *Model, tasks []Task, date string, cursor int) stri
 }
 
 func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
-	list := ""
+	var listItems []string
 	itemDetails := ""
 	completedList := ""
 	activeList := ""
@@ -211,10 +207,16 @@ func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
 			if index > 15 {
 				break
 			}
-			list, activeList, completedList, inactiveList = buildTaskFilesView(m, line, index, file, style, activeList, completedList, inactiveList)
+			list, _, _, _ := buildTaskFilesView(m, line, index, file, style, activeList, completedList, inactiveList)
+			return list, itemDetails
 		} else {
-			list = joinVertical(list, style.Render(line))
+			listItems = append(listItems, style.Render(line))
 		}
+	}
+
+	list := ""
+	if len(listItems) > 0 {
+		list = joinVertical(listItems...)
 	}
 
 	if hiddenSidebar {
@@ -224,37 +226,37 @@ func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
 	if m.IsAddTaskView() || m.IsAddSubTaskView() {
 		itemDetails = m.NewTaskInput.View()
 
+		// Only render suggestions if they're active (state set in Update, not here)
 		if hasUnclosedDoubleSquareBrackets(m.NewTaskInput.Value()) {
-			m.ViewManager.IsSuggestionsActive = true
 			filterValue := peopleFilterValue(m.NewTaskInput.Value())
 			peopleOptions := m.FileManager.PeopleFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
 			taskOptions := m.FileManager.TaskFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
 
-			peopleOptionsView := ""
+			// Collect all people options first, then join once
+			var peopleItems []string
 			for _, option := range peopleOptions {
 				person := strings.Split(option, m.FileManager.FileExtension)[0]
-				peopleOptionsView = joinVertical(peopleOptionsView, suggestionTextStyle.Render(person))
+				peopleItems = append(peopleItems, suggestionTextStyle.Render(person))
 			}
 
-			peopleOptionViewTitle := suggestionTitleStyle.Render("People")
-
-			if peopleOptionsView != "" {
+			if len(peopleItems) > 0 {
+				peopleOptionViewTitle := suggestionTitleStyle.Render("People")
+				peopleOptionsView := joinVertical(peopleItems...)
 				itemDetails = joinVertical(itemDetails, peopleOptionViewTitle, peopleOptionsView, "\n")
 			}
 
-			taskOptionsView := ""
+			// Collect all task options first, then join once
+			var taskItems []string
 			for _, option := range taskOptions {
 				task := strings.Split(option, m.FileManager.FileExtension)[0]
-				taskOptionsView = joinVertical(taskOptionsView, suggestionTextStyle.Render(task))
+				taskItems = append(taskItems, suggestionTextStyle.Render(task))
 			}
 
-			taskOptionViewTitle := suggestionTitleStyle.Render("Tasks")
-
-			if taskOptionsView != "" {
+			if len(taskItems) > 0 {
+				taskOptionViewTitle := suggestionTitleStyle.Render("Tasks")
+				taskOptionsView := joinVertical(taskItems...)
 				itemDetails = joinVertical(itemDetails, taskOptionViewTitle, taskOptionsView)
 			}
-		} else {
-			m.ViewManager.IsSuggestionsActive = false
 		}
 	} else {
 		markdown := renderMarkdown(itemDetails)
@@ -404,6 +406,11 @@ func progressBar(completed, total int) string {
 
 func buildProgressText(m *Model, category string) string {
 	completedTasksCount, totalTasksCount := m.TaskManager.TaskCollection.Progress(category)
+
+	if totalTasksCount == 0 {
+		return "[          ] 0%"
+	}
+
 	percentage := float64(completedTasksCount) / float64(totalTasksCount)
 	roundedUpPercentage := int(percentage*10) * 10
 
