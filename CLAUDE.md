@@ -96,11 +96,25 @@ The application follows a modular architecture with clear separation of concerns
 
 ### Command Pattern for Key Bindings
 
-Keyboard input is handled through a command pattern (app/key_command_factory.go):
-- Each key mapping has a dedicated command file (e.g., j_key_command.go, enter_key_command.go)
-- KeyCommandFactory routes key presses to appropriate command handlers
-- Commands implement the KeyCommand interface with Execute(model) method
-- This makes it easy to add new keyboard shortcuts without modifying core logic
+Keyboard input is handled through a command pattern with organized command groups:
+
+**Core Files:**
+- **app/command_interface.go**: Defines Command interface with Execute(), Description(), Contexts()
+- **app/command_registry.go**: CommandRegistry for mapping keys to commands
+- **app/key_command_factory.go**: Creates registry and registers all commands
+
+**Command Groups:**
+- **app/navigation.go**: Movement commands (j, k, h, l, g, tab, shift+tab)
+- **app/file_operations.go**: File handling (e, o, n, f - edit, open, next company, sidebar)
+- **app/task_operations.go**: Task management (d, s, p, D, S, a, A - complete, schedule, priority, etc.)
+- **app/view_control.go**: View switching (c, w, W, 1-3, +/-, C, Q, L - calendar, weekly, companies)
+- **app/input_handling.go**: Input modes (enter, esc, /, t, m - selection, filtering, task/meeting views)
+
+Each command group contains:
+1. A struct (e.g., `NavigationCommands{}`)
+2. Handler methods for each operation
+3. Command wrapper types implementing the Command interface
+4. Execute(), Description(), and Contexts() methods for each wrapper
 
 ### Task Parsing
 
@@ -148,10 +162,33 @@ Files are stored at `~/Notes/{company}/{category}/{filename}.md`
 
 ### Adding a New Key Command
 
-1. Create new file in app/ following pattern: `{key}_key_command.go`
-2. Implement KeyCommand interface with Execute method
-3. Add mapping in KeyCommandFactory.CreateKeyCommand()
-4. Update documentation if it's a user-facing feature
+Commands are organized into logical groups. To add a new command:
+
+1. **Identify the appropriate group** (navigation, file_operations, task_operations, view_control, or input_handling)
+2. **Add a handler method** to the group's struct (e.g., `func (nc NavigationCommands) NewMethod(m *Model) error`)
+3. **Create a command wrapper** implementing the Command interface:
+   ```go
+   type NewKeyCommand struct{}
+
+   func (cmd NewKeyCommand) Execute(m *Model) error {
+       return NavigationCommands{}.NewMethod(m)
+   }
+
+   func (cmd NewKeyCommand) Description() string {
+       return "Description of what this command does"
+   }
+
+   func (cmd NewKeyCommand) Contexts() []string {
+       return []string{} // Empty for all contexts, or specify like []string{"details_view"}
+   }
+   ```
+4. **Register in KeyCommandFactory** (app/key_command_factory.go):
+   ```go
+   registry.Register("x", NewKeyCommand{})
+   ```
+5. **Update documentation** if it's a user-facing feature
+
+For a completely new command category, create a new group file following the pattern of existing group files.
 
 ### Adding a New View
 

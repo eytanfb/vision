@@ -1,77 +1,85 @@
 package app
 
-type KeyCommandFactory struct{}
+import tea "github.com/charmbracelet/bubbletea"
+
+type KeyCommandFactory struct {
+	registry *CommandRegistry
+}
+
+func NewKeyCommandFactory() *KeyCommandFactory {
+	registry := NewRegistry()
+
+	// Navigation commands
+	registry.Register("j", JKeyCommand{})
+	registry.Register("k", KKeyCommand{})
+	registry.Register("h", HKeyCommand{})
+	registry.Register("l", LKeyCommand{})
+	registry.Register("g", GKeyCommand{})
+	registry.Register("tab", TabKeyCommand{})
+	registry.Register("shift + tab", ShiftTabKeyCommand{})
+
+	// File operations
+	registry.Register("e", EKeyCommand{})
+	registry.Register("o", OKeyCommand{})
+	registry.Register("n", NKeyCommand{})
+	registry.Register("f", FKeyCommand{})
+
+	// Task operations
+	registry.Register("d", DKeyCommand{})
+	registry.Register("s", SKeyCommand{})
+	registry.Register("p", PKeyCommand{})
+	registry.Register("D", UppercaseDKeyCommand{})
+	registry.Register("S", UppercaseSKeyCommand{})
+	registry.Register("a", AKeyCommand{})
+	registry.Register("A", UppercaseAKeyCommand{})
+
+	// View control
+	registry.Register("c", CKeyCommand{})
+	registry.Register("w", WKeyCommand{})
+	registry.Register("W", UppercaseWKeyCommand{})
+	registry.Register("1", OneKeyCommand{})
+	registry.Register("2", TwoKeyCommand{})
+	registry.Register("3", ThreeKeyCommand{})
+	registry.Register("+", PlusKeyCommand{})
+	registry.Register("-", MinusKeyCommand{})
+	registry.Register("C", UppercaseCKeyCommand{})
+	registry.Register("Q", UppercaseQKeyCommand{})
+	registry.Register("L", UppercaseLKeyCommand{})
+
+	// Input handling
+	registry.Register("enter", EnterKeyCommand{})
+	registry.Register("esc", EscKeyCommand{})
+	registry.Register("/", SlashKeyCommand{})
+	registry.Register("t", TKeyCommand{})
+	registry.Register("m", MKeyCommand{})
+
+	return &KeyCommandFactory{
+		registry: registry,
+	}
+}
 
 func (kcf KeyCommandFactory) CreateKeyCommand(key string) KeyCommand {
-	switch key {
-	case "j":
-		return JKeyCommand{}
-	case "k":
-		return KKeyCommand{}
-	case "enter":
-		return EnterKeyCommand{}
-	case "e":
-		return EKeyCommand{}
-	case "m":
-		return MKeyCommand{}
-	case "t":
-		return TKeyCommand{}
-	case "l":
-		return LKeyCommand{}
-	case "h":
-		return HKeyCommand{}
-	case "esc":
-		return EscKeyCommand{}
-	case "o":
-		return OKeyCommand{}
-	case "n":
-		return NKeyCommand{}
-	case "f":
-		return FKeyCommand{}
-	case "C":
-		return UppercaseCKeyCommand{}
-	case "Q":
-		return UppercaseQKeyCommand{}
-	case "L":
-		return UppercaseLKeyCommand{}
-	case "1":
-		return OneKeyCommand{}
-	case "2":
-		return TwoKeyCommand{}
-	case "3":
-		return ThreeKeyCommand{}
-	case "a":
-		return AKeyCommand{}
-	case "A":
-		return UppercaseAKeyCommand{}
-	case "w":
-		return WKeyCommand{}
-	case "-":
-		return MinusKeyCommand{}
-	case "+":
-		return PlusKeyCommand{}
-	case "g":
-		return GKeyCommand{}
-	case "D":
-		return UppercaseDKeyCommand{}
-	case "d":
-		return DKeyCommand{}
-	case "W":
-		return UppercaseWKeyCommand{}
-	case "s":
-		return SKeyCommand{}
-	case "S":
-		return UppercaseSKeyCommand{}
-	case "/":
-		return SlashKeyCommand{}
-	case "tab":
-		return TabKeyCommand{}
-	case "shift + tab":
-		return ShiftTabKeyCommand{}
-	case "c":
-		return CKeyCommand{}
-	case "p":
-		return PKeyCommand{}
+	cmd := kcf.registry.Get(key)
+	if cmd != nil {
+		// Wrap the command to implement the old KeyCommand interface
+		return &CommandAdapter{command: cmd}
 	}
 	return NilKeyCommand{}
+}
+
+// CommandAdapter adapts the new Command interface to the old KeyCommand interface
+type CommandAdapter struct {
+	command Command
+}
+
+func (ca *CommandAdapter) Execute(m *Model) tea.Cmd {
+	return ca.command.Execute(m)
+}
+
+func (ca *CommandAdapter) HelpText() string {
+	return ca.command.Description()
+}
+
+func (ca *CommandAdapter) AllowedStates() []string {
+	return ca.command.Contexts()
 }
