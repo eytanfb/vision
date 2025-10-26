@@ -32,10 +32,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			return m, tea.Quit
 		} else if m.IsAddTaskView() || m.IsFilterView() || m.IsAddSubTaskView() {
+			factory := NewKeyCommandFactory()
 			if key == "esc" {
-				KeyCommandFactory{}.CreateKeyCommand("esc").Execute(m)
+				factory.CreateKeyCommand("esc").Execute(m)
 			} else if key == "enter" {
-				KeyCommandFactory{}.CreateKeyCommand("enter").Execute(m)
+				factory.CreateKeyCommand("enter").Execute(m)
 			}
 
 			if m.IsFilterView() {
@@ -43,21 +44,21 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.TaskManager.TaskCollection.FilterValue = m.FilterInput.Value()
 			} else {
 				if key == "[" {
-					KeyCommandFactory{}.CreateKeyCommand("[").Execute(m)
+					factory.CreateKeyCommand("[").Execute(m)
 				} else if key == "]" {
-					KeyCommandFactory{}.CreateKeyCommand("]").Execute(m)
+					factory.CreateKeyCommand("]").Execute(m)
 				}
 
 				m.NewTaskInput, cmd = m.NewTaskInput.Update(msg)
 			}
 
 			if key == "tab" {
-				KeyCommandFactory{}.CreateKeyCommand("tab").Execute(m)
+				factory.CreateKeyCommand("tab").Execute(m)
 			} else if key == "shift+tab" {
-				ShiftTabKeyCommand{}.Execute(m)
+				factory.CreateKeyCommand("shift+tab").Execute(m)
 			}
 		} else {
-			keyCommandFactory := KeyCommandFactory{}
+			keyCommandFactory := NewKeyCommandFactory()
 			keyCommand := keyCommandFactory.CreateKeyCommand(key)
 
 			err := keyCommand.Execute(m)
