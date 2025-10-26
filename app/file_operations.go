@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/log"
 )
 
@@ -13,7 +14,7 @@ import (
 type FileOperations struct{}
 
 // HandleKey routes file operation keys to their appropriate handlers
-func (fo FileOperations) HandleKey(key string, m *Model) error {
+func (fo FileOperations) HandleKey(key string, m *Model) tea.Cmd {
 	switch key {
 	case "e":
 		return fo.OpenInVim(m)
@@ -28,7 +29,7 @@ func (fo FileOperations) HandleKey(key string, m *Model) error {
 }
 
 // OpenInVim opens the current file in Vim
-func (fo FileOperations) OpenInVim(m *Model) error {
+func (fo FileOperations) OpenInVim(m *Model) tea.Cmd {
 	if m.IsDetailsView() || m.IsKanbanView() {
 		log.Info("Opening file in vim", m.FileManager.SelectedFile.Name)
 		filePath := m.FileManager.SelectedFile.FullPath
@@ -41,7 +42,7 @@ func (fo FileOperations) OpenInVim(m *Model) error {
 }
 
 // OpenInObsidian opens the current file in Obsidian
-func (fo FileOperations) OpenInObsidian(m *Model) error {
+func (fo FileOperations) OpenInObsidian(m *Model) tea.Cmd {
 	if m.IsDetailsView() || m.IsKanbanView() {
 		filePath := m.FileManager.SelectedFile.FullPath
 		homeDir, _ := os.UserHomeDir()
@@ -57,14 +58,14 @@ func (fo FileOperations) OpenInObsidian(m *Model) error {
 }
 
 // NextCompany switches to the next company
-func (fo FileOperations) NextCompany(m *Model) error {
+func (fo FileOperations) NextCompany(m *Model) tea.Cmd {
 	m.GoToNextCompany()
 	m.GotoCategoryView()
 	return nil
 }
 
 // ToggleSidebar toggles the visibility of the sidebar
-func (fo FileOperations) ToggleSidebar(m *Model) error {
+func (fo FileOperations) ToggleSidebar(m *Model) tea.Cmd {
 	m.ViewManager.ToggleHideSidebar()
 	return nil
 }
@@ -81,7 +82,7 @@ func constructObsidianURL(fullPath, notesPath string) string {
 
 type EKeyCommand struct{}
 
-func (cmd EKeyCommand) Execute(m *Model) error {
+func (cmd EKeyCommand) Execute(m *Model) tea.Cmd {
 	return FileOperations{}.OpenInVim(m)
 }
 
@@ -95,7 +96,7 @@ func (cmd EKeyCommand) Contexts() []string {
 
 type OKeyCommand struct{}
 
-func (cmd OKeyCommand) Execute(m *Model) error {
+func (cmd OKeyCommand) Execute(m *Model) tea.Cmd {
 	return FileOperations{}.OpenInObsidian(m)
 }
 
@@ -109,7 +110,7 @@ func (cmd OKeyCommand) Contexts() []string {
 
 type NKeyCommand struct{}
 
-func (cmd NKeyCommand) Execute(m *Model) error {
+func (cmd NKeyCommand) Execute(m *Model) tea.Cmd {
 	return FileOperations{}.NextCompany(m)
 }
 
@@ -123,7 +124,7 @@ func (cmd NKeyCommand) Contexts() []string {
 
 type FKeyCommand struct{}
 
-func (cmd FKeyCommand) Execute(m *Model) error {
+func (cmd FKeyCommand) Execute(m *Model) tea.Cmd {
 	return FileOperations{}.ToggleSidebar(m)
 }
 

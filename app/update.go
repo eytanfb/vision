@@ -34,37 +34,42 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else if m.IsAddTaskView() || m.IsFilterView() || m.IsAddSubTaskView() {
 			factory := NewKeyCommandFactory()
 			if key == "esc" {
-				factory.CreateKeyCommand("esc").Execute(m)
+				cmdResult := factory.CreateKeyCommand("esc").Execute(m)
+				cmds = append(cmds, cmdResult)
 			} else if key == "enter" {
-				factory.CreateKeyCommand("enter").Execute(m)
+				cmdResult := factory.CreateKeyCommand("enter").Execute(m)
+				cmds = append(cmds, cmdResult)
 			}
 
 			if m.IsFilterView() {
 				m.FilterInput, cmd = m.FilterInput.Update(msg)
 				m.TaskManager.TaskCollection.FilterValue = m.FilterInput.Value()
+				cmds = append(cmds, cmd)
 			} else {
 				if key == "[" {
-					factory.CreateKeyCommand("[").Execute(m)
+					cmdResult := factory.CreateKeyCommand("[").Execute(m)
+					cmds = append(cmds, cmdResult)
 				} else if key == "]" {
-					factory.CreateKeyCommand("]").Execute(m)
+					cmdResult := factory.CreateKeyCommand("]").Execute(m)
+					cmds = append(cmds, cmdResult)
 				}
 
 				m.NewTaskInput, cmd = m.NewTaskInput.Update(msg)
+				cmds = append(cmds, cmd)
 			}
 
 			if key == "tab" {
-				factory.CreateKeyCommand("tab").Execute(m)
+				cmdResult := factory.CreateKeyCommand("tab").Execute(m)
+				cmds = append(cmds, cmdResult)
 			} else if key == "shift+tab" {
-				factory.CreateKeyCommand("shift+tab").Execute(m)
+				cmdResult := factory.CreateKeyCommand("shift+tab").Execute(m)
+				cmds = append(cmds, cmdResult)
 			}
 		} else {
 			keyCommandFactory := NewKeyCommandFactory()
 			keyCommand := keyCommandFactory.CreateKeyCommand(key)
-
-			err := keyCommand.Execute(m)
-			if err != nil {
-				return m, tea.Quit
-			}
+			cmdResult := keyCommand.Execute(m)
+			cmds = append(cmds, cmdResult)
 		}
 	case tea.WindowSizeMsg:
 		m.ViewManager.SetWidth(msg.Width)

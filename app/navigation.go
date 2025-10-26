@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/log"
 )
 
@@ -11,7 +12,7 @@ import (
 type NavigationCommands struct{}
 
 // HandleKey routes navigation keys to their appropriate handlers
-func (nc NavigationCommands) HandleKey(key string, m *Model) error {
+func (nc NavigationCommands) HandleKey(key string, m *Model) tea.Cmd {
 	switch key {
 	case "j":
 		return nc.MoveDown(m)
@@ -32,7 +33,7 @@ func (nc NavigationCommands) HandleKey(key string, m *Model) error {
 }
 
 // MoveDown handles j key - move cursor down
-func (nc NavigationCommands) MoveDown(m *Model) error {
+func (nc NavigationCommands) MoveDown(m *Model) tea.Cmd {
 	if m.IsSuggestionsActive() {
 		m.ViewManager.NextSuggestion(&m.FileManager)
 	} else if m.IsCategoryView() {
@@ -69,7 +70,7 @@ func (nc NavigationCommands) moveDownInItemDetails(m *Model) {
 }
 
 // MoveUp handles k key - move cursor up
-func (nc NavigationCommands) MoveUp(m *Model) error {
+func (nc NavigationCommands) MoveUp(m *Model) tea.Cmd {
 	if m.IsDetailsView() {
 		if m.IsItemDetailsFocus() {
 			if m.IsTaskDetailsFocus() {
@@ -94,7 +95,7 @@ func (nc NavigationCommands) MoveUp(m *Model) error {
 }
 
 // MoveLeft handles h key - move left or go back
-func (nc NavigationCommands) MoveLeft(m *Model) error {
+func (nc NavigationCommands) MoveLeft(m *Model) tea.Cmd {
 	if m.IsCategoryView() {
 		if m.ViewManager.HideSidebar {
 			m.GoToPreviousKanbanList()
@@ -108,7 +109,7 @@ func (nc NavigationCommands) MoveLeft(m *Model) error {
 }
 
 // MoveRight handles l key - move right or select
-func (nc NavigationCommands) MoveRight(m *Model) error {
+func (nc NavigationCommands) MoveRight(m *Model) tea.Cmd {
 	if m.IsCategoryView() {
 		if m.ViewManager.HideSidebar {
 			m.GoToNextKanbanList()
@@ -122,7 +123,7 @@ func (nc NavigationCommands) MoveRight(m *Model) error {
 }
 
 // OpenGitHubDash handles g key - opens GitHub dashboard
-func (nc NavigationCommands) OpenGitHubDash(m *Model) error {
+func (nc NavigationCommands) OpenGitHubDash(m *Model) tea.Cmd {
 	cmd := exec.Command("gh", "dash")
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -131,7 +132,7 @@ func (nc NavigationCommands) OpenGitHubDash(m *Model) error {
 }
 
 // NextSuggestion handles tab key - move to next suggestion
-func (nc NavigationCommands) NextSuggestion(m *Model) error {
+func (nc NavigationCommands) NextSuggestion(m *Model) tea.Cmd {
 	if m.ViewManager.SuggestionsListsCursor == -1 {
 		m.ViewManager.SuggestionsListsCursor = 0
 	}
@@ -140,7 +141,7 @@ func (nc NavigationCommands) NextSuggestion(m *Model) error {
 }
 
 // PreviousSuggestion handles shift+tab key - move to previous suggestion
-func (nc NavigationCommands) PreviousSuggestion(m *Model) error {
+func (nc NavigationCommands) PreviousSuggestion(m *Model) tea.Cmd {
 	log.Info("PreviousSuggestion")
 	m.ViewManager.PreviousSuggestion(&m.FileManager)
 	return nil
@@ -148,7 +149,7 @@ func (nc NavigationCommands) PreviousSuggestion(m *Model) error {
 
 // Helper methods for h and l keys that delegate to other command behavior
 
-func (nc NavigationCommands) goBack(m *Model) error {
+func (nc NavigationCommands) goBack(m *Model) tea.Cmd {
 	// Esc key behavior - go to previous view
 	if m.IsDetailsView() {
 		m.GoToPreviousView()
@@ -156,7 +157,7 @@ func (nc NavigationCommands) goBack(m *Model) error {
 	return nil
 }
 
-func (nc NavigationCommands) selectItem(m *Model) error {
+func (nc NavigationCommands) selectItem(m *Model) tea.Cmd {
 	// Enter key behavior - select current item
 	if !m.ViewManager.HideSidebar {
 		m.Select()
@@ -168,7 +169,7 @@ func (nc NavigationCommands) selectItem(m *Model) error {
 
 type JKeyCommand struct{}
 
-func (cmd JKeyCommand) Execute(m *Model) error {
+func (cmd JKeyCommand) Execute(m *Model) tea.Cmd {
 	return NavigationCommands{}.MoveDown(m)
 }
 
@@ -182,7 +183,7 @@ func (cmd JKeyCommand) Contexts() []string {
 
 type KKeyCommand struct{}
 
-func (cmd KKeyCommand) Execute(m *Model) error {
+func (cmd KKeyCommand) Execute(m *Model) tea.Cmd {
 	return NavigationCommands{}.MoveUp(m)
 }
 
@@ -196,7 +197,7 @@ func (cmd KKeyCommand) Contexts() []string {
 
 type HKeyCommand struct{}
 
-func (cmd HKeyCommand) Execute(m *Model) error {
+func (cmd HKeyCommand) Execute(m *Model) tea.Cmd {
 	return NavigationCommands{}.MoveLeft(m)
 }
 
@@ -210,7 +211,7 @@ func (cmd HKeyCommand) Contexts() []string {
 
 type LKeyCommand struct{}
 
-func (cmd LKeyCommand) Execute(m *Model) error {
+func (cmd LKeyCommand) Execute(m *Model) tea.Cmd {
 	return NavigationCommands{}.MoveRight(m)
 }
 
@@ -224,7 +225,7 @@ func (cmd LKeyCommand) Contexts() []string {
 
 type GKeyCommand struct{}
 
-func (cmd GKeyCommand) Execute(m *Model) error {
+func (cmd GKeyCommand) Execute(m *Model) tea.Cmd {
 	return NavigationCommands{}.OpenGitHubDash(m)
 }
 
@@ -238,7 +239,7 @@ func (cmd GKeyCommand) Contexts() []string {
 
 type TabKeyCommand struct{}
 
-func (cmd TabKeyCommand) Execute(m *Model) error {
+func (cmd TabKeyCommand) Execute(m *Model) tea.Cmd {
 	return NavigationCommands{}.NextSuggestion(m)
 }
 
@@ -252,7 +253,7 @@ func (cmd TabKeyCommand) Contexts() []string {
 
 type ShiftTabKeyCommand struct{}
 
-func (cmd ShiftTabKeyCommand) Execute(m *Model) error {
+func (cmd ShiftTabKeyCommand) Execute(m *Model) tea.Cmd {
 	return NavigationCommands{}.PreviousSuggestion(m)
 }
 

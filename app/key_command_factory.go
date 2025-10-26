@@ -1,5 +1,7 @@
 package app
 
+import tea "github.com/charmbracelet/bubbletea"
+
 type KeyCommandFactory struct {
 	registry *CommandRegistry
 }
@@ -70,7 +72,7 @@ type CommandAdapter struct {
 	command Command
 }
 
-func (ca *CommandAdapter) Execute(m *Model) error {
+func (ca *CommandAdapter) Execute(m *Model) tea.Cmd {
 	return ca.command.Execute(m)
 }
 
