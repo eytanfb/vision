@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/atotto/clipboard"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/log"
 )
 
@@ -11,7 +12,7 @@ import (
 type TaskOperations struct{}
 
 // HandleKey routes task operation keys to their appropriate handlers
-func (to TaskOperations) HandleKey(key string, m *Model) error {
+func (to TaskOperations) HandleKey(key string, m *Model) tea.Cmd {
 	switch key {
 	case "d":
 		return to.CompleteTask(m)
@@ -32,7 +33,7 @@ func (to TaskOperations) HandleKey(key string, m *Model) error {
 }
 
 // CompleteTask marks the current task as completed
-func (to TaskOperations) CompleteTask(m *Model) error {
+func (to TaskOperations) CompleteTask(m *Model) tea.Cmd {
 	if m.IsCategoryView() && m.ViewManager.HideSidebar {
 		if err := m.TaskManager.UpdateTaskToCompleted(&m.FileManager, m.TaskManager.SelectedTask); err != nil {
 			m.Errors = append(m.Errors, err.Error())
@@ -43,7 +44,7 @@ func (to TaskOperations) CompleteTask(m *Model) error {
 }
 
 // ScheduleOrStartTask schedules or starts a task depending on its current state
-func (to TaskOperations) ScheduleOrStartTask(m *Model) error {
+func (to TaskOperations) ScheduleOrStartTask(m *Model) tea.Cmd {
 	if m.ViewManager.HideSidebar {
 		log.Info("SKeyCommand: Show sidebar")
 		if m.TaskManager.SelectedTask.Scheduled {
@@ -67,7 +68,7 @@ func (to TaskOperations) ScheduleOrStartTask(m *Model) error {
 }
 
 // TogglePriority toggles the priority marker on a task
-func (to TaskOperations) TogglePriority(m *Model) error {
+func (to TaskOperations) TogglePriority(m *Model) tea.Cmd {
 	if m.IsCategoryView() && m.ViewManager.HideSidebar {
 		selectedTask := m.TaskManager.SelectedTask
 
@@ -89,7 +90,7 @@ func (to TaskOperations) TogglePriority(m *Model) error {
 }
 
 // StartTaskOrCopyStandup starts a task in kanban view or copies standup in other views
-func (to TaskOperations) StartTaskOrCopyStandup(m *Model) error {
+func (to TaskOperations) StartTaskOrCopyStandup(m *Model) tea.Cmd {
 	if m.IsCategoryView() && m.ViewManager.HideSidebar {
 		if err := m.TaskManager.UpdateTaskToStarted(&m.FileManager, m.TaskManager.SelectedTask); err != nil {
 			m.Errors = append(m.Errors, err.Error())
@@ -113,7 +114,7 @@ func (to TaskOperations) StartTaskOrCopyStandup(m *Model) error {
 }
 
 // ToggleScheduledUnscheduled toggles between scheduled and unscheduled states
-func (to TaskOperations) ToggleScheduledUnscheduled(m *Model) error {
+func (to TaskOperations) ToggleScheduledUnscheduled(m *Model) tea.Cmd {
 	if m.IsCategoryView() && m.ViewManager.HideSidebar {
 		if m.TaskManager.SelectedTask.Started {
 			if err := m.TaskManager.UpdateTaskToScheduled(&m.FileManager, m.TaskManager.SelectedTask); err != nil {
@@ -135,7 +136,7 @@ func (to TaskOperations) ToggleScheduledUnscheduled(m *Model) error {
 }
 
 // AddTask opens the add task dialog
-func (to TaskOperations) AddTask(m *Model) error {
+func (to TaskOperations) AddTask(m *Model) tea.Cmd {
 	m.ViewManager.IsAddTaskView = true
 	m.NewTaskInput.Reset()
 	m.NewTaskInput.Prompt = ""
@@ -145,7 +146,7 @@ func (to TaskOperations) AddTask(m *Model) error {
 }
 
 // AddSubTask opens the add subtask dialog
-func (to TaskOperations) AddSubTask(m *Model) error {
+func (to TaskOperations) AddSubTask(m *Model) tea.Cmd {
 	if m.FileManager.SelectedFile.Name == "" {
 		m.Errors = append(m.Errors, "No file selected")
 		return nil
@@ -164,7 +165,7 @@ func (to TaskOperations) AddSubTask(m *Model) error {
 
 type DKeyCommand struct{}
 
-func (cmd DKeyCommand) Execute(m *Model) error {
+func (cmd DKeyCommand) Execute(m *Model) tea.Cmd {
 	return TaskOperations{}.CompleteTask(m)
 }
 
@@ -178,7 +179,7 @@ func (cmd DKeyCommand) Contexts() []string {
 
 type SKeyCommand struct{}
 
-func (cmd SKeyCommand) Execute(m *Model) error {
+func (cmd SKeyCommand) Execute(m *Model) tea.Cmd {
 	return TaskOperations{}.ScheduleOrStartTask(m)
 }
 
@@ -192,7 +193,7 @@ func (cmd SKeyCommand) Contexts() []string {
 
 type PKeyCommand struct{}
 
-func (cmd PKeyCommand) Execute(m *Model) error {
+func (cmd PKeyCommand) Execute(m *Model) tea.Cmd {
 	return TaskOperations{}.TogglePriority(m)
 }
 
@@ -206,7 +207,7 @@ func (cmd PKeyCommand) Contexts() []string {
 
 type UppercaseDKeyCommand struct{}
 
-func (cmd UppercaseDKeyCommand) Execute(m *Model) error {
+func (cmd UppercaseDKeyCommand) Execute(m *Model) tea.Cmd {
 	return TaskOperations{}.StartTaskOrCopyStandup(m)
 }
 
@@ -220,7 +221,7 @@ func (cmd UppercaseDKeyCommand) Contexts() []string {
 
 type UppercaseSKeyCommand struct{}
 
-func (cmd UppercaseSKeyCommand) Execute(m *Model) error {
+func (cmd UppercaseSKeyCommand) Execute(m *Model) tea.Cmd {
 	return TaskOperations{}.ToggleScheduledUnscheduled(m)
 }
 
@@ -234,7 +235,7 @@ func (cmd UppercaseSKeyCommand) Contexts() []string {
 
 type AKeyCommand struct{}
 
-func (cmd AKeyCommand) Execute(m *Model) error {
+func (cmd AKeyCommand) Execute(m *Model) tea.Cmd {
 	return TaskOperations{}.AddTask(m)
 }
 
@@ -248,7 +249,7 @@ func (cmd AKeyCommand) Contexts() []string {
 
 type UppercaseAKeyCommand struct{}
 
-func (cmd UppercaseAKeyCommand) Execute(m *Model) error {
+func (cmd UppercaseAKeyCommand) Execute(m *Model) tea.Cmd {
 	return TaskOperations{}.AddSubTask(m)
 }
 

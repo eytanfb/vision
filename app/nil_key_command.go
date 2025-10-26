@@ -1,8 +1,10 @@
 package app
 
+import tea "github.com/charmbracelet/bubbletea"
+
 type NilKeyCommand struct{}
 
-func (j NilKeyCommand) Execute(m *Model) error {
+func (j NilKeyCommand) Execute(m *Model) tea.Cmd {
 	return nil
 }
 

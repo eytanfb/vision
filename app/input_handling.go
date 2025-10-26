@@ -3,13 +3,15 @@ package app
 import (
 	"strings"
 	"vision/utils"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 // InputHandling handles input-related commands
 type InputHandling struct{}
 
 // HandleKey routes input handling keys to their appropriate handlers
-func (ih InputHandling) HandleKey(key string, m *Model) error {
+func (ih InputHandling) HandleKey(key string, m *Model) tea.Cmd {
 	switch key {
 	case "enter":
 		return ih.HandleEnter(m)
@@ -26,7 +28,7 @@ func (ih InputHandling) HandleKey(key string, m *Model) error {
 }
 
 // HandleEnter processes the enter key
-func (ih InputHandling) HandleEnter(m *Model) error {
+func (ih InputHandling) HandleEnter(m *Model) tea.Cmd {
 	if m.IsSuggestionsActive() {
 		acceptedSuggestion := m.FileManager.GetActiveSuggestion(m.ViewManager.SuggestionsListsCursor, m.ViewManager.SuggestionCursor)
 
@@ -86,7 +88,7 @@ func (ih InputHandling) HandleEnter(m *Model) error {
 }
 
 // HandleEscape processes the escape key
-func (ih InputHandling) HandleEscape(m *Model) error {
+func (ih InputHandling) HandleEscape(m *Model) tea.Cmd {
 	goToPreviousView := true
 
 	if m.IsSuggestionsActive() {
@@ -124,13 +126,13 @@ func (ih InputHandling) HandleEscape(m *Model) error {
 }
 
 // StartFilter activates filter mode
-func (ih InputHandling) StartFilter(m *Model) error {
+func (ih InputHandling) StartFilter(m *Model) tea.Cmd {
 	m.ViewManager.IsFilterView = true
 	return nil
 }
 
 // ShowTasks shows the tasks view
-func (ih InputHandling) ShowTasks(m *Model) error {
+func (ih InputHandling) ShowTasks(m *Model) tea.Cmd {
 	if m.IsItemDetailsFocus() {
 		m.TaskManager.TasksCursor = -1
 		m.TaskManager.ChangeDailySummaryDateToToday()
@@ -140,7 +142,7 @@ func (ih InputHandling) ShowTasks(m *Model) error {
 }
 
 // GoToMeetings navigates to the meetings category
-func (ih InputHandling) GoToMeetings(m *Model) error {
+func (ih InputHandling) GoToMeetings(m *Model) tea.Cmd {
 	if m.IsCategoryView() {
 		m.GoToNextViewWithCategory("meetings")
 	}
@@ -151,7 +153,7 @@ func (ih InputHandling) GoToMeetings(m *Model) error {
 
 type EnterKeyCommand struct{}
 
-func (cmd EnterKeyCommand) Execute(m *Model) error {
+func (cmd EnterKeyCommand) Execute(m *Model) tea.Cmd {
 	return InputHandling{}.HandleEnter(m)
 }
 
@@ -165,7 +167,7 @@ func (cmd EnterKeyCommand) Contexts() []string {
 
 type EscKeyCommand struct{}
 
-func (cmd EscKeyCommand) Execute(m *Model) error {
+func (cmd EscKeyCommand) Execute(m *Model) tea.Cmd {
 	return InputHandling{}.HandleEscape(m)
 }
 
@@ -179,7 +181,7 @@ func (cmd EscKeyCommand) Contexts() []string {
 
 type SlashKeyCommand struct{}
 
-func (cmd SlashKeyCommand) Execute(m *Model) error {
+func (cmd SlashKeyCommand) Execute(m *Model) tea.Cmd {
 	return InputHandling{}.StartFilter(m)
 }
 
@@ -193,7 +195,7 @@ func (cmd SlashKeyCommand) Contexts() []string {
 
 type TKeyCommand struct{}
 
-func (cmd TKeyCommand) Execute(m *Model) error {
+func (cmd TKeyCommand) Execute(m *Model) tea.Cmd {
 	return InputHandling{}.ShowTasks(m)
 }
 
@@ -207,7 +209,7 @@ func (cmd TKeyCommand) Contexts() []string {
 
 type MKeyCommand struct{}
 
-func (cmd MKeyCommand) Execute(m *Model) error {
+func (cmd MKeyCommand) Execute(m *Model) tea.Cmd {
 	return InputHandling{}.GoToMeetings(m)
 }
 
