@@ -1,6 +1,6 @@
 ## Summary
 
-This PR implements significant architectural improvements to the Vision task management application through Phase 2.1 and Phase 2.2 of a comprehensive refactoring plan. The changes improve code organization, maintainability, and follow Bubble Tea framework best practices.
+This PR implements significant architectural improvements to the Vision task management application through Phase 2.1, 2.2, and 2.3 of a comprehensive refactoring plan. The changes improve code organization, maintainability, UI responsiveness, and follow Bubble Tea framework best practices.
 
 ## Changes Overview
 
@@ -71,6 +71,40 @@ This PR implements significant architectural improvements to the Vision task man
 - ✅ Foundation for loading states, progress indicators, undo/redo
 - ✅ More idiomatic Bubble Tea code following best practices
 
+### 🚀 Phase 2.3: Non-Blocking External Commands
+
+**Converted all blocking external commands to use tea.ExecProcess:**
+
+**Modified Files:**
+1. **app/file_operations.go**:
+   - Updated OpenInVim() to use tea.ExecProcess
+   - Updated OpenInObsidian() to use tea.ExecProcess
+   - Returns EditorClosedMsg when vim exits
+   - Returns ErrorOccurredMsg on failures
+
+2. **app/navigation.go**:
+   - Updated OpenGitHubDash() to use tea.ExecProcess
+   - Removed unused imports
+   - Non-blocking GitHub dashboard
+
+3. **app/update.go**:
+   - Added EditorClosedMsg handler
+   - Added ErrorOccurredMsg handler
+   - Automatic task reload after editor closes
+   - Proper error display for external command failures
+
+**External Commands Converted:**
+- `vim` editor (e key) - Non-blocking with auto-reload
+- `Obsidian` app (o key) - Non-blocking launch
+- `gh dash` (g key) - Non-blocking GitHub dashboard
+
+**Benefits:**
+- ✅ UI remains responsive while external programs are open
+- ✅ Automatic file and task reload after editing in vim
+- ✅ Proper error handling for external command failures
+- ✅ No more frozen UI when opening editors
+- ✅ Foundation for loading indicators and progress feedback
+
 ## Before/After Comparison
 
 ### Before (35 individual files):
@@ -126,6 +160,40 @@ func (m *Model) updateTaskCmd(task Task, action string) tea.Cmd {
 }
 ```
 
+**Phase 2.3 - External Commands:**
+```go
+// Before: Blocking execution
+func (fo FileOperations) OpenInVim(m *Model) tea.Cmd {
+    cmd := exec.Command("vim", filePath)
+    cmd.Stdin = os.Stdin
+    cmd.Stdout = os.Stdout
+    cmd.Run()  // UI freezes here!
+    return nil
+}
+
+// After: Non-blocking with tea.ExecProcess
+func (fo FileOperations) OpenInVim(m *Model) tea.Cmd {
+    c := exec.Command("vim", "-u", "~/.dotfiles/.vimrc", filePath)
+
+    return tea.ExecProcess(c, func(err error) tea.Msg {
+        if err != nil {
+            return EditorClosedMsg{Err: err}
+        }
+        return EditorClosedMsg{}  // Triggers file reload
+    })
+}
+
+// Update handler
+case EditorClosedMsg:
+    if msg.Err != nil {
+        m.Errors = append(m.Errors, "Editor error: "+msg.Err.Error())
+        return m, nil
+    }
+    // Auto-reload tasks after editing
+    m.FileManager.FetchTasks(&m.DirectoryManager, &m.TaskManager)
+    return m, nil
+```
+
 ## Testing
 
 - ✅ **Build Status**: SUCCESS (no compilation errors)
@@ -145,22 +213,30 @@ func (m *Model) updateTaskCmd(task Task, action string) tea.Cmd {
 - Added: messages.go, tea_commands.go
 - Updated: All command files to return tea.Cmd
 
-## Next Steps (Phase 2.3 - Future Work)
+**Phase 2.3:**
+- 3 files changed, 54 insertions(+), 17 deletions(-)
+- Updated: file_operations.go, navigation.go, update.go
+- Converted: 3 blocking external commands to tea.ExecProcess
+- Added: EditorClosedMsg and ErrorOccurredMsg handlers
 
-- Convert blocking external commands (vim, gh, obsidian) to `tea.ExecProcess`
-- Add loading indicators for async operations
-- Implement proper editor lifecycle management
-- Message handlers for custom message types
+## Next Steps (Phase 2.4 - Future Work)
+
+- Add loading indicators during external command execution
+- Implement progress feedback for long-running operations
+- Add comprehensive integration tests
+- Performance validation and benchmarking
 
 ## Commits Included
 
 1. Add CLAUDE.md documentation for Claude Code (3a610c7)
 2. Add comprehensive code quality improvement guide (75cdfb1)
 3. Refactor code to fix critical quality issues (e99e67b)
-4. Add comprehensive Phase 2 refactoring plan (244e849)
-5. Phase 2.1: Consolidate 35 key command files into 6 organized groups (e991702)
-6. Update CLAUDE.md with Phase 2.1 command structure (1294c8a)
-7. Phase 2.2: Implement Bubble Tea message-passing pattern (9412788)
+4. Add comprehensive Phase 2 refactoring plan (ca6fada)
+5. Phase 2.1: Consolidate 35 key command files into 6 organized groups (0f83b53)
+6. Update CLAUDE.md with Phase 2.1 command structure (1fea678)
+7. Phase 2.2: Implement Bubble Tea message-passing pattern (f6003c7)
+8. Add PR description for Phase 2.1 & 2.2 refactoring (93571fe)
+9. Phase 2.3: Implement non-blocking external commands (ee385cb)
 
 ---
 
