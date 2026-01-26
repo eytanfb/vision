@@ -77,6 +77,7 @@ func (ih InputHandling) HandleEnter(m *Model) tea.Cmd {
 		m.ViewManager.IsFilterView = false
 		m.TaskManager.TaskCollection.FilterValue = m.FilterInput.Value()
 		m.TaskManager.TasksCursor = 0
+		m.TaskManager.SyncSelectedTask(m.FileManager.currentFileName())
 		m.FilterInput.Blur()
 
 		return nil
@@ -138,6 +139,7 @@ func (ih InputHandling) StartFilter(m *Model) tea.Cmd {
 func (ih InputHandling) ShowTasks(m *Model) tea.Cmd {
 	if m.IsItemDetailsFocus() {
 		m.TaskManager.TasksCursor = -1
+		m.TaskManager.SelectedTask = Task{} // Clear selected task when cursor is reset
 		m.TaskManager.ChangeDailySummaryDateToToday()
 		m.ShowTasks()
 	}

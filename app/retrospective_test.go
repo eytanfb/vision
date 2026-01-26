@@ -487,3 +487,250 @@ func floatEquals(a, b, tolerance float64) bool {
 	}
 	return diff < tolerance
 }
+
+func TestRetrospective_UsesSelectedTask(t *testing.T) {
+	task1 := Task{
+		Text:          "First completed task",
+		ScheduledDate: "2024-01-01",
+		StartDate:     "2024-01-02",
+		CompletedDate: "2024-01-05",
+		Completed:     true,
+		FileName:      "test.md",
+		LineNumber:    1,
+	}
+	task2 := Task{
+		Text:          "Second completed task",
+		ScheduledDate: "2024-01-10",
+		StartDate:     "2024-01-12",
+		CompletedDate: "2024-01-20",
+		Completed:     true,
+		FileName:      "test.md",
+		LineNumber:    2,
+	}
+	task3 := Task{
+		Text:          "Third completed task",
+		ScheduledDate: "2024-02-01",
+		StartDate:     "2024-02-05",
+		CompletedDate: "2024-02-10",
+		Completed:     true,
+		FileName:      "test.md",
+		LineNumber:    3,
+	}
+
+	m := &Model{
+		TaskManager: TaskManager{
+			TaskCollection: TaskCollection{
+				TasksByFile: map[string][]Task{
+					"test.md": {task1, task2, task3},
+				},
+			},
+			SelectedTask: task2,
+		},
+		ViewManager: ViewManager{
+			IsRetrospectiveView: false,
+		},
+	}
+
+	ViewControl{}.ToggleRetrospectiveView(m)
+
+	if !m.ViewManager.IsRetrospectiveView {
+		t.Error("Expected retrospective view to be enabled")
+	}
+
+	if m.TaskManager.SelectedTask.Text != task2.Text {
+		t.Errorf("Expected SelectedTask to be '%s', got '%s'",
+			task2.Text, m.TaskManager.SelectedTask.Text)
+	}
+	if m.TaskManager.SelectedTask.CompletedDate != task2.CompletedDate {
+		t.Errorf("Expected SelectedTask.CompletedDate to be '%s', got '%s'",
+			task2.CompletedDate, m.TaskManager.SelectedTask.CompletedDate)
+	}
+}
+
+func TestRetrospective_DoesNotShowForIncompleteTask(t *testing.T) {
+	incompleteTask := Task{
+		Text:          "Incomplete task",
+		ScheduledDate: "2024-01-01",
+		StartDate:     "2024-01-02",
+		Completed:     false,
+		FileName:      "test.md",
+		LineNumber:    1,
+	}
+
+	m := &Model{
+		TaskManager: TaskManager{
+			TaskCollection: TaskCollection{
+				TasksByFile: map[string][]Task{
+					"test.md": {incompleteTask},
+				},
+			},
+			SelectedTask: incompleteTask,
+		},
+		ViewManager: ViewManager{
+			IsRetrospectiveView: false,
+		},
+	}
+
+	result := ViewControl{}.ToggleRetrospectiveView(m)
+
+	if result != nil {
+		t.Error("Expected ToggleRetrospectiveView to return nil for incomplete task")
+	}
+
+	if m.ViewManager.IsRetrospectiveView {
+		t.Error("Expected retrospective view to remain disabled for incomplete task")
+	}
+}
+
+func TestRetrospective_SyncsSelectedTaskFromCursor(t *testing.T) {
+	completedTask := Task{
+		Text:          "Completed task at cursor",
+		ScheduledDate: "2024-01-01",
+		StartDate:     "2024-01-02",
+		CompletedDate: "2024-01-05",
+		Completed:     true,
+		FileName:      "test.md",
+		LineNumber:    1,
+	}
+
+	m := &Model{
+		TaskManager: TaskManager{
+			TaskCollection: TaskCollection{
+				TasksByFile: map[string][]Task{
+					"test.md": {completedTask},
+				},
+			},
+			SelectedTask: Task{}, // Empty - simulating out-of-sync state
+			TasksCursor:  0,      // Cursor pointing to first task
+		},
+		FileManager: FileManager{
+			SelectedFile: FileInfo{Name: "test.md"},
+		},
+		ViewManager: ViewManager{
+			IsRetrospectiveView: false,
+			HideSidebar:         false,
+			CurrentView:         DetailsView,   // Must be in details view
+			TaskDetailsFocus:    true,          // Must have task focus for sync to work
+		},
+	}
+
+	ViewControl{}.ToggleRetrospectiveView(m)
+
+	if !m.ViewManager.IsRetrospectiveView {
+		t.Error("Expected retrospective view to be enabled after syncing SelectedTask")
+	}
+
+	if m.TaskManager.SelectedTask.Text != completedTask.Text {
+		t.Errorf("Expected SelectedTask to be synced to '%s', got '%s'",
+			completedTask.Text, m.TaskManager.SelectedTask.Text)
+	}
+}
+
+func TestRetrospective_SyncsSelectedTaskInKanbanView(t *testing.T) {
+	completedTask := Task{
+		Text:          "Completed task in kanban",
+		ScheduledDate: "2024-01-01",
+		StartDate:     "2024-01-02",
+		CompletedDate: "2024-01-05",
+		Completed:     true,
+		FileName:      "test.md",
+		LineNumber:    1,
+	}
+
+	m := &Model{
+		TaskManager: TaskManager{
+			TaskCollection: TaskCollection{
+				TasksByFile: map[string][]Task{
+					"test.md": {completedTask},
+				},
+			},
+			SelectedTask:     Task{}, // Empty - simulating out-of-sync state
+			TasksCursor:      0,
+			DailySummaryDate: "2024-01-10", // Date after completion
+		},
+		FileManager: FileManager{
+			SelectedFile: FileInfo{Name: "test.md"},
+		},
+		ViewManager: ViewManager{
+			IsRetrospectiveView: false,
+			HideSidebar:         true,            // Kanban view
+			KanbanListCursor:    2,               // Completed list
+			KanbanTaskCursor:    0,               // First task
+		},
+	}
+
+	ViewControl{}.ToggleRetrospectiveView(m)
+
+	if !m.ViewManager.IsRetrospectiveView {
+		t.Error("Expected retrospective view to be enabled in kanban view after syncing")
+	}
+
+	if m.TaskManager.SelectedTask.Text != completedTask.Text {
+		t.Errorf("Expected SelectedTask to be synced to '%s', got '%s'",
+			completedTask.Text, m.TaskManager.SelectedTask.Text)
+	}
+}
+
+func TestTaskManager_SyncSelectedTask(t *testing.T) {
+	task1 := Task{Text: "Task 1", FileName: "test.md", LineNumber: 1}
+	task2 := Task{Text: "Task 2", FileName: "test.md", LineNumber: 2}
+	task3 := Task{Text: "Task 3", FileName: "test.md", LineNumber: 3}
+
+	tm := &TaskManager{
+		TaskCollection: TaskCollection{
+			TasksByFile: map[string][]Task{
+				"test.md": {task1, task2, task3},
+			},
+		},
+		TasksCursor:  1,
+		SelectedTask: Task{}, // Empty
+	}
+
+	tm.SyncSelectedTask("test.md")
+
+	if tm.SelectedTask.Text != task2.Text {
+		t.Errorf("Expected SelectedTask to be '%s', got '%s'", task2.Text, tm.SelectedTask.Text)
+	}
+}
+
+func TestTaskManager_SyncSelectedTask_InvalidCursor(t *testing.T) {
+	task1 := Task{Text: "Task 1", FileName: "test.md", LineNumber: 1}
+
+	tm := &TaskManager{
+		TaskCollection: TaskCollection{
+			TasksByFile: map[string][]Task{
+				"test.md": {task1},
+			},
+		},
+		TasksCursor:  5, // Out of bounds
+		SelectedTask: Task{},
+	}
+
+	tm.SyncSelectedTask("test.md")
+
+	// SelectedTask should remain empty since cursor is out of bounds
+	if tm.SelectedTask.Text != "" {
+		t.Errorf("Expected SelectedTask to remain empty for invalid cursor, got '%s'", tm.SelectedTask.Text)
+	}
+}
+
+func TestTaskManager_SyncSelectedTask_NegativeCursor(t *testing.T) {
+	task1 := Task{Text: "Task 1", FileName: "test.md", LineNumber: 1}
+
+	tm := &TaskManager{
+		TaskCollection: TaskCollection{
+			TasksByFile: map[string][]Task{
+				"test.md": {task1},
+			},
+		},
+		TasksCursor:  -1, // Negative cursor
+		SelectedTask: Task{},
+	}
+
+	tm.SyncSelectedTask("test.md")
+
+	// SelectedTask should remain empty since cursor is negative
+	if tm.SelectedTask.Text != "" {
+		t.Errorf("Expected SelectedTask to remain empty for negative cursor, got '%s'", tm.SelectedTask.Text)
+	}
+}

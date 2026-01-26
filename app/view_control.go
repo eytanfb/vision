@@ -265,6 +265,16 @@ func (cmd UppercaseLKeyCommand) Contexts() []string {
 
 // ToggleRetrospectiveView shows retrospective for completed tasks
 func (vc ViewControl) ToggleRetrospectiveView(m *Model) tea.Cmd {
+	// Always sync SelectedTask from current cursor position before showing retrospective
+	// This ensures we show the task that's visually selected, not a stale selection
+	if m.ViewManager.HideSidebar {
+		// In kanban view, use kanban sync (handles multi-file, filtered lists)
+		NavigationCommands{}.updateSelectedTaskInKanban(m)
+	} else if m.ViewManager.IsTaskDetailsFocus() {
+		// In task details view, sync from current file's tasks using TasksCursor
+		m.TaskManager.SyncSelectedTask(m.FileManager.currentFileName())
+	}
+
 	selectedTask := m.TaskManager.SelectedTask
 	if !selectedTask.Completed {
 		return nil // Only show for completed tasks

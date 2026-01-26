@@ -232,6 +232,15 @@ func (tm *TaskManager) SelectTask(task Task) {
 	tm.SelectedTask = task
 }
 
+// SyncSelectedTask synchronizes SelectedTask with the task at TasksCursor position.
+// This should be called whenever TasksCursor is modified to keep them in sync.
+func (tm *TaskManager) SyncSelectedTask(filename string) {
+	tasks := tm.TaskCollection.GetTasks(filename)
+	if tm.TasksCursor >= 0 && tm.TasksCursor < len(tasks) {
+		tm.SelectedTask = tasks[tm.TasksCursor]
+	}
+}
+
 func (tm *TaskManager) UpdateTaskToUnscheduled(fm *FileManager, task Task) error {
 	return fm.UpdateTask(task, "unscheduled")
 }
