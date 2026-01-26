@@ -299,20 +299,26 @@ func (nc NavigationCommands) updateSelectedTaskInKanban(m *Model) {
 	for _, key := range keys {
 		tasks := allTasksMap[key]
 		for _, task := range tasks {
-			// Match the same filtering logic as makeKanbanLists
+			// Match EXACTLY the same logic as makeKanbanLists in view_builder.go
+			// The view checks IsScheduledForFuture FIRST and puts those in inactive
+			// regardless of completion status
+			isFuture := task.IsScheduledForFuture(m.TaskManager.DailySummaryDate)
+
 			if m.ViewManager.KanbanListCursor == 0 {
-				// Inactive: future scheduled or unscheduled (no scheduled date)
-				if task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) || task.ScheduledDate == "" {
+				// Inactive: future scheduled, OR (not completed AND not started AND not scheduled AND no scheduled date)
+				if isFuture {
+					filteredTasks = append(filteredTasks, task)
+				} else if !task.Completed && !task.Started && !task.Scheduled && task.ScheduledDate == "" {
 					filteredTasks = append(filteredTasks, task)
 				}
 			} else if m.ViewManager.KanbanListCursor == 1 {
-				// Active: started or scheduled (not completed, not future)
-				if !task.Completed && !task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) && (task.Started || task.Scheduled) {
+				// Active: not future, not completed, and (started OR scheduled)
+				if !isFuture && !task.Completed && (task.Started || task.Scheduled) {
 					filteredTasks = append(filteredTasks, task)
 				}
 			} else if m.ViewManager.KanbanListCursor == 2 {
-				// Completed
-				if task.Completed {
+				// Completed: not future, and completed
+				if !isFuture && task.Completed {
 					filteredTasks = append(filteredTasks, task)
 				}
 			}

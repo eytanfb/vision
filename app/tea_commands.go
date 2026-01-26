@@ -154,19 +154,26 @@ func (m *Model) getKanbanListTaskCount(listCursor int) int {
 	for _, key := range keys {
 		tasks := allTasksMap[key]
 		for _, task := range tasks {
+			// Match EXACTLY the same logic as makeKanbanLists in view_builder.go
+			// The view checks IsScheduledForFuture FIRST and puts those in inactive
+			// regardless of completion status
+			isFuture := task.IsScheduledForFuture(m.TaskManager.DailySummaryDate)
+
 			if listCursor == 0 {
-				// Inactive: future scheduled or unscheduled
-				if task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) || task.ScheduledDate == "" {
+				// Inactive: future scheduled, OR (not completed AND not started AND not scheduled AND no scheduled date)
+				if isFuture {
+					count++
+				} else if !task.Completed && !task.Started && !task.Scheduled && task.ScheduledDate == "" {
 					count++
 				}
 			} else if listCursor == 1 {
-				// Active: started or scheduled (not completed, not future)
-				if !task.Completed && !task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) && (task.Started || task.Scheduled) {
+				// Active: not future, not completed, and (started OR scheduled)
+				if !isFuture && !task.Completed && (task.Started || task.Scheduled) {
 					count++
 				}
 			} else if listCursor == 2 {
-				// Completed
-				if task.Completed {
+				// Completed: not future, and completed
+				if !isFuture && task.Completed {
 					count++
 				}
 			}
