@@ -288,11 +288,3 @@ func previousDayString(date string) string {
 
 	return previousDay.Format("2006-01-02")
 }
-
-func nextDayString(date string) string {
-	currentDate, _ := time.Parse("2006-01-02", date)
-
-	nextDay := currentDate.AddDate(0, 0, 1)
-
-	return nextDay.Format("2006-01-02")
-}

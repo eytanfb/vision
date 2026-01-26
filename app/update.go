@@ -15,7 +15,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		key := msg.String()
-		log.Info("Key pressed: ", key)
+		Debug("Key pressed: ", key)
 		if key == "ctrl+c" {
 			return m, tea.Quit
 		} else if key == "q" {
@@ -93,19 +93,135 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+		// Mark everything dirty on window resize - forces complete re-render
+		m.ViewManager.MarkDirty("all")
+		// Invalidate style cache since dimensions changed
+		globalStyleCache.InvalidateAll()
+
 	// Handle custom messages from Phase 2.2 and 2.3
 	case EditorClosedMsg:
 		if msg.Err != nil {
-			m.Errors = append(m.Errors, "Editor error: "+msg.Err.Error())
+			m.AddError("Editor error: " + msg.Err.Error())
 			return m, nil
 		}
-		// Reload file and tasks after editing
+		// Reload file and tasks after editing - async
 		log.Info("Editor closed, reloading tasks")
-		m.FileManager.FetchTasks(&m.DirectoryManager, &m.TaskManager)
-		return m, nil
+		return m, m.loadTasksCmd()
 
 	case ErrorOccurredMsg:
-		m.Errors = append(m.Errors, msg.Context+": "+msg.Err.Error())
+		m.AddError(msg.Context + ": " + msg.Err.Error())
+		return m, nil
+
+	// Handle async file/task loading messages
+	case FilesLoadedMsg:
+		m.IsLoadingFiles = false
+		if msg.Err != nil {
+			m.AddError("Error loading files: " + msg.Err.Error())
+			return m, nil
+		}
+		m.FileManager.filesMu.Lock()
+		m.FileManager.Files = msg.Files
+		m.FileManager.filesMu.Unlock()
+		// Mark files dirty when files are loaded
+		m.ViewManager.MarkDirty("files")
+		return m, nil
+
+	case TasksLoadedMsg:
+		m.IsLoadingTasks = false
+		if msg.Err != nil {
+			m.AddError("Error loading tasks: " + msg.Err.Error())
+			return m, nil
+		}
+		// Tasks are already loaded into TaskManager by FetchTasks
+		// Mark tasks and kanban dirty when tasks are loaded
+		m.ViewManager.MarkDirty("tasks")
+		return m, nil
+
+	case LoadingStartedMsg:
+		if msg.Operation == "tasks" {
+			m.IsLoadingTasks = true
+		} else if msg.Operation == "files" {
+			m.IsLoadingFiles = true
+		}
+		return m, nil
+
+	case LoadingCompletedMsg:
+		if msg.Operation == "tasks" {
+			m.IsLoadingTasks = false
+		} else if msg.Operation == "files" {
+			m.IsLoadingFiles = false
+		}
+		return m, nil
+
+	case TaskUpdatedMsg:
+		if msg.Err != nil {
+			m.AddError("Error updating task: " + msg.Err.Error())
+			return m, nil
+		}
+
+		// Update kanban list cursor based on action
+		if msg.Action == "completed" {
+			m.ViewManager.KanbanListCursor = 2 // Move to completed list
+			m.ViewManager.KanbanTaskCursor = 0
+		} else if msg.Action == "started" || msg.Action == "scheduled" {
+			m.ViewManager.KanbanListCursor = 1 // Move to active list
+			m.ViewManager.KanbanTaskCursor = 0
+		} else if msg.Action == "unscheduled" {
+			m.ViewManager.KanbanListCursor = 0 // Move to todo list
+			m.ViewManager.KanbanTaskCursor = 0
+		}
+
+		m.ViewManager.IsKanbanTaskUpdated = true
+		// Mark tasks dirty after update
+		m.ViewManager.MarkDirty("tasks")
+		return m, m.loadTasksCmd()
+
+	case TaskCreatedMsg:
+		if msg.Err != nil {
+			m.AddError("Error creating task: " + msg.Err.Error())
+		}
+		m.ViewManager.MarkDirty("tasks")
+		return m, m.loadFilesCmd()
+
+	case SubTaskCreatedMsg:
+		if msg.Err != nil {
+			m.AddError("Error creating subtask: " + msg.Err.Error())
+		}
+		m.ViewManager.MarkDirty("tasks")
+		return m, m.loadTasksCmd()
+
+	case ViewChangedMsg:
+		m.ViewManager.MarkDirty("all")
+		return m, nil
+
+	case SidebarToggledMsg:
+		m.ViewManager.MarkDirty("all")
+		return m, nil
+
+	case FileSelectedMsg:
+		m.ViewManager.MarkDirty("tasks")
+		return m, nil
+
+	case CategorySelectedMsg:
+		m.ViewManager.MarkDirty("all")
+		return m, m.loadFilesCmd()
+
+	case CompanySelectedMsg:
+		m.ViewManager.MarkDirty("all")
+		return m, m.loadFilesCmd()
+
+	case FileNavigatedMsg:
+		m.FileManager.FilesCursor = msg.NewCursor
+		m.FileManager.SelectedFile = msg.File
+		m.Viewport.GotoTop()
+		m.ViewManager.MarkDirty("files")
+		return m, nil
+
+	case KanbanNavigatedMsg:
+		m.ViewManager.KanbanListCursor = msg.ListCursor
+		m.ViewManager.KanbanTaskCursor = msg.TaskCursor
+		NavigationCommands{}.updateSelectedTaskInKanban(m)
+		m.ViewManager.MarkDirty("kanban")
 		return m, nil
 	}
 

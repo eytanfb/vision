@@ -1,6 +1,11 @@
 package app
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"fmt"
+	"sync"
+
+	"github.com/charmbracelet/lipgloss"
+)
 
 var (
 	white                          = lipgloss.Color("#FFFFFF")
@@ -20,6 +25,37 @@ var (
 	selectedSuggestionTextColor    = lipgloss.Color("#CB48B7")
 	priorityTextColor              = lipgloss.Color("#EC4E20")
 )
+
+// StyleCache caches lipgloss.Style instances by their dimensions to avoid
+// recreating styles on every render. Cache is invalidated on window resize.
+type StyleCache struct {
+	kanbanTaskStyles      map[int]lipgloss.Style
+	highlightedKanbanTask map[int]lipgloss.Style
+	taskStyles            map[int]lipgloss.Style
+	containerStyles       map[string]lipgloss.Style // key: "width-height"
+	boardStyles           map[string]lipgloss.Style // key: "width-height-selected"
+	mu                    sync.RWMutex
+}
+
+var globalStyleCache = &StyleCache{
+	kanbanTaskStyles:      make(map[int]lipgloss.Style),
+	highlightedKanbanTask: make(map[int]lipgloss.Style),
+	taskStyles:            make(map[int]lipgloss.Style),
+	containerStyles:       make(map[string]lipgloss.Style),
+	boardStyles:           make(map[string]lipgloss.Style),
+}
+
+// InvalidateAll clears all cached styles. Called on window resize to prevent
+// unbounded cache growth and ensure styles reflect new dimensions.
+func (sc *StyleCache) InvalidateAll() {
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+	sc.kanbanTaskStyles = make(map[int]lipgloss.Style)
+	sc.highlightedKanbanTask = make(map[int]lipgloss.Style)
+	sc.taskStyles = make(map[int]lipgloss.Style)
+	sc.containerStyles = make(map[string]lipgloss.Style)
+	sc.boardStyles = make(map[string]lipgloss.Style)
+}
 
 var (
 	defaultTextStyle            = lipgloss.NewStyle().Foreground(white)
@@ -66,18 +102,6 @@ func joinHorizontal(items ...string) string {
 	return lipgloss.JoinHorizontal(lipgloss.Left, items...)
 }
 
-func itemDetailsContainerStyle(width, height int, isItemDetailsFocus bool) lipgloss.Style {
-	style := contentContainerStyle(width, height)
-	if isItemDetailsFocus {
-		style = style.Copy().BorderForeground(lipgloss.Color("63"))
-	}
-	return style
-}
-
-func addTaskContainerStyle(width, height int) lipgloss.Style {
-	return contentContainerStyle(width, height)
-}
-
 func summaryContainerStyle(width, height int) lipgloss.Style {
 	return contentContainerStyle(width, height)
 }
@@ -87,11 +111,49 @@ func summaryContainerStyleNoBorder(width, height int) lipgloss.Style {
 }
 
 func contentContainerStyle(width, height int) lipgloss.Style {
-	return lipgloss.NewStyle().Width(width).Height(height).Border(lipgloss.NormalBorder()).MarginLeft(2)
+	key := fmt.Sprintf("container-%d-%d", width, height)
+
+	globalStyleCache.mu.RLock()
+	if style, ok := globalStyleCache.containerStyles[key]; ok {
+		globalStyleCache.mu.RUnlock()
+		return style
+	}
+	globalStyleCache.mu.RUnlock()
+
+	globalStyleCache.mu.Lock()
+	defer globalStyleCache.mu.Unlock()
+
+	// Double-check after acquiring write lock
+	if style, ok := globalStyleCache.containerStyles[key]; ok {
+		return style
+	}
+
+	style := lipgloss.NewStyle().Width(width).Height(height).Border(lipgloss.NormalBorder()).MarginLeft(2)
+	globalStyleCache.containerStyles[key] = style
+	return style
 }
 
 func contentContainerStyleNoBorder(width, height int) lipgloss.Style {
-	return lipgloss.NewStyle().Width(width).Height(height).MarginLeft(2)
+	key := fmt.Sprintf("container-noborder-%d-%d", width, height)
+
+	globalStyleCache.mu.RLock()
+	if style, ok := globalStyleCache.containerStyles[key]; ok {
+		globalStyleCache.mu.RUnlock()
+		return style
+	}
+	globalStyleCache.mu.RUnlock()
+
+	globalStyleCache.mu.Lock()
+	defer globalStyleCache.mu.Unlock()
+
+	// Double-check after acquiring write lock
+	if style, ok := globalStyleCache.containerStyles[key]; ok {
+		return style
+	}
+
+	style := lipgloss.NewStyle().Width(width).Height(height).MarginLeft(2)
+	globalStyleCache.containerStyles[key] = style
+	return style
 }
 
 func taskSummaryContainerStyle(width, height int) lipgloss.Style {
@@ -125,15 +187,66 @@ func progressTextStyle(style lipgloss.Style) lipgloss.Style {
 }
 
 func taskStyle(width int) lipgloss.Style {
-	return lipgloss.NewStyle().MarginLeft(2).Width(width)
+	globalStyleCache.mu.RLock()
+	if style, ok := globalStyleCache.taskStyles[width]; ok {
+		globalStyleCache.mu.RUnlock()
+		return style
+	}
+	globalStyleCache.mu.RUnlock()
+
+	globalStyleCache.mu.Lock()
+	defer globalStyleCache.mu.Unlock()
+
+	// Double-check after acquiring write lock
+	if style, ok := globalStyleCache.taskStyles[width]; ok {
+		return style
+	}
+
+	style := lipgloss.NewStyle().MarginLeft(2).Width(width)
+	globalStyleCache.taskStyles[width] = style
+	return style
 }
 
 func kanbanTaskStyle(width int) lipgloss.Style {
-	return lipgloss.NewStyle().Width(width).MarginBottom(1)
+	globalStyleCache.mu.RLock()
+	if style, ok := globalStyleCache.kanbanTaskStyles[width]; ok {
+		globalStyleCache.mu.RUnlock()
+		return style
+	}
+	globalStyleCache.mu.RUnlock()
+
+	globalStyleCache.mu.Lock()
+	defer globalStyleCache.mu.Unlock()
+
+	// Double-check after acquiring write lock
+	if style, ok := globalStyleCache.kanbanTaskStyles[width]; ok {
+		return style
+	}
+
+	style := lipgloss.NewStyle().Width(width).MarginBottom(1)
+	globalStyleCache.kanbanTaskStyles[width] = style
+	return style
 }
 
 func highlightedKanbanTaskStyle(width int) lipgloss.Style {
-	return lipgloss.NewStyle().Width(width).Background(highlightedTaskBackgroundColor).MarginBottom(1)
+	globalStyleCache.mu.RLock()
+	if style, ok := globalStyleCache.highlightedKanbanTask[width]; ok {
+		globalStyleCache.mu.RUnlock()
+		return style
+	}
+	globalStyleCache.mu.RUnlock()
+
+	globalStyleCache.mu.Lock()
+	defer globalStyleCache.mu.Unlock()
+
+	// Double-check after acquiring write lock
+	if style, ok := globalStyleCache.highlightedKanbanTask[width]; ok {
+		return style
+	}
+
+	style := lipgloss.NewStyle().Width(width).Background(highlightedTaskBackgroundColor).MarginBottom(1)
+	globalStyleCache.highlightedKanbanTask[width] = style
+	return style
 }
 
 func kanbanBoardTitleStyle(color lipgloss.Color) lipgloss.Style {
@@ -181,12 +294,30 @@ func taskItemDetailsContainerStyle(width, height int) lipgloss.Style {
 }
 
 func boardContainerStyle(width int, height int, selected bool) lipgloss.Style {
+	key := fmt.Sprintf("board-%d-%d-%t", width, height, selected)
+
+	globalStyleCache.mu.RLock()
+	if style, ok := globalStyleCache.boardStyles[key]; ok {
+		globalStyleCache.mu.RUnlock()
+		return style
+	}
+	globalStyleCache.mu.RUnlock()
+
+	globalStyleCache.mu.Lock()
+	defer globalStyleCache.mu.Unlock()
+
+	// Double-check after acquiring write lock
+	if style, ok := globalStyleCache.boardStyles[key]; ok {
+		return style
+	}
+
 	style := lipgloss.NewStyle().Width(width).Height(height).Border(lipgloss.NormalBorder())
 
 	if selected {
 		style = style.Copy().BorderForeground(lipgloss.Color("63"))
 	}
 
+	globalStyleCache.boardStyles[key] = style
 	return style
 }
 

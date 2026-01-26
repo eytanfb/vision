@@ -2,16 +2,16 @@ package app
 
 import tea "github.com/charmbracelet/bubbletea"
 
-type NilKeyCommand struct{}
+type NilCommand struct{}
 
-func (j NilKeyCommand) Execute(m *Model) tea.Cmd {
+func (j NilCommand) Execute(m *Model) tea.Cmd {
 	return nil
 }
 
-func (j NilKeyCommand) HelpText() string {
+func (j NilCommand) Description() string {
 	return ""
 }
 
-func (j NilKeyCommand) AllowedStates() []string {
+func (j NilCommand) Contexts() []string {
 	return []string{}
 }

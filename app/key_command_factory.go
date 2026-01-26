@@ -16,7 +16,7 @@ func NewKeyCommandFactory() *KeyCommandFactory {
 	registry.Register("l", LKeyCommand{})
 	registry.Register("g", GKeyCommand{})
 	registry.Register("tab", TabKeyCommand{})
-	registry.Register("shift + tab", ShiftTabKeyCommand{})
+	registry.Register("shift+tab", ShiftTabKeyCommand{})
 
 	// File operations
 	registry.Register("e", EKeyCommand{})
@@ -58,28 +58,31 @@ func NewKeyCommandFactory() *KeyCommandFactory {
 	}
 }
 
-func (kcf KeyCommandFactory) CreateKeyCommand(key string) KeyCommand {
+func (kcf KeyCommandFactory) CreateKeyCommand(key string) Command {
 	cmd := kcf.registry.Get(key)
 	if cmd != nil {
-		// Wrap the command to implement the old KeyCommand interface
-		return &CommandAdapter{command: cmd}
+		return &ContextValidatingCommand{command: cmd}
 	}
-	return NilKeyCommand{}
+	return NilCommand{}
 }
 
-// CommandAdapter adapts the new Command interface to the old KeyCommand interface
-type CommandAdapter struct {
+// ContextValidatingCommand wraps a Command and validates context before execution
+type ContextValidatingCommand struct {
 	command Command
 }
 
-func (ca *CommandAdapter) Execute(m *Model) tea.Cmd {
-	return ca.command.Execute(m)
+func (cvc *ContextValidatingCommand) Execute(m *Model) tea.Cmd {
+	contexts := cvc.command.Contexts()
+	if len(contexts) > 0 && !m.MatchesContext(contexts) {
+		return nil // Command not valid in current context
+	}
+	return cvc.command.Execute(m)
 }
 
-func (ca *CommandAdapter) HelpText() string {
-	return ca.command.Description()
+func (cvc *ContextValidatingCommand) Description() string {
+	return cvc.command.Description()
 }
 
-func (ca *CommandAdapter) AllowedStates() []string {
-	return ca.command.Contexts()
+func (cvc *ContextValidatingCommand) Contexts() []string {
+	return cvc.command.Contexts()
 }

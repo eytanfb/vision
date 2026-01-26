@@ -2,6 +2,7 @@ package app
 
 import (
 	"os/exec"
+	"sort"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/log"
@@ -35,90 +36,92 @@ func (nc NavigationCommands) HandleKey(key string, m *Model) tea.Cmd {
 func (nc NavigationCommands) MoveDown(m *Model) tea.Cmd {
 	if m.IsSuggestionsActive() {
 		m.ViewManager.NextSuggestion(&m.FileManager)
-	} else if m.IsCategoryView() {
-		nc.moveDownInCategoryView(m)
-	} else if m.IsDetailsView() {
-		nc.moveDownInDetailsView(m)
+		return nil
 	}
+
+	if m.IsCategoryView() {
+		if m.ViewManager.HideSidebar {
+			return m.navigateKanbanCmd("down")
+		}
+		nc.moveDownInCategoryView(m)
+		return nil
+	}
+
+	if m.IsDetailsView() {
+		return nc.moveDownInDetailsView(m)
+	}
+
 	return nil
 }
 
 func (nc NavigationCommands) moveDownInCategoryView(m *Model) {
-	if !m.ViewManager.HideSidebar {
-		m.GoToNextCategory()
-	} else {
-		m.GoToNextKanbanTask()
-	}
+	m.GoToNextCategory()
 }
 
-func (nc NavigationCommands) moveDownInDetailsView(m *Model) {
+func (nc NavigationCommands) moveDownInDetailsView(m *Model) tea.Cmd {
 	if m.IsItemDetailsFocus() {
-		nc.moveDownInItemDetails(m)
-	} else {
-		m.GoToNextFile()
-		m.Viewport.GotoTop()
+		if m.IsTaskDetailsFocus() {
+			m.GoToNextTask()
+			nc.updateSelectedTask(m)
+			return nil
+		}
+		m.Viewport.LineDown(ViewportLineScroll)
+		return nil
 	}
-}
-
-func (nc NavigationCommands) moveDownInItemDetails(m *Model) {
-	if m.IsTaskDetailsFocus() {
-		m.GoToNextTask()
-	} else {
-		m.Viewport.LineDown(10)
-	}
+	// File navigation - use message pattern
+	return m.navigateFileCmd("down")
 }
 
 // MoveUp handles k key - move cursor up
 func (nc NavigationCommands) MoveUp(m *Model) tea.Cmd {
 	if m.IsDetailsView() {
-		if m.IsItemDetailsFocus() {
-			if m.IsTaskDetailsFocus() {
-				m.GoToPreviousTask()
-			} else {
-				m.Viewport.LineUp(10)
-			}
-		} else {
-			m.GoToPreviousFile()
-			m.Viewport.GotoTop()
+		return nc.moveUpInDetailsView(m)
+	}
+
+	if m.IsCategoryView() {
+		if m.ViewManager.HideSidebar {
+			return m.navigateKanbanCmd("up")
 		}
-	} else if m.IsCategoryView() {
-		if !m.ViewManager.HideSidebar {
-			m.GoToPreviousCategory()
-		} else {
-			m.GoToPreviousKanbanTask()
-		}
-	} else if m.IsCompanyView() {
+		m.GoToPreviousCategory()
+		return nil
+	}
+
+	if m.IsCompanyView() {
 		m.GoToPreviousCompany()
 	}
 	return nil
 }
 
-// MoveLeft handles h key - move left or go back
-func (nc NavigationCommands) MoveLeft(m *Model) tea.Cmd {
-	if m.IsCategoryView() {
-		if m.ViewManager.HideSidebar {
-			m.GoToPreviousKanbanList()
-			m.ViewManager.KanbanTaskCursor = 0
+func (nc NavigationCommands) moveUpInDetailsView(m *Model) tea.Cmd {
+	if m.IsItemDetailsFocus() {
+		if m.IsTaskDetailsFocus() {
+			m.GoToPreviousTask()
+			nc.updateSelectedTask(m)
 			return nil
 		}
+		m.Viewport.LineUp(ViewportLineScroll)
+		return nil
 	}
+	// File navigation - use message pattern
+	return m.navigateFileCmd("up")
+}
 
-	// Delegate to Esc behavior for going back
-	return nc.goBack(m)
+// MoveLeft handles h key - move left or go back
+func (nc NavigationCommands) MoveLeft(m *Model) tea.Cmd {
+	if m.IsCategoryView() && m.ViewManager.HideSidebar {
+		return m.navigateKanbanCmd("left")
+	}
+	nc.goBack(m)
+	return nil
 }
 
 // MoveRight handles l key - move right or select
 func (nc NavigationCommands) MoveRight(m *Model) tea.Cmd {
-	if m.IsCategoryView() {
-		if m.ViewManager.HideSidebar {
-			m.GoToNextKanbanList()
-			m.ViewManager.KanbanTaskCursor = 0
-			return nil
-		}
+	if m.IsCategoryView() && m.ViewManager.HideSidebar {
+		return m.navigateKanbanCmd("right")
 	}
-
-	// Delegate to Enter behavior for selection
-	return nc.selectItem(m)
+	nc.goForward(m)
+	return nil
 }
 
 // OpenGitHubDash handles g key - opens GitHub dashboard using non-blocking tea.ExecProcess
@@ -156,20 +159,18 @@ func (nc NavigationCommands) PreviousSuggestion(m *Model) tea.Cmd {
 
 // Helper methods for h and l keys that delegate to other command behavior
 
-func (nc NavigationCommands) goBack(m *Model) tea.Cmd {
+func (nc NavigationCommands) goBack(m *Model) {
 	// Esc key behavior - go to previous view
 	if m.IsDetailsView() {
 		m.GoToPreviousView()
 	}
-	return nil
 }
 
-func (nc NavigationCommands) selectItem(m *Model) tea.Cmd {
+func (nc NavigationCommands) goForward(m *Model) {
 	// Enter key behavior - select current item
 	if !m.ViewManager.HideSidebar {
 		m.Select()
 	}
-	return nil
 }
 
 // Command implementations for registry
@@ -270,4 +271,60 @@ func (cmd ShiftTabKeyCommand) Description() string {
 
 func (cmd ShiftTabKeyCommand) Contexts() []string {
 	return []string{}
+}
+
+// Helper functions to update selected items after navigation
+// These are called from Update() handlers, not from View()
+
+func (nc NavigationCommands) updateSelectedTask(m *Model) {
+	tasks := m.TaskManager.TaskCollection.GetTasks(m.FileManager.currentFileName())
+	if m.TaskManager.TasksCursor >= 0 && m.TaskManager.TasksCursor < len(tasks) {
+		task := tasks[m.TaskManager.TasksCursor]
+		m.TaskManager.SelectedTask = task
+		m.FileManager.SelectFile(task.FileName)
+	}
+}
+
+func (nc NavigationCommands) updateSelectedTaskInKanban(m *Model) {
+	// Get ALL tasks from ALL files (not just current file)
+	allTasksMap := m.TaskManager.TaskCollection.TasksByFile
+
+	// Use sorted keys for deterministic iteration order (matching view rendering)
+	keys := make([]string, 0, len(allTasksMap))
+	for k := range allTasksMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build flat list of tasks matching the current kanban list
+	// This must match the same order as makeKanbanLists in view_builder.go
+	var filteredTasks []Task
+
+	for _, key := range keys {
+		tasks := allTasksMap[key]
+		for _, task := range tasks {
+			// Match the same filtering logic as makeKanbanLists
+			if m.ViewManager.KanbanListCursor == 0 {
+				// Inactive: future scheduled or unscheduled (no scheduled date)
+				if task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) || task.ScheduledDate == "" {
+					filteredTasks = append(filteredTasks, task)
+				}
+			} else if m.ViewManager.KanbanListCursor == 1 {
+				// Active: started or scheduled (not completed, not future)
+				if !task.Completed && !task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) && (task.Started || task.Scheduled) {
+					filteredTasks = append(filteredTasks, task)
+				}
+			} else if m.ViewManager.KanbanListCursor == 2 {
+				// Completed
+				if task.Completed {
+					filteredTasks = append(filteredTasks, task)
+				}
+			}
+		}
+	}
+
+	// Update SelectedTask with bounds checking
+	if m.ViewManager.KanbanTaskCursor >= 0 && m.ViewManager.KanbanTaskCursor < len(filteredTasks) {
+		m.TaskManager.SelectedTask = filteredTasks[m.ViewManager.KanbanTaskCursor]
+	}
 }

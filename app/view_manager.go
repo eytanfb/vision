@@ -1,5 +1,14 @@
 package app
 
+type DirtyFlags struct {
+	Files      bool
+	Tasks      bool
+	Kanban     bool
+	Navbar     bool
+	Viewport   bool
+	Everything bool // Forces complete re-render
+}
+
 type ViewManager struct {
 	CurrentView              string
 	Width                    int
@@ -22,13 +31,13 @@ type ViewManager struct {
 	ShowCompanies            bool
 	KanbanListCursor         int
 	KanbanTaskCursor         int
-	KanbanTasksCount         int
 	KanbanViewLineDownFactor int
 	IsKanbanTaskUpdated      bool
 	SuggestionsListsCursor   int
 	SuggestionCursor         int
 	IsSuggestionsActive      bool
 	IsCalendarView           bool
+	Dirty                    DirtyFlags
 }
 
 const (
@@ -39,6 +48,16 @@ const (
 	// Layout spacing and offsets (in characters/lines)
 	// Height components: navbar (3) + filter (2) + status bar (1) + padding (2) + borders (4) = 12
 	heightOffset = 12
+
+	// Kanban layout
+	KanbanBoardSpacing = 6 // Space between kanban columns
+	KanbanColumnCount  = 3 // Number of kanban columns
+
+	// Task view padding
+	TaskWidthPadding = 25 // Padding for task width calculations
+
+	// Viewport scrolling
+	ViewportLineScroll = 10 // Lines to scroll per j/k press
 	// Width components: sidebar border (4) + padding (5) = 9
 	detailsWidthOffset = 9
 	// Navbar: left/right padding (5) = 5
@@ -93,14 +112,16 @@ func (vm *ViewManager) GoToPreviousView() {
 	}
 }
 
-func (vm *ViewManager) GoToNextView(fm *FileManager, dm *DirectoryManager, tm *TaskManager) {
+func (vm *ViewManager) GoToNextView(fm *FileManager, dm *DirectoryManager, tm *TaskManager) bool {
+	needsFileLoad := false
 	if vm.IsCompanyView() {
 		vm.CurrentView = CategoriesView
 	} else if vm.IsCategoryView() {
 		vm.CurrentView = DetailsView
 		fm.FilesCursor = 0
-		fm.Files = fm.FetchFiles(dm, tm)
+		needsFileLoad = true
 	}
+	return needsFileLoad
 }
 
 func (vm *ViewManager) Select(fm *FileManager, dm *DirectoryManager, tm *TaskManager) {
@@ -190,4 +211,26 @@ func (vm *ViewManager) PreviousSuggestionsList(fm *FileManager) {
 	} else {
 		vm.SuggestionsListsCursor = 1
 	}
+}
+
+func (vm *ViewManager) MarkDirty(component string) {
+	switch component {
+	case "files":
+		vm.Dirty.Files = true
+	case "tasks":
+		vm.Dirty.Tasks = true
+		vm.Dirty.Kanban = true // Kanban depends on tasks
+	case "kanban":
+		vm.Dirty.Kanban = true
+	case "navbar":
+		vm.Dirty.Navbar = true
+	case "viewport":
+		vm.Dirty.Viewport = true
+	case "all":
+		vm.Dirty.Everything = true
+	}
+}
+
+func (vm *ViewManager) ClearDirty() {
+	vm.Dirty = DirtyFlags{}
 }

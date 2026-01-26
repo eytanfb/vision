@@ -9,6 +9,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 	"vision/mindmap"
 
@@ -20,6 +21,8 @@ type FileManager struct {
 	Files                  []FileInfo
 	FileCache              map[string][]FileInfo
 	TaskCache              map[string]map[string][]Task
+	cacheMu                sync.RWMutex
+	filesMu                sync.RWMutex
 	SelectedFile           FileInfo
 	TaskSuggestions        []string
 	PeopleSuggestions      []string
@@ -59,7 +62,7 @@ func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileI
 		filenames = append(filenames, file.Name)
 	}
 
-	if categoryPath == "standups" {
+	if categoryPath == "standups" && len(files) > 0 {
 		lastStandup := files[0] // The first one is the most recent
 		todayInFormat := time.Now().Format("2006-01-02")
 		todayInFormat += fm.FileExtension
@@ -75,7 +78,10 @@ func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileI
 
 	log.Info("Files count: " + fmt.Sprintf("%d", len(files)))
 	fm.FetchTasks(dm, tm)
+
+	fm.filesMu.Lock()
 	fm.Files = files
+	fm.filesMu.Unlock()
 
 	return files
 }
@@ -102,15 +108,15 @@ func (fm *FileManager) GetCurrentFilePath(companyName string, categoryName strin
 	return notesPath() + "/" + companyName + "/" + categoryName + "/" + fm.currentFileName()
 }
 
-func (fm FileManager) CurrentFile() FileInfo {
+func (fm *FileManager) CurrentFile() FileInfo {
 	return fm.SelectedFile
 }
 
-func (fm FileManager) CurrentFileContent() string {
+func (fm *FileManager) CurrentFileContent() string {
 	return fm.CurrentFile().Content
 }
 
-func (fm FileManager) CreateStandup(company string) error {
+func (fm *FileManager) CreateStandup(company string) error {
 	todayInFormat := time.Now().Format("2006-01-02")
 
 	filePath := notesPath() + "/" + company + "/standups/" + todayInFormat + fm.FileExtension
@@ -123,7 +129,7 @@ func (fm FileManager) CreateStandup(company string) error {
 	return nil
 }
 
-func (fm FileManager) CreateTask(company string, taskName string) error {
+func (fm *FileManager) CreateTask(company string, taskName string) error {
 	filePath := notesPath() + "/" + company + "/tasks/" + taskName + fm.FileExtension
 	templatePath := notesPath() + "/obsidian/templates/" + company + "_task.md"
 
@@ -137,7 +143,7 @@ func (fm FileManager) CreateTask(company string, taskName string) error {
 	return nil
 }
 
-func (fm FileManager) CreateSubTask(company string, file FileInfo, taskName string) error {
+func (fm *FileManager) CreateSubTask(company string, file FileInfo, taskName string) error {
 	filePath := filepath.Join(notesPath(), "/", company, "/tasks/", file.Name)
 
 	content, err := os.ReadFile(filePath)
@@ -166,7 +172,66 @@ func (fm FileManager) CreateSubTask(company string, file FileInfo, taskName stri
 }
 
 func (fm *FileManager) ResetCache() {
+	fm.cacheMu.Lock()
+	defer fm.cacheMu.Unlock()
 	fm.FileCache = make(map[string][]FileInfo)
+	fm.TaskCache = make(map[string]map[string][]Task)
+}
+
+// calculateProgress computes progress info for a file
+func (fm *FileManager) calculateProgress(file *FileInfo, tm *TaskManager) ProgressInfo {
+	completed, total := tm.TaskCollection.Progress(file.Name)
+
+	var percentage int
+	if total > 0 {
+		percentage = int(float64(completed) / float64(total) * 100)
+	}
+
+	isInactive := tm.TaskCollection.IsInactive(file.Name)
+	isComplete := total > 0 && completed == total
+
+	return ProgressInfo{
+		Completed:      completed,
+		Total:          total,
+		Percentage:     percentage,
+		IsInactive:     isInactive,
+		IsComplete:     isComplete,
+		LastCalculated: time.Now(),
+	}
+}
+
+// getOrCalculateProgress returns cached progress or calculates it
+func (fm *FileManager) getOrCalculateProgress(file *FileInfo, tm *TaskManager) ProgressInfo {
+	if file.CachedProgress != nil {
+		return *file.CachedProgress
+	}
+
+	progress := fm.calculateProgress(file, tm)
+	file.CachedProgress = &progress
+	return progress
+}
+
+// InvalidateProgressCache clears progress cache for a specific file
+func (fm *FileManager) InvalidateProgressCache(filename string) {
+	fm.filesMu.Lock()
+	defer fm.filesMu.Unlock()
+	for i := range fm.Files {
+		if fm.Files[i].Name == filename {
+			fm.Files[i].CachedProgress = nil
+			break
+		}
+	}
+}
+
+// InvalidateAllCaches clears all caches
+func (fm *FileManager) InvalidateAllCaches() {
+	fm.filesMu.Lock()
+	for i := range fm.Files {
+		fm.Files[i].CachedProgress = nil
+	}
+	fm.filesMu.Unlock()
+
+	fm.ResetCache()
 }
 
 func (fm *FileManager) UpdateTask(task Task, status string) error {
@@ -247,6 +312,9 @@ func (fm *FileManager) UpdateTask(task Task, status string) error {
 	if err != nil {
 		return fmt.Errorf("failed to write updated task: %w", err)
 	}
+
+	// Invalidate progress cache for this file
+	fm.InvalidateProgressCache(filename)
 
 	if status == "scheduled" || status == "started" || status == "completed" || status == "unscheduled" {
 		// Clean the task text before sending to mind map updater
@@ -353,11 +421,7 @@ func (fm *FileManager) GetActiveSuggestion(suggestionsListCursor int, suggestion
 	return strings.Split(activeSuggestionsList[suggestionCursor], fm.FileExtension)[0]
 }
 
-func (fm FileManager) currentFile() FileInfo {
-	return fm.SelectedFile
-}
-
-func (fm FileManager) currentFileName() string {
+func (fm *FileManager) currentFileName() string {
 	return fm.CurrentFile().Name
 }
 
@@ -553,8 +617,13 @@ func activeCmp(filenames []string, tm *TaskManager) {
 		iCompletedTasks, iTotalTasks := tm.TaskCollection.Progress(iFilename)
 		jCompletedTasks, jTotalTasks := tm.TaskCollection.Progress(jFilename)
 
-		iPercentage := float64(iCompletedTasks) / float64(iTotalTasks)
-		jPercentage := float64(jCompletedTasks) / float64(jTotalTasks)
+		var iPercentage, jPercentage float64
+		if iTotalTasks > 0 {
+			iPercentage = float64(iCompletedTasks) / float64(iTotalTasks)
+		}
+		if jTotalTasks > 0 {
+			jPercentage = float64(jCompletedTasks) / float64(jTotalTasks)
+		}
 
 		iRoundedUp := int(iPercentage*10) * 10
 		jRoundedUp := int(jPercentage*10) * 10

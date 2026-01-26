@@ -24,11 +24,15 @@ func (dm *DirectoryManager) CompanyNames() []string {
 }
 
 func (dm *DirectoryManager) AssignCompany() {
-	dm.SelectedCompany = dm.Companies[dm.CompaniesCursor]
+	if dm.CompaniesCursor >= 0 && dm.CompaniesCursor < len(dm.Companies) {
+		dm.SelectedCompany = dm.Companies[dm.CompaniesCursor]
+	}
 }
 
 func (dm *DirectoryManager) AssignCategory() {
-	dm.SelectedCategory = dm.Categories[dm.CategoriesCursor]
+	if dm.CategoriesCursor >= 0 && dm.CategoriesCursor < len(dm.Categories) {
+		dm.SelectedCategory = dm.Categories[dm.CategoriesCursor]
+	}
 }
 
 func (dm *DirectoryManager) SelectCompany(companyName string) bool {

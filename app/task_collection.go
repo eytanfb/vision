@@ -2,8 +2,6 @@ package app
 
 import (
 	"strings"
-
-	"github.com/charmbracelet/log"
 )
 
 type TaskCollection struct {
@@ -166,7 +164,7 @@ func (tc *TaskCollection) LastUpdatedAt(filename string) string {
 }
 
 func (tc *TaskCollection) GetStartedTasksByDate(startDate, endDate string) []Task {
-	log.Info("Getting started tasks")
+	Debug("Getting started tasks")
 	tasks := tc.allTasks()
 	var startedTasks []Task
 	for _, task := range tasks {
@@ -179,7 +177,7 @@ func (tc *TaskCollection) GetStartedTasksByDate(startDate, endDate string) []Tas
 }
 
 func (tc *TaskCollection) GetCompletedTasksByDate(startDate, endDate string) []Task {
-	log.Info("Getting completed tasks")
+	Debug("Getting completed tasks")
 	tasks := tc.allTasks()
 	var completedTasks []Task
 	for _, task := range tasks {
@@ -191,7 +189,7 @@ func (tc *TaskCollection) GetCompletedTasksByDate(startDate, endDate string) []T
 }
 
 func (tc *TaskCollection) GetScheduledTasksByDate(startDate, endDate string) []Task {
-	log.Info("Getting scheduled tasks")
+	Debug("Getting scheduled tasks")
 	tasks := tc.allTasks()
 	var scheduledTasks []Task
 	for _, task := range tasks {
@@ -203,7 +201,7 @@ func (tc *TaskCollection) GetScheduledTasksByDate(startDate, endDate string) []T
 }
 
 func (tc *TaskCollection) GetUnscheduledTasksByDate(startDate, endDate string) []Task {
-	log.Info("Getting unscheduled tasks")
+	Debug("Getting unscheduled tasks")
 	tasks := tc.allTasks()
 	var unscheduledTasks []Task
 	for _, task := range tasks {
@@ -222,11 +220,11 @@ func (tc *TaskCollection) GetTasksByDayByStatus(date string, status status) []Ta
 			filteredTasks = append(filteredTasks, task)
 		}
 	}
-	return tasks
+	return filteredTasks
 }
 
 func (tc *TaskCollection) GetCompletedTasks() []Task {
-	log.Info("Getting completed tasks")
+	Debug("Getting completed tasks")
 	tasks := tc.allTasks()
 	var completedTasks []Task
 	for _, task := range tasks {
@@ -238,7 +236,7 @@ func (tc *TaskCollection) GetCompletedTasks() []Task {
 }
 
 func (tc *TaskCollection) GetScheduledTasks() []Task {
-	log.Info("Getting scheduled tasks")
+	Debug("Getting scheduled tasks")
 	tasks := tc.allTasks()
 	var scheduledTasks []Task
 
@@ -252,12 +250,12 @@ func (tc *TaskCollection) GetScheduledTasks() []Task {
 }
 
 func (tc *TaskCollection) allTasks() []Task {
-	log.Info("Getting all tasks")
+	Debug("Getting all tasks")
 	var allTasks []Task
 	for _, tasks := range tc.GetTasksByFile() {
 		allTasks = append(allTasks, tasks...)
 	}
-	log.Info("All tasks count: ", len(allTasks))
+	Debug("All tasks count: ", len(allTasks))
 	return allTasks
 }
 

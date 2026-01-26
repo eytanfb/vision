@@ -57,6 +57,12 @@ type (
 	FilesRefreshedMsg struct {
 		Files []FileInfo
 	}
+
+	// FilesLoadedMsg indicates files were loaded asynchronously
+	FilesLoadedMsg struct {
+		Files []FileInfo
+		Err   error
+	}
 )
 
 // Task Operations Messages
@@ -89,6 +95,12 @@ type (
 		ParentTask Task
 		SubTask    string
 		Err        error
+	}
+
+	// TasksLoadedMsg indicates tasks were loaded asynchronously
+	TasksLoadedMsg struct {
+		Tasks []Task
+		Err   error
 	}
 )
 
@@ -158,6 +170,35 @@ type (
 		Suggestion string
 		Index      int
 	}
+
+	// FileNavigatedMsg indicates cursor moved to a different file
+	FileNavigatedMsg struct {
+		File      FileInfo
+		Direction string // "up", "down"
+		NewCursor int
+	}
+
+	// KanbanNavigatedMsg indicates movement within kanban view
+	KanbanNavigatedMsg struct {
+		ListCursor int
+		TaskCursor int
+		Direction  string // "up", "down", "left", "right"
+	}
+)
+
+// Loading Messages
+// These messages indicate loading states
+
+type (
+	// LoadingStartedMsg indicates a loading operation started
+	LoadingStartedMsg struct {
+		Operation string // "tasks", "files", "standup", etc.
+	}
+
+	// LoadingCompletedMsg indicates a loading operation completed
+	LoadingCompletedMsg struct {
+		Operation string
+	}
 )
 
 // Error Messages
@@ -170,13 +211,6 @@ type (
 		Context string
 	}
 )
-
-// Helper function to create a simple message command
-func sendMsg(msg tea.Msg) tea.Cmd {
-	return func() tea.Msg {
-		return msg
-	}
-}
 
 // NoOp returns a command that does nothing
 func NoOp() tea.Cmd {

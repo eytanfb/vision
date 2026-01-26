@@ -512,16 +512,3 @@ func (u *MindMapUpdater) updateTaskStatusLine(ev Event) error {
 	// Task not found and not unscheduled, create it with clean text
 	return u.createAndUpdateTask(path, taskID, ev.ParentTaskID, ev.NewStatus)
 }
-
-func statusIcon(status string) string {
-	switch status {
-	case "scheduled":
-		return "⏳"
-	case "started":
-		return "🛫"
-	case "completed":
-		return "✅"
-	default:
-		return ""
-	}
-}

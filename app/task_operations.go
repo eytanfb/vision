@@ -35,10 +35,8 @@ func (to TaskOperations) HandleKey(key string, m *Model) tea.Cmd {
 // CompleteTask marks the current task as completed
 func (to TaskOperations) CompleteTask(m *Model) tea.Cmd {
 	if m.IsCategoryView() && m.ViewManager.HideSidebar {
-		if err := m.TaskManager.UpdateTaskToCompleted(&m.FileManager, m.TaskManager.SelectedTask); err != nil {
-			m.Errors = append(m.Errors, err.Error())
-		}
-		m.FileManager.FetchTasks(&m.DirectoryManager, &m.TaskManager)
+		selectedTask := m.TaskManager.SelectedTask
+		return m.updateTaskCmd(selectedTask, "completed")
 	}
 	return nil
 }
@@ -46,23 +44,14 @@ func (to TaskOperations) CompleteTask(m *Model) tea.Cmd {
 // ScheduleOrStartTask schedules or starts a task depending on its current state
 func (to TaskOperations) ScheduleOrStartTask(m *Model) tea.Cmd {
 	if m.ViewManager.HideSidebar {
-		log.Info("SKeyCommand: Show sidebar")
-		if m.TaskManager.SelectedTask.Scheduled {
+		selectedTask := m.TaskManager.SelectedTask
+		if selectedTask.Scheduled {
 			log.Info("SKeyCommand: Update task to started")
-			if err := m.TaskManager.UpdateTaskToStarted(&m.FileManager, m.TaskManager.SelectedTask); err != nil {
-				m.Errors = append(m.Errors, err.Error())
-			}
-			m.ViewManager.KanbanListCursor = 1
-			m.ViewManager.IsKanbanTaskUpdated = true
+			return m.updateTaskCmd(selectedTask, "started")
 		} else {
 			log.Info("SKeyCommand: Update task to scheduled")
-			if err := m.TaskManager.UpdateTaskToScheduled(&m.FileManager, m.TaskManager.SelectedTask); err != nil {
-				m.Errors = append(m.Errors, err.Error())
-			}
-			m.ViewManager.KanbanListCursor = 1
-			m.ViewManager.IsKanbanTaskUpdated = true
+			return m.updateTaskCmd(selectedTask, "scheduled")
 		}
-		m.FileManager.FetchFiles(&m.DirectoryManager, &m.TaskManager)
 	}
 	return nil
 }
@@ -74,16 +63,10 @@ func (to TaskOperations) TogglePriority(m *Model) tea.Cmd {
 
 		if !strings.Contains(selectedTask.Text, "🔺") {
 			log.Info("Adding priority marker to task")
-			if err := m.TaskManager.UpdateTaskToPriority(&m.FileManager, selectedTask); err != nil {
-				m.Errors = append(m.Errors, err.Error())
-			}
-			m.FileManager.FetchTasks(&m.DirectoryManager, &m.TaskManager)
+			return m.updateTaskCmd(selectedTask, "priority")
 		} else {
 			log.Info("Removing priority marker from task")
-			if err := m.TaskManager.UpdateTaskToUnpriority(&m.FileManager, selectedTask); err != nil {
-				m.Errors = append(m.Errors, err.Error())
-			}
-			m.FileManager.FetchTasks(&m.DirectoryManager, &m.TaskManager)
+			return m.updateTaskCmd(selectedTask, "unpriority")
 		}
 	}
 	return nil
@@ -92,11 +75,8 @@ func (to TaskOperations) TogglePriority(m *Model) tea.Cmd {
 // StartTaskOrCopyStandup starts a task in kanban view or copies standup in other views
 func (to TaskOperations) StartTaskOrCopyStandup(m *Model) tea.Cmd {
 	if m.IsCategoryView() && m.ViewManager.HideSidebar {
-		if err := m.TaskManager.UpdateTaskToStarted(&m.FileManager, m.TaskManager.SelectedTask); err != nil {
-			m.Errors = append(m.Errors, err.Error())
-		}
-		m.FileManager.FetchTasks(&m.DirectoryManager, &m.TaskManager)
-		return nil
+		selectedTask := m.TaskManager.SelectedTask
+		return m.updateTaskCmd(selectedTask, "started")
 	}
 
 	if !m.IsCategoryView() || m.ViewManager.IsWeeklyView {
@@ -116,21 +96,14 @@ func (to TaskOperations) StartTaskOrCopyStandup(m *Model) tea.Cmd {
 // ToggleScheduledUnscheduled toggles between scheduled and unscheduled states
 func (to TaskOperations) ToggleScheduledUnscheduled(m *Model) tea.Cmd {
 	if m.IsCategoryView() && m.ViewManager.HideSidebar {
-		if m.TaskManager.SelectedTask.Started {
-			if err := m.TaskManager.UpdateTaskToScheduled(&m.FileManager, m.TaskManager.SelectedTask); err != nil {
-				m.Errors = append(m.Errors, err.Error())
-			}
-			m.ViewManager.KanbanListCursor = 1
-			m.ViewManager.IsKanbanTaskUpdated = true
+		selectedTask := m.TaskManager.SelectedTask
+		if selectedTask.Started {
+			log.Info("Updating started task to scheduled")
+			return m.updateTaskCmd(selectedTask, "scheduled")
 		} else {
-			if err := m.TaskManager.UpdateTaskToUnscheduled(&m.FileManager, m.TaskManager.SelectedTask); err != nil {
-				m.Errors = append(m.Errors, err.Error())
-			}
-			m.ViewManager.KanbanListCursor = 0
-			m.ViewManager.IsKanbanTaskUpdated = true
-			log.Info("Updating task to unscheduled ", m.ViewManager.IsKanbanTaskUpdated)
+			log.Info("Updating task to unscheduled")
+			return m.updateTaskCmd(selectedTask, "unscheduled")
 		}
-		m.FileManager.FetchTasks(&m.DirectoryManager, &m.TaskManager)
 	}
 	return nil
 }
@@ -148,7 +121,7 @@ func (to TaskOperations) AddTask(m *Model) tea.Cmd {
 // AddSubTask opens the add subtask dialog
 func (to TaskOperations) AddSubTask(m *Model) tea.Cmd {
 	if m.FileManager.SelectedFile.Name == "" {
-		m.Errors = append(m.Errors, "No file selected")
+		m.AddError("No file selected")
 		return nil
 	}
 	m.ViewManager.IsAddSubTaskView = true
@@ -174,7 +147,7 @@ func (cmd DKeyCommand) Description() string {
 }
 
 func (cmd DKeyCommand) Contexts() []string {
-	return []string{"kanban"}
+	return []string{ContextKanban}
 }
 
 type SKeyCommand struct{}
@@ -188,7 +161,7 @@ func (cmd SKeyCommand) Description() string {
 }
 
 func (cmd SKeyCommand) Contexts() []string {
-	return []string{"kanban"}
+	return []string{ContextKanban}
 }
 
 type PKeyCommand struct{}
@@ -202,7 +175,7 @@ func (cmd PKeyCommand) Description() string {
 }
 
 func (cmd PKeyCommand) Contexts() []string {
-	return []string{"kanban"}
+	return []string{ContextKanban}
 }
 
 type UppercaseDKeyCommand struct{}
@@ -230,7 +203,7 @@ func (cmd UppercaseSKeyCommand) Description() string {
 }
 
 func (cmd UppercaseSKeyCommand) Contexts() []string {
-	return []string{"kanban"}
+	return []string{ContextKanban}
 }
 
 type AKeyCommand struct{}

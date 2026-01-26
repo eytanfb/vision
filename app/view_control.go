@@ -148,7 +148,7 @@ func (cmd UppercaseWKeyCommand) Description() string {
 }
 
 func (cmd UppercaseWKeyCommand) Contexts() []string {
-	return []string{"weekly_view"}
+	return []string{ContextWeeklyView}
 }
 
 type OneKeyCommand struct{}

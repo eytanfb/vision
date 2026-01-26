@@ -18,26 +18,27 @@ func TestFilteredForDay(t *testing.T) {
 			tc: TaskCollection{
 				TasksByFile: map[string][]Task{
 					"file1.md": {
-						{Text: "Task 1", ScheduledDate: "2022-01-05", StartDate: "2022-01-06", CompletedDate: "2022-01-07"},
-						{Text: "Task 2", ScheduledDate: "2022-01-06", StartDate: "2022-01-09"},
-						{Text: "Task 3", ScheduledDate: "2022-01-10"},
+						{Text: "Task 1", ScheduledDate: "2022-01-05", StartDate: "2022-01-06", CompletedDate: "2022-01-07", Scheduled: true, Started: true, Completed: true},
+						{Text: "Task 2", ScheduledDate: "2022-01-06", StartDate: "2022-01-09", Scheduled: true, Started: true},
+						{Text: "Task 3", ScheduledDate: "2022-01-10", Scheduled: true},
 					},
 					"file2.md": {
-						{Text: "Task 4", ScheduledDate: "2022-01-05", StartDate: "2022-01-06"},
-						{Text: "Task 5", CompletedDate: "2022-01-04"},
-						{Text: "Task 6", StartDate: "2022-01-04"},
+						{Text: "Task 4", ScheduledDate: "2022-01-05", StartDate: "2022-01-06", Scheduled: true, Started: true},
+						{Text: "Task 5", CompletedDate: "2022-01-04", Completed: true},
+						{Text: "Task 6", StartDate: "2022-01-04", Started: true},
 					},
 				},
 			},
 			date: "2022-01-06",
 			expected: map[string][]Task{
 				"file1.md": {
-					{Text: "Task 1", ScheduledDate: "2022-01-05", StartDate: "2022-01-06", CompletedDate: "2022-01-07"},
-					{Text: "Task 2", ScheduledDate: "2022-01-06", StartDate: "2022-01-09"},
+					{Text: "Task 1", ScheduledDate: "2022-01-05", StartDate: "2022-01-06", CompletedDate: "2022-01-07", Scheduled: true, Started: true, Completed: true},
+					{Text: "Task 2", ScheduledDate: "2022-01-06", StartDate: "2022-01-09", Scheduled: true, Started: true},
+					{Text: "Task 3", ScheduledDate: "2022-01-10", Scheduled: true},
 				},
 				"file2.md": {
-					{Text: "Task 4", ScheduledDate: "2022-01-05", StartDate: "2022-01-06"},
-					{Text: "Task 6", StartDate: "2022-01-04"},
+					{Text: "Task 4", ScheduledDate: "2022-01-05", StartDate: "2022-01-06", Scheduled: true, Started: true},
+					{Text: "Task 6", StartDate: "2022-01-04", Started: true},
 				},
 			},
 		},
@@ -47,22 +48,23 @@ func TestFilteredForDay(t *testing.T) {
 			tc: TaskCollection{
 				TasksByFile: map[string][]Task{
 					"January6Insurrection.md": {
-						{Text: "Reflect on political dynamics", ScheduledDate: "2021-01-06", StartDate: "2021-01-07", CompletedDate: "2021-01-08"},
-						{Text: "Prepare report on event", ScheduledDate: "2021-01-09", StartDate: "2021-01-10"},
+						{Text: "Reflect on political dynamics", ScheduledDate: "2021-01-06", StartDate: "2021-01-07", CompletedDate: "2021-01-08", Scheduled: true, Started: true, Completed: true},
+						{Text: "Prepare report on event", ScheduledDate: "2021-01-09", StartDate: "2021-01-10", Scheduled: true, Started: true},
 					},
 					"COVID19PandemicStart.md": {
-						{Text: "Gather initial data", ScheduledDate: "2020-03-11", StartDate: "2020-03-12", CompletedDate: "2020-03-20"},
-						{Text: "Draft initial response plans", ScheduledDate: "2020-03-15", StartDate: "2020-03-16"},
+						{Text: "Gather initial data", ScheduledDate: "2020-03-11", StartDate: "2020-03-12", CompletedDate: "2020-03-20", Scheduled: true, Started: true, Completed: true},
+						{Text: "Draft initial response plans", ScheduledDate: "2020-03-15", StartDate: "2020-03-16", Scheduled: true, Started: true},
 					},
 				},
 			},
 			date: "2021-01-07",
 			expected: map[string][]Task{
 				"January6Insurrection.md": {
-					{Text: "Reflect on political dynamics", ScheduledDate: "2021-01-06", StartDate: "2021-01-07", CompletedDate: "2021-01-08"},
+					{Text: "Reflect on political dynamics", ScheduledDate: "2021-01-06", StartDate: "2021-01-07", CompletedDate: "2021-01-08", Scheduled: true, Started: true, Completed: true},
+					{Text: "Prepare report on event", ScheduledDate: "2021-01-09", StartDate: "2021-01-10", Scheduled: true, Started: true},
 				},
 				"COVID19PandemicStart.md": {
-					{Text: "Draft initial response plans", ScheduledDate: "2020-03-15", StartDate: "2020-03-16"},
+					{Text: "Draft initial response plans", ScheduledDate: "2020-03-15", StartDate: "2020-03-16", Scheduled: true, Started: true},
 				},
 			},
 		},

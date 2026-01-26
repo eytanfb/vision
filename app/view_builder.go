@@ -28,7 +28,6 @@ type KanbanItem struct {
 
 func BuildKanbanSummaryView(m *Model, keys []string, tasksByFile map[string][]Task, width int, date string) string {
 	inactiveList, activeList, completedList := makeKanbanLists(m, keys, tasksByFile)
-	setKanbanTasksCounts(inactiveList, activeList, completedList, m)
 
 	activeBoard := renderBoard("Active", activeList, m, m.ViewManager.KanbanListCursor == 1)
 	completedBoard := renderBoard("Completed", completedList, m, m.ViewManager.KanbanListCursor == 2)
@@ -75,28 +74,6 @@ func addTaskOrCreateKanbanItem(list []KanbanItem, filename string, task Task) []
 	return append(list, KanbanItem{filename: filename, tasks: []Task{task}})
 }
 
-func setKanbanTasksCounts(inactiveList, activeList, completedList []KanbanItem, m *Model) {
-	if m.ViewManager.KanbanListCursor == 0 {
-		tasksCount := 0
-		for _, item := range inactiveList {
-			tasksCount += len(item.tasks)
-		}
-		m.ViewManager.KanbanTasksCount = tasksCount
-	} else if m.ViewManager.KanbanListCursor == 1 {
-		tasksCount := 0
-		for _, item := range activeList {
-			tasksCount += len(item.tasks)
-		}
-		m.ViewManager.KanbanTasksCount = tasksCount
-	} else if m.ViewManager.KanbanListCursor == 2 {
-		tasksCount := 0
-		for _, item := range completedList {
-			tasksCount += len(item.tasks)
-		}
-		m.ViewManager.KanbanTasksCount = tasksCount
-	}
-}
-
 func renderKanbanList(m *Model, kanbanList []KanbanItem, boardWidth int, selectedList bool) string {
 	var renderedItems []string
 	index := m.ViewManager.KanbanTaskCursor
@@ -141,7 +118,7 @@ func renderKanbanList(m *Model, kanbanList []KanbanItem, boardWidth int, selecte
 }
 
 func renderBoard(title string, list []KanbanItem, m *Model, selectedBoard bool) string {
-	boardWidth := (m.ViewManager.DetailsViewWidth - 6) / 3
+	boardWidth := (m.ViewManager.DetailsViewWidth - KanbanBoardSpacing) / KanbanColumnCount
 
 	renderedTitle := kanbanBoardTitleStyle(colorForTitle(title)).Render(title)
 	renderedList := renderKanbanList(m, list, boardWidth, selectedBoard)
@@ -198,7 +175,7 @@ func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
 		if index == m.FileManager.FilesCursor {
 			style = highlightedTextStyle
 			itemDetails = file.Content
-			m.FileManager.SelectedFile = file
+			// SelectedFile is set in Update(), not here
 		}
 
 		line := file.FileNameWithoutExtension(m.FileManager.FileExtension)
@@ -232,36 +209,45 @@ func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
 			peopleOptions := m.FileManager.PeopleFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
 			taskOptions := m.FileManager.TaskFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
 
-			// Collect all people options first, then join once
-			var peopleItems []string
-			for _, option := range peopleOptions {
-				person := strings.Split(option, m.FileManager.FileExtension)[0]
-				peopleItems = append(peopleItems, suggestionTextStyle.Render(person))
-			}
+			// Use strings.Builder for efficient string concatenation
+			if len(peopleOptions) > 0 {
+				var peopleBuilder strings.Builder
+				for i, option := range peopleOptions {
+					person := strings.Split(option, m.FileManager.FileExtension)[0]
+					peopleBuilder.WriteString(suggestionTextStyle.Render(person))
+					if i < len(peopleOptions)-1 {
+						peopleBuilder.WriteRune('\n')
+					}
+				}
 
-			if len(peopleItems) > 0 {
 				peopleOptionViewTitle := suggestionTitleStyle.Render("People")
-				peopleOptionsView := joinVertical(peopleItems...)
-				itemDetails = joinVertical(itemDetails, peopleOptionViewTitle, peopleOptionsView, "\n")
+				itemDetails += "\n" + peopleOptionViewTitle + "\n" + peopleBuilder.String() + "\n"
 			}
 
-			// Collect all task options first, then join once
-			var taskItems []string
-			for _, option := range taskOptions {
-				task := strings.Split(option, m.FileManager.FileExtension)[0]
-				taskItems = append(taskItems, suggestionTextStyle.Render(task))
-			}
+			// Use strings.Builder for task options
+			if len(taskOptions) > 0 {
+				var taskBuilder strings.Builder
+				for i, option := range taskOptions {
+					task := strings.Split(option, m.FileManager.FileExtension)[0]
+					taskBuilder.WriteString(suggestionTextStyle.Render(task))
+					if i < len(taskOptions)-1 {
+						taskBuilder.WriteRune('\n')
+					}
+				}
 
-			if len(taskItems) > 0 {
 				taskOptionViewTitle := suggestionTitleStyle.Render("Tasks")
-				taskOptionsView := joinVertical(taskItems...)
-				itemDetails = joinVertical(itemDetails, taskOptionViewTitle, taskOptionsView)
+				itemDetails += "\n" + taskOptionViewTitle + "\n" + taskBuilder.String()
 			}
 		}
 	} else {
 		markdown := renderMarkdown(itemDetails)
-		m.Viewport.SetContent(markdown)
-		itemDetails = m.Viewport.View()
+		// Create temporary viewport for rendering - don't mutate model state
+		tempViewport := viewport.Model{
+			Width:  m.Viewport.Width,
+			Height: m.Viewport.Height,
+		}
+		tempViewport.SetContent(markdown)
+		itemDetails = tempViewport.View()
 	}
 
 	return list, itemDetails
@@ -320,7 +306,7 @@ func buildTaskView(m *Model, task Task, date string, tasksView string) string {
 		task:   task,
 		date:   date,
 		weekly: m.ViewManager.IsWeeklyView,
-		width:  m.ViewManager.DetailsViewWidth - 25,
+		width:  m.ViewManager.DetailsViewWidth - TaskWidthPadding,
 	}.RenderedText()
 
 	return joinVertical(tasksView, tasksString)
@@ -347,8 +333,7 @@ func buildTaskForFileView(m *Model, task Task, date string, view string, cursor 
 
 		tasksString = joinVertical(tasksString, "\n", datesContainerStyle(width).Render(datesString))
 		tasksString = tasksStringStyle(width).Render(tasksString)
-		m.TaskManager.SelectedTask = task
-		m.FileManager.SelectFile(task.FileName)
+		// SelectedTask and SelectedFile are set in Update(), not here
 	}
 
 	view = joinVertical(view, tasksString)
@@ -388,6 +373,10 @@ func buildTaskFilesView(m *Model, line string, index int, file FileInfo, style l
 }
 
 func progressBar(completed, total int) string {
+	if total == 0 {
+		return "[          ]"
+	}
+
 	percentage := float64(completed) / float64(total)
 	numberOfBars := int(percentage * 10)
 	progressBar := "["

@@ -58,7 +58,7 @@ func (ih InputHandling) HandleEnter(m *Model) tea.Cmd {
 		input := m.NewTaskInput.Value()
 
 		if err := m.FileManager.CreateTask(company, input); err != nil {
-			m.Errors = append(m.Errors, err.Error())
+			m.AddError(err.Error())
 		}
 		return ih.HandleEscape(m)
 	} else if m.IsAddSubTaskView() {
@@ -70,7 +70,7 @@ func (ih InputHandling) HandleEnter(m *Model) tea.Cmd {
 		processedInput := utils.ParseHashtagsToObsidianDates(input)
 
 		if err := m.FileManager.CreateSubTask(company, selectedFile, processedInput); err != nil {
-			m.Errors = append(m.Errors, err.Error())
+			m.AddError(err.Error())
 		}
 		return ih.HandleEscape(m)
 	} else if m.IsFilterView() {
@@ -113,16 +113,19 @@ func (ih InputHandling) HandleEscape(m *Model) tea.Cmd {
 	} else if m.ViewManager.IsTaskDetailsFocus() {
 		// Toggle sidebar when in task details
 		m.ViewManager.ToggleHideSidebar()
+		// If we just entered kanban view, update the selected task
+		if m.ViewManager.HideSidebar {
+			NavigationCommands{}.updateSelectedTaskInKanban(m)
+		}
 		goToPreviousView = false
 	}
-
-	m.FileManager.FetchFiles(&m.DirectoryManager, &m.TaskManager)
 
 	if goToPreviousView {
 		m.GoToPreviousView()
 	}
 
-	return nil
+	// Reload files/tasks after input operations
+	return m.loadFilesCmd()
 }
 
 // StartFilter activates filter mode
@@ -144,7 +147,7 @@ func (ih InputHandling) ShowTasks(m *Model) tea.Cmd {
 // GoToMeetings navigates to the meetings category
 func (ih InputHandling) GoToMeetings(m *Model) tea.Cmd {
 	if m.IsCategoryView() {
-		m.GoToNextViewWithCategory("meetings")
+		return m.GoToNextViewWithCategory("meetings")
 	}
 	return nil
 }
@@ -204,7 +207,7 @@ func (cmd TKeyCommand) Description() string {
 }
 
 func (cmd TKeyCommand) Contexts() []string {
-	return []string{"item_details"}
+	return []string{ContextItemDetails}
 }
 
 type MKeyCommand struct{}
@@ -218,5 +221,5 @@ func (cmd MKeyCommand) Description() string {
 }
 
 func (cmd MKeyCommand) Contexts() []string {
-	return []string{"category_view"}
+	return []string{ContextCategoryView}
 }

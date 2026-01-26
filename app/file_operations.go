@@ -74,14 +74,18 @@ func (fo FileOperations) OpenInObsidian(m *Model) tea.Cmd {
 
 // NextCompany switches to the next company
 func (fo FileOperations) NextCompany(m *Model) tea.Cmd {
-	m.GoToNextCompany()
+	cmd := m.GoToNextCompany()
 	m.GotoCategoryView()
-	return nil
+	return cmd
 }
 
 // ToggleSidebar toggles the visibility of the sidebar
 func (fo FileOperations) ToggleSidebar(m *Model) tea.Cmd {
 	m.ViewManager.ToggleHideSidebar()
+	// If we just entered kanban view, update the selected task
+	if m.ViewManager.HideSidebar {
+		NavigationCommands{}.updateSelectedTaskInKanban(m)
+	}
 	return nil
 }
 
@@ -106,7 +110,7 @@ func (cmd EKeyCommand) Description() string {
 }
 
 func (cmd EKeyCommand) Contexts() []string {
-	return []string{"details", "kanban"}
+	return []string{ContextDetails, ContextKanban}
 }
 
 type OKeyCommand struct{}
@@ -120,7 +124,7 @@ func (cmd OKeyCommand) Description() string {
 }
 
 func (cmd OKeyCommand) Contexts() []string {
-	return []string{"details", "kanban"}
+	return []string{ContextDetails, ContextKanban}
 }
 
 type NKeyCommand struct{}

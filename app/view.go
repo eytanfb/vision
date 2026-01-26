@@ -2,34 +2,51 @@ package app
 
 import (
 	"fmt"
+	"hash/fnv"
 	"sort"
 	"strings"
 	"time"
 	"unicode"
 
+	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/glamour"
-	"github.com/charmbracelet/log"
 )
+
+func hashString(s string) uint64 {
+	h := fnv.New64a()
+	h.Write([]byte(s))
+	return h.Sum64()
+}
 
 func (m *Model) View() string {
 	return ViewHandler(m)
 }
 
 func ViewHandler(m *Model) string {
+	// On window resize or Everything flag, force full re-render by clearing viewport cache
+	if m.ViewManager.Dirty.Everything {
+		m.ViewCache = ViewCache{} // Clear all caches
+		// Note: We don't call ClearDirty() here because dirty flags are not yet
+		// used for selective rendering optimization. They are set by Update()
+		// but currently only Everything is checked above.
+	}
+
 	content := "Something is wrong"
 
 	if m.IsCategoryView() {
 		content = renderList(m, m.CategoryNames())
 	} else if m.IsDetailsView() {
 		if m.IsTaskDetailsFocus() {
-			log.Info("Task details focus")
+			Debug("Task details focus")
 			content = renderTasks(m)
 		} else {
 			content = renderFiles(m)
 		}
 	}
 
-	return joinVertical(renderNavbar(m), renderFilterInput(m), content, renderErrors(m))
+	result := joinVertical(renderNavbar(m), renderFilterInput(m), content, renderErrors(m))
+
+	return result
 }
 
 func renderErrors(m *Model) string {
@@ -68,9 +85,29 @@ func renderList(m *Model, items []string) string {
 
 	summaryView := buildSummaryView(m, m.ViewManager.HideSidebar)
 
-	m.Viewport.SetContent(summaryView)
+	// Create a temporary viewport for rendering - don't mutate model state
+	tempViewport := viewport.Model{
+		Width:  m.Viewport.Width,
+		Height: m.Viewport.Height,
+	}
 
-	summary := summaryContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.SummaryViewHeight).Render(m.Viewport.View())
+	// Only update viewport content if it changed
+	// NOTE: This mutates ViewCache in View(), which technically violates
+	// the pure View() principle. However, this is safe because:
+	// 1. Bubble Tea's Update/View cycle is single-threaded
+	// 2. This is purely a rendering optimization (doesn't affect business logic)
+	// 3. The cache state doesn't influence application behavior
+	hash := hashString(summaryView)
+	if hash != m.ViewCache.LastSummaryViewHash {
+		tempViewport.SetContent(summaryView)
+		m.ViewCache.LastSummaryViewHash = hash
+		m.ViewCache.LastViewportContent = summaryView
+	} else {
+		// Reuse cached content
+		tempViewport.SetContent(m.ViewCache.LastViewportContent)
+	}
+
+	summary := summaryContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.SummaryViewHeight).Render(tempViewport.View())
 
 	if m.ViewManager.HideSidebar {
 		sidebar = ""
@@ -88,11 +125,9 @@ func buildSummaryView(m *Model, hiddenSidebar bool) string {
 		summaryView = m.NewTaskInput.View() + "\n"
 
 		if hasUnclosedDoubleSquareBrackets(m.NewTaskInput.Value()) {
-			m.ViewManager.IsSuggestionsActive = true
+			// IsSuggestionsActive is managed in Update(), not View()
 			optionsView := linkingSuggestionsDisplay(m)
 			summaryView = joinVertical(summaryView, optionsView)
-		} else {
-			m.ViewManager.IsSuggestionsActive = false
 		}
 	} else {
 		if m.ViewManager.IsWeeklyView {
@@ -260,10 +295,8 @@ func renderNavbar(m *Model) string {
 }
 
 func renderFilterInput(m *Model) string {
-	if m.ViewManager.IsFilterView {
-		m.FilterInput.Focus()
-	}
-
+	// Focus is managed in Update(), not View()
+	// The input will be focused when FilterModeEnteredMsg is handled
 	return filterInputStyle(m.DirectoryManager.SelectedCompany.Color).Render(m.FilterInput.View())
 }
 
@@ -272,16 +305,19 @@ func renderTasks(m *Model) string {
 		addTaskView := m.NewTaskInput.View()
 
 		if hasUnclosedDoubleSquareBrackets(m.NewTaskInput.Value()) {
-			m.ViewManager.IsSuggestionsActive = true
+			// IsSuggestionsActive is set in Update(), not View()
 			optionsView := linkingSuggestionsDisplay(m)
 			addTaskView = joinVertical(addTaskView, optionsView)
-		} else {
-			m.ViewManager.IsSuggestionsActive = false
 		}
 
-		m.Viewport.SetContent("Add new subtask\n" + addTaskView + "\n")
+		// Create temporary viewport for rendering
+		tempViewport := viewport.Model{
+			Width:  m.Viewport.Width,
+			Height: m.Viewport.Height,
+		}
+		tempViewport.SetContent("Add new subtask\n" + addTaskView + "\n")
 
-		return contentContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight).Render(m.Viewport.View())
+		return contentContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight).Render(tempViewport.View())
 	}
 
 	date := m.TaskManager.DailySummaryDate
@@ -317,21 +353,38 @@ type fileSortKey struct {
 }
 
 func viewSort(filenames []string, m *Model) {
-	// Pre-calculate all sort keys once - O(n) instead of O(n log n) Progress() calls
+	// Create a map of filename to FileInfo for fast lookup
+	m.FileManager.filesMu.RLock()
+	fileMap := make(map[string]*FileInfo)
+	for i := range m.FileManager.Files {
+		fileMap[m.FileManager.Files[i].Name] = &m.FileManager.Files[i]
+	}
+	m.FileManager.filesMu.RUnlock()
+
+	// Pre-calculate all sort keys once using cached progress - O(n) instead of O(n log n)
 	sortKeys := make([]fileSortKey, len(filenames))
 	for i, filename := range filenames {
-		completed, total := m.TaskManager.TaskCollection.Progress(filename)
+		var progress ProgressInfo
 
-		var percentage int
-		if total > 0 {
-			percentage = int(float64(completed) / float64(total) * 100)
+		// Try to use cached progress if available
+		if file, ok := fileMap[filename]; ok {
+			progress = m.FileManager.getOrCalculateProgress(file, &m.TaskManager)
+		} else {
+			// Fallback to direct calculation if file not found
+			completed, total := m.TaskManager.TaskCollection.Progress(filename)
+			progress.Percentage = 0
+			if total > 0 {
+				progress.Percentage = int(float64(completed) / float64(total) * 100)
+			}
+			progress.IsInactive = m.TaskManager.TaskCollection.IsInactive(filename)
+			progress.IsComplete = total > 0 && completed == total
 		}
 
 		sortKeys[i] = fileSortKey{
 			filename:   filename,
-			percentage: percentage,
-			isInactive: m.TaskManager.TaskCollection.IsInactive(filename),
-			isComplete: total > 0 && completed == total,
+			percentage: progress.Percentage,
+			isInactive: progress.IsInactive,
+			isComplete: progress.IsComplete,
 		}
 	}
 
@@ -427,47 +480,53 @@ func peopleFilterValue(input string) string {
 
 func linkingSuggestionsDisplay(m *Model) string {
 	filterValue := peopleFilterValue(m.NewTaskInput.Value())
-	m.FileManager.SuggestionsFilterValue = filterValue
+	// SuggestionsFilterValue is set elsewhere if needed for state persistence
 
 	peopleOptions := m.FileManager.PeopleFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
 	taskOptions := m.FileManager.TaskFilenames(&m.DirectoryManager, &m.TaskManager, filterValue)
 
-	peopleOptionsView := ""
+	var peopleBuilder strings.Builder
 	for index, option := range peopleOptions {
 		person := strings.Split(option, m.FileManager.FileExtension)[0]
 
-		suggestionTextStyle := suggestionTextStyle
+		style := suggestionTextStyle
 
 		if m.ViewManager.SuggestionsListsCursor == 0 && index == m.ViewManager.SuggestionCursor {
-			suggestionTextStyle = selectedSuggestionTextStyle
+			style = selectedSuggestionTextStyle
 		}
 
-		peopleOptionsView = joinVertical(peopleOptionsView, suggestionTextStyle.Render(person))
+		peopleBuilder.WriteString(style.Render(person))
+		if index < len(peopleOptions)-1 {
+			peopleBuilder.WriteRune('\n')
+		}
 	}
 
-	peopleOptionViewTitle := suggestionTitleStyle.Render("People")
-
-	if peopleOptionsView != "" {
-		peopleOptionsView = joinVertical(peopleOptionViewTitle, peopleOptionsView)
+	peopleOptionsView := ""
+	if peopleBuilder.Len() > 0 {
+		peopleOptionViewTitle := suggestionTitleStyle.Render("People")
+		peopleOptionsView = peopleOptionViewTitle + "\n" + peopleBuilder.String()
 	}
 
-	taskOptionsView := ""
+	var taskBuilder strings.Builder
 	for index, option := range taskOptions {
 		task := strings.Split(option, m.FileManager.FileExtension)[0]
 
-		suggestionTextStyle := suggestionTextStyle
+		style := suggestionTextStyle
 
 		if m.ViewManager.SuggestionsListsCursor == 1 && index == m.ViewManager.SuggestionCursor {
-			suggestionTextStyle = selectedSuggestionTextStyle
+			style = selectedSuggestionTextStyle
 		}
 
-		taskOptionsView = joinVertical(taskOptionsView, suggestionTextStyle.Render(task))
+		taskBuilder.WriteString(style.Render(task))
+		if index < len(taskOptions)-1 {
+			taskBuilder.WriteRune('\n')
+		}
 	}
 
-	taskOptionViewTitle := suggestionTitleStyle.Render("Tasks")
-
-	if taskOptionsView != "" {
-		taskOptionsView = joinVertical(taskOptionViewTitle, taskOptionsView)
+	taskOptionsView := ""
+	if taskBuilder.Len() > 0 {
+		taskOptionViewTitle := suggestionTitleStyle.Render("Tasks")
+		taskOptionsView = taskOptionViewTitle + "\n" + taskBuilder.String()
 	}
 
 	return joinHorizontal(peopleOptionsView, taskOptionSuggestionsContainerStyle().Render(taskOptionsView))
