@@ -91,6 +91,10 @@ func (vc ViewControl) NextDay(m *Model) tea.Cmd {
 		} else {
 			m.TaskManager.ChangeWeeklySummaryToNextWeek()
 		}
+		// Re-sync selected task after date change (task lists may have changed)
+		if m.ViewManager.HideSidebar {
+			NavigationCommands{}.updateSelectedTaskInKanban(m)
+		}
 	}
 	return nil
 }
@@ -102,6 +106,10 @@ func (vc ViewControl) PreviousDay(m *Model) tea.Cmd {
 			m.TaskManager.ChangeDailySummaryDateToPreviousDay()
 		} else {
 			m.TaskManager.ChangeWeeklySummaryToPreviousWeek()
+		}
+		// Re-sync selected task after date change (task lists may have changed)
+		if m.ViewManager.HideSidebar {
+			NavigationCommands{}.updateSelectedTaskInKanban(m)
 		}
 	}
 	return nil

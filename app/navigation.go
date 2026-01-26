@@ -323,8 +323,17 @@ func (nc NavigationCommands) updateSelectedTaskInKanban(m *Model) {
 		}
 	}
 
-	// Update SelectedTask with bounds checking
-	if m.ViewManager.KanbanTaskCursor >= 0 && m.ViewManager.KanbanTaskCursor < len(filteredTasks) {
+	// Clamp cursor to valid bounds if task list changed (e.g., after date filter change)
+	if len(filteredTasks) > 0 {
+		if m.ViewManager.KanbanTaskCursor >= len(filteredTasks) {
+			m.ViewManager.KanbanTaskCursor = len(filteredTasks) - 1
+		}
+		if m.ViewManager.KanbanTaskCursor < 0 {
+			m.ViewManager.KanbanTaskCursor = 0
+		}
 		m.TaskManager.SelectedTask = filteredTasks[m.ViewManager.KanbanTaskCursor]
+	} else {
+		// No tasks in this list - clear selection
+		m.TaskManager.SelectedTask = Task{}
 	}
 }

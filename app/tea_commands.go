@@ -103,9 +103,16 @@ func (m *Model) navigateKanbanCmd(direction string) tea.Cmd {
 		newListCursor := m.ViewManager.KanbanListCursor
 		newTaskCursor := m.ViewManager.KanbanTaskCursor
 
+		// Get the task count for the target list to enforce bounds
+		taskCount := m.getKanbanListTaskCount(newListCursor)
+
 		switch direction {
 		case "down":
 			newTaskCursor++
+			// Upper bounds check - don't go past last task
+			if taskCount > 0 && newTaskCursor >= taskCount {
+				newTaskCursor = taskCount - 1
+			}
 		case "up":
 			newTaskCursor--
 			if newTaskCursor < 0 {
@@ -131,4 +138,32 @@ func (m *Model) navigateKanbanCmd(direction string) tea.Cmd {
 			Direction:  direction,
 		}
 	}
+}
+
+// getKanbanListTaskCount returns the number of tasks in a specific kanban list
+func (m *Model) getKanbanListTaskCount(listCursor int) int {
+	allTasksMap := m.TaskManager.TaskCollection.TasksByFile
+	count := 0
+
+	for _, tasks := range allTasksMap {
+		for _, task := range tasks {
+			if listCursor == 0 {
+				// Inactive: future scheduled or unscheduled
+				if task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) || task.ScheduledDate == "" {
+					count++
+				}
+			} else if listCursor == 1 {
+				// Active: started or scheduled (not completed, not future)
+				if !task.Completed && !task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) && (task.Started || task.Scheduled) {
+					count++
+				}
+			} else if listCursor == 2 {
+				// Completed
+				if task.Completed {
+					count++
+				}
+			}
+		}
+	}
+	return count
 }
