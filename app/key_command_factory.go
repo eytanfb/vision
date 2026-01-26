@@ -45,6 +45,7 @@ func NewKeyCommandFactory() *KeyCommandFactory {
 	registry.Register("C", UppercaseCKeyCommand{})
 	registry.Register("Q", UppercaseQKeyCommand{})
 	registry.Register("L", UppercaseLKeyCommand{})
+	registry.Register("r", RKeyCommand{})
 
 	// Input handling
 	registry.Register("enter", EnterKeyCommand{})

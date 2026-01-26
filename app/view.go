@@ -10,6 +10,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/glamour"
+	"github.com/charmbracelet/lipgloss"
 )
 
 func hashString(s string) uint64 {
@@ -31,6 +32,11 @@ func ViewHandler(m *Model) string {
 		// but currently only Everything is checked above.
 	}
 
+	// Check for retrospective view early - it takes over the entire screen
+	if m.IsRetrospectiveView() {
+		return renderRetrospectiveView(m)
+	}
+
 	content := "Something is wrong"
 
 	if m.IsCategoryView() {
@@ -47,6 +53,68 @@ func ViewHandler(m *Model) string {
 	result := joinVertical(renderNavbar(m), renderFilterInput(m), content, renderErrors(m))
 
 	return result
+}
+
+func renderRetrospectiveView(m *Model) string {
+	selectedTask := m.TaskManager.SelectedTask
+
+	// Get the earliest date as the creation date fallback
+	createdDate := getTaskCreationDate(selectedTask)
+
+	retro := NewTaskRetrospective(selectedTask, createdDate)
+	if retro == nil {
+		return "Unable to generate retrospective - task may not be completed"
+	}
+
+	retroView := NewRetrospectiveView(retro, m.ViewManager.Width, m.ViewManager.Height)
+
+	// Center the retrospective view content
+	content := retroView.View()
+	centeredContent := lipgloss.Place(
+		m.ViewManager.Width,
+		m.ViewManager.Height,
+		lipgloss.Center,
+		lipgloss.Center,
+		content,
+	)
+
+	return centeredContent
+}
+
+func getTaskCreationDate(task Task) time.Time {
+	// Try to find the earliest date from the task's dates
+	var earliestDate time.Time
+
+	if task.ScheduledDate != "" {
+		if d, err := time.Parse("2006-01-02", task.ScheduledDate); err == nil {
+			if earliestDate.IsZero() || d.Before(earliestDate) {
+				earliestDate = d
+			}
+		}
+	}
+
+	if task.StartDate != "" {
+		if d, err := time.Parse("2006-01-02", task.StartDate); err == nil {
+			if earliestDate.IsZero() || d.Before(earliestDate) {
+				earliestDate = d
+			}
+		}
+	}
+
+	if task.CompletedDate != "" {
+		if d, err := time.Parse("2006-01-02", task.CompletedDate); err == nil {
+			if earliestDate.IsZero() || d.Before(earliestDate) {
+				earliestDate = d
+			}
+		}
+	}
+
+	// If no dates found, use today as fallback
+	if earliestDate.IsZero() {
+		earliestDate = time.Now()
+	}
+
+	return earliestDate
 }
 
 func renderErrors(m *Model) string {

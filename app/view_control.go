@@ -262,3 +262,28 @@ func (cmd UppercaseLKeyCommand) Description() string {
 func (cmd UppercaseLKeyCommand) Contexts() []string {
 	return []string{}
 }
+
+// ToggleRetrospectiveView shows retrospective for completed tasks
+func (vc ViewControl) ToggleRetrospectiveView(m *Model) tea.Cmd {
+	selectedTask := m.TaskManager.SelectedTask
+	if !selectedTask.Completed {
+		return nil // Only show for completed tasks
+	}
+	m.ViewManager.ToggleRetrospectiveView()
+	m.ViewManager.MarkDirty("all")
+	return nil
+}
+
+type RKeyCommand struct{}
+
+func (cmd RKeyCommand) Execute(m *Model) tea.Cmd {
+	return ViewControl{}.ToggleRetrospectiveView(m)
+}
+
+func (cmd RKeyCommand) Description() string {
+	return "Show task retrospective (completed tasks only)"
+}
+
+func (cmd RKeyCommand) Contexts() []string {
+	return []string{ContextDetails, ContextKanban, ContextItemDetails, ContextRetrospective}
+}

@@ -37,6 +37,7 @@ type ViewManager struct {
 	SuggestionCursor         int
 	IsSuggestionsActive      bool
 	IsCalendarView           bool
+	IsRetrospectiveView      bool
 	Dirty                    DirtyFlags
 }
 
@@ -150,6 +151,10 @@ func (vm *ViewManager) ToggleHideSidebar() {
 
 func (vm *ViewManager) ToggleWeeklyView() {
 	vm.IsWeeklyView = !vm.IsWeeklyView
+}
+
+func (vm *ViewManager) ToggleRetrospectiveView() {
+	vm.IsRetrospectiveView = !vm.IsRetrospectiveView
 }
 
 func (vm *ViewManager) KanbanLineDownAmount() int {

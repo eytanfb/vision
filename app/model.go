@@ -211,6 +211,10 @@ func (m *Model) IsSuggestionsActive() bool {
 	return m.ViewManager.IsSuggestionsActive
 }
 
+func (m *Model) IsRetrospectiveView() bool {
+	return m.ViewManager.IsRetrospectiveView
+}
+
 func (m *Model) GoToCompany(companyName string) tea.Cmd {
 	m.DirectoryManager.SelectCompany(companyName)
 	m.FileManager.ResetCache()
@@ -479,6 +483,9 @@ func (m *Model) getCurrentContexts() []string {
 	}
 	if m.ViewManager.IsWeeklyView {
 		contexts = append(contexts, ContextWeeklyView)
+	}
+	if m.ViewManager.IsRetrospectiveView {
+		contexts = append(contexts, ContextRetrospective)
 	}
 
 	return contexts
