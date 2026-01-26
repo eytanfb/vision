@@ -135,6 +135,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Tasks are already loaded into TaskManager by FetchTasks
 		// Mark tasks and kanban dirty when tasks are loaded
 		m.ViewManager.MarkDirty("tasks")
+		// Sync SelectedTask after tasks are reloaded (important after task operations)
+		if m.ViewManager.HideSidebar {
+			NavigationCommands{}.updateSelectedTaskInKanban(m)
+		}
 		return m, nil
 
 	case LoadingStartedMsg:
