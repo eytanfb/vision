@@ -2,7 +2,6 @@ package app
 
 import (
 	"os/exec"
-	"sort"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/log"
@@ -289,12 +288,9 @@ func (nc NavigationCommands) updateSelectedTaskInKanban(m *Model) {
 	// Get ALL tasks from ALL files (not just current file)
 	allTasksMap := m.TaskManager.TaskCollection.TasksByFile
 
-	// Use sorted keys for deterministic iteration order (matching view rendering)
-	keys := make([]string, 0, len(allTasksMap))
-	for k := range allTasksMap {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
+	// Use the same sorting as the view rendering (viewSort) to ensure cursor position
+	// maps to the same task visually and in selection logic
+	keys := m.getSortedKanbanKeys(allTasksMap)
 
 	// Build flat list of tasks matching the current kanban list
 	// This must match the same order as makeKanbanLists in view_builder.go

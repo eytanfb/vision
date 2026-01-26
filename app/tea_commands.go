@@ -1,6 +1,10 @@
 package app
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	"sort"
+
+	tea "github.com/charmbracelet/bubbletea"
+)
 
 // tea_commands.go contains Bubble Tea command generators.
 // These functions return tea.Cmd that perform operations and send messages back.
@@ -143,9 +147,12 @@ func (m *Model) navigateKanbanCmd(direction string) tea.Cmd {
 // getKanbanListTaskCount returns the number of tasks in a specific kanban list
 func (m *Model) getKanbanListTaskCount(listCursor int) int {
 	allTasksMap := m.TaskManager.TaskCollection.TasksByFile
+	// Use same sorted keys as view to ensure consistent counting
+	keys := m.getSortedKanbanKeys(allTasksMap)
 	count := 0
 
-	for _, tasks := range allTasksMap {
+	for _, key := range keys {
+		tasks := allTasksMap[key]
 		for _, task := range tasks {
 			if listCursor == 0 {
 				// Inactive: future scheduled or unscheduled
@@ -166,4 +173,80 @@ func (m *Model) getKanbanListTaskCount(listCursor int) int {
 		}
 	}
 	return count
+}
+
+// getSortedKanbanKeys returns task keys sorted the same way as the kanban view
+// This ensures cursor position maps to the same task in both view and selection logic
+func (m *Model) getSortedKanbanKeys(tasksByFile map[string][]Task) []string {
+	keys := make([]string, 0, len(tasksByFile))
+	for k := range tasksByFile {
+		keys = append(keys, k)
+	}
+
+	// Create a map of filename to FileInfo for fast lookup
+	m.FileManager.filesMu.RLock()
+	fileMap := make(map[string]*FileInfo)
+	for i := range m.FileManager.Files {
+		fileMap[m.FileManager.Files[i].Name] = &m.FileManager.Files[i]
+	}
+	m.FileManager.filesMu.RUnlock()
+
+	// Sort using the same logic as viewSort in view.go
+	type sortKey struct {
+		filename   string
+		percentage int
+		isInactive bool
+		isComplete bool
+	}
+
+	sortKeys := make([]sortKey, len(keys))
+	for i, filename := range keys {
+		var percentage int
+		var isInactive, isComplete bool
+
+		if file, ok := fileMap[filename]; ok {
+			progress := m.FileManager.getOrCalculateProgress(file, &m.TaskManager)
+			percentage = progress.Percentage
+			isInactive = progress.IsInactive
+			isComplete = progress.IsComplete
+		} else {
+			completed, total := m.TaskManager.TaskCollection.Progress(filename)
+			if total > 0 {
+				percentage = int(float64(completed) / float64(total) * 100)
+				isComplete = completed == total
+			}
+			isInactive = m.TaskManager.TaskCollection.IsInactive(filename)
+		}
+
+		sortKeys[i] = sortKey{
+			filename:   filename,
+			percentage: percentage,
+			isInactive: isInactive,
+			isComplete: isComplete,
+		}
+	}
+
+	sort.Slice(sortKeys, func(i, j int) bool {
+		// Inactive files go last
+		if sortKeys[i].isInactive != sortKeys[j].isInactive {
+			return !sortKeys[i].isInactive
+		}
+		// Complete files go last
+		if sortKeys[i].isComplete != sortKeys[j].isComplete {
+			return !sortKeys[i].isComplete
+		}
+		// Sort by percentage descending
+		if sortKeys[i].percentage != sortKeys[j].percentage {
+			return sortKeys[i].percentage > sortKeys[j].percentage
+		}
+		// Alphabetical tiebreaker
+		return sortKeys[i].filename < sortKeys[j].filename
+	})
+
+	// Extract sorted filenames
+	result := make([]string, len(sortKeys))
+	for i := range sortKeys {
+		result[i] = sortKeys[i].filename
+	}
+	return result
 }
