@@ -49,6 +49,11 @@ func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileI
 	path := notesPath() + "/" + companyFolderPath + "/" + categoryPath
 	log.Info("Path: " + path)
 
+	// For tasks category, we need to fetch tasks FIRST so sorting uses correct data
+	if categoryPath == "tasks" {
+		fm.FetchTasks(dm, tm)
+	}
+
 	sorting := "default"
 
 	if categoryPath == "tasks" {
@@ -77,7 +82,6 @@ func (fm *FileManager) FetchFiles(dm *DirectoryManager, tm *TaskManager) []FileI
 	}
 
 	log.Info("Files count: " + fmt.Sprintf("%d", len(files)))
-	fm.FetchTasks(dm, tm)
 
 	fm.filesMu.Lock()
 	fm.Files = files
