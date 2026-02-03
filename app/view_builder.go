@@ -185,11 +185,25 @@ func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
 			if index > 15 {
 				break
 			}
-			list, _, _, _ := buildTaskFilesView(m, line, index, file, style, activeList, completedList, inactiveList)
-			return list, itemDetails
+			// Accumulate files into the active/inactive/completed lists
+			_, activeList, completedList, inactiveList = buildTaskFilesView(m, line, index, file, style, activeList, completedList, inactiveList)
 		} else {
 			listItems = append(listItems, style.Render(line))
 		}
+	}
+
+	// Build final task files list after processing all files
+	if m.DirectoryManager.SelectedCategory == "tasks" {
+		activeTitle := taskFileTitleStyle.Render("Active")
+		inactiveTitle := inactiveTitleStyle().Render("Inactive")
+		completeTitle := completedTitleStyle().Render("Complete")
+
+		renderedActiveList := renderedActiveListStyle().Render(activeList)
+		renderedInactiveList := renderedInactiveListStyle().Render(inactiveList)
+		renderedCompletedList := renderedCompletedListStyle().Render(completedList)
+
+		list := joinVertical(activeTitle, renderedActiveList, inactiveTitle, renderedInactiveList, completeTitle, renderedCompletedList)
+		return list, itemDetails
 	}
 
 	list := ""
