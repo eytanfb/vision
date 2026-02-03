@@ -54,7 +54,8 @@ func makeKanbanLists(m *Model, keys []string, tasksByFile map[string][]Task) ([]
 				completedList = addTaskOrCreateKanbanItem(completedList, key, task)
 			} else if task.Started || task.Scheduled {
 				activeList = addTaskOrCreateKanbanItem(activeList, key, task)
-			} else if task.ScheduledDate == "" {
+			} else {
+				// Remaining tasks (including past-due scheduled but not started) go to inactive
 				inactiveList = addTaskOrCreateKanbanItem(inactiveList, key, task)
 			}
 		}

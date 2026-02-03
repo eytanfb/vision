@@ -305,10 +305,10 @@ func (nc NavigationCommands) updateSelectedTaskInKanban(m *Model) {
 			isFuture := task.IsScheduledForFuture(m.TaskManager.DailySummaryDate)
 
 			if m.ViewManager.KanbanListCursor == 0 {
-				// Inactive: future scheduled, OR (not completed AND not started AND not scheduled AND no scheduled date)
+				// Inactive: future scheduled, OR (not completed AND not started AND not scheduled)
 				if isFuture {
 					filteredTasks = append(filteredTasks, task)
-				} else if !task.Completed && !task.Started && !task.Scheduled && task.ScheduledDate == "" {
+				} else if !task.Completed && !task.Started && !task.Scheduled {
 					filteredTasks = append(filteredTasks, task)
 				}
 			} else if m.ViewManager.KanbanListCursor == 1 {

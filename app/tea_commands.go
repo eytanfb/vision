@@ -160,10 +160,10 @@ func (m *Model) getKanbanListTaskCount(listCursor int) int {
 			isFuture := task.IsScheduledForFuture(m.TaskManager.DailySummaryDate)
 
 			if listCursor == 0 {
-				// Inactive: future scheduled, OR (not completed AND not started AND not scheduled AND no scheduled date)
+				// Inactive: future scheduled, OR (not completed AND not started AND not scheduled)
 				if isFuture {
 					count++
-				} else if !task.Completed && !task.Started && !task.Scheduled && task.ScheduledDate == "" {
+				} else if !task.Completed && !task.Started && !task.Scheduled {
 					count++
 				}
 			} else if listCursor == 1 {

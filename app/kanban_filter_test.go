@@ -75,7 +75,7 @@ func TestKanbanFilterLogicMatchesView(t *testing.T) {
 			expectedList: 1,
 		},
 
-		// Unscheduled tasks (not completed, not started, not scheduled, no scheduled date) go to inactive (list 0)
+		// Unscheduled tasks (not completed, not started, not scheduled) go to inactive (list 0)
 		{
 			name:         "unscheduled task goes to inactive",
 			task:         Task{Text: "Unscheduled", ScheduledDate: ""},
@@ -84,6 +84,13 @@ func TestKanbanFilterLogicMatchesView(t *testing.T) {
 		{
 			name:         "task with only text goes to inactive",
 			task:         Task{Text: "Just text"},
+			expectedList: 0,
+		},
+
+		// Past-due scheduled tasks (not started, not completed) should go to inactive (list 0)
+		{
+			name:         "past-due scheduled task not started goes to inactive",
+			task:         Task{Text: "Past due", ScheduledDate: past},
 			expectedList: 0,
 		},
 	}
@@ -98,7 +105,7 @@ func TestKanbanFilterLogicMatchesView(t *testing.T) {
 			// Inactive check (matches makeKanbanLists logic)
 			if isFuture {
 				actualList = 0
-			} else if !tc.task.Completed && !tc.task.Started && !tc.task.Scheduled && tc.task.ScheduledDate == "" {
+			} else if !tc.task.Completed && !tc.task.Started && !tc.task.Scheduled {
 				actualList = 0
 			}
 
