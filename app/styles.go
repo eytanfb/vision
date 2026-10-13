@@ -172,7 +172,7 @@ func companiesContainerStyle(width int) lipgloss.Style {
 func listContainerStyle(width int, height int, isItemDetailsFocus bool) lipgloss.Style {
 	style := sidebarStyle(width, height)
 	if !isItemDetailsFocus {
-		style = style.Copy().BorderForeground(lipgloss.Color("63"))
+		style = style.BorderForeground(lipgloss.Color("63"))
 	}
 
 	return style
@@ -183,7 +183,7 @@ func filesItemDetailsContainerStyle(width int, height int) lipgloss.Style {
 }
 
 func progressTextStyle(style lipgloss.Style) lipgloss.Style {
-	return style.Copy().Width(35).Align(lipgloss.Right)
+	return style.Width(35).Align(lipgloss.Right)
 }
 
 func taskStyle(width int) lipgloss.Style {
@@ -270,11 +270,11 @@ func summaryTitleStyle(width int) lipgloss.Style {
 }
 
 func inactiveTitleStyle() lipgloss.Style {
-	return taskFileTitleStyle.Copy().Foreground(inactiveFileColor)
+	return taskFileTitleStyle.Foreground(inactiveFileColor)
 }
 
 func completedTitleStyle() lipgloss.Style {
-	return taskFileTitleStyle.Copy().Foreground(completedFileColor)
+	return taskFileTitleStyle.Foreground(completedFileColor)
 }
 
 func renderedActiveListStyle() lipgloss.Style {
@@ -314,7 +314,7 @@ func boardContainerStyle(width int, height int, selected bool) lipgloss.Style {
 	style := lipgloss.NewStyle().Width(width).Height(height).Border(lipgloss.NormalBorder())
 
 	if selected {
-		style = style.Copy().BorderForeground(lipgloss.Color("63"))
+		style = style.BorderForeground(lipgloss.Color("63"))
 	}
 
 	globalStyleCache.boardStyles[key] = style
