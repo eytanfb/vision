@@ -10,6 +10,7 @@ import (
 	"time"
 	"vision/config"
 
+	"github.com/charmbracelet/bubbles/cursor"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -77,6 +78,8 @@ func newRenderTestModel(t *testing.T) *Model {
 	if !ok {
 		t.Fatalf("InitialModel did not return *Model")
 	}
+	model.FilterInput.Cursor.SetMode(cursor.CursorStatic)
+	model.NewTaskInput.Cursor.SetMode(cursor.CursorStatic)
 	return model
 }
 
@@ -191,14 +194,10 @@ func (h *renderHarness) render() string {
 	if strings.Contains(strings.ToLower(view), "panic") {
 		h.t.Fatalf("View contains 'panic' after keys %v:\n%s", h.trail, view)
 	}
-	if h.m.ViewManager.Width > 0 && !hasKnownDetailsOverflow(h.m) {
+	if h.m.ViewManager.Width > 0 {
 		h.assertMaxLineWidth(view, h.m.ViewManager.Width)
 	}
 	return view
-}
-
-func hasKnownDetailsOverflow(m *Model) bool {
-	return m.IsDetailsView() && m.ViewManager.HideSidebar
 }
 
 func maxLineWidth(view string) int {
@@ -344,7 +343,7 @@ func TestModelFiltersKanbanByTypedText(t *testing.T) {
 
 	h.press("f", "/", "d", "o", "c", "s")
 	if got := h.m.TaskManager.TaskCollection.FilterValue; got != "docs" {
-		t.Skipf("filter input never receives focus (StartFilter does not call FilterInput.Focus since commit e8bf377, predates the dependency upgrade); typed %q, got %q", "docs", got)
+		t.Fatalf("expected filter value %q, got %q", "docs", got)
 	}
 	view := stripANSI(h.render())
 	if !strings.Contains(view, "Write the docs") || strings.Contains(view, "Close the sprint") {
@@ -431,8 +430,33 @@ func TestModelFitsDetailsViewWithHiddenSidebarInWindow(t *testing.T) {
 	h := newRenderHarness(t)
 
 	h.press("enter", "f")
-	if got := maxLineWidth(h.render()); got > testWidth {
-		t.Skipf("details view with hidden sidebar renders %d cells in a %d-wide window; ToggleHideSidebar adds SidebarWidth to DetailsViewWidth without the layout offsets (predates the dependency upgrade)", got, testWidth)
+	h.assertMaxLineWidth(h.render(), testWidth)
+
+	h.send(tea.WindowSizeMsg{Width: 120, Height: testHeight}, "resize 120 while hidden")
+	h.assertMaxLineWidth(h.render(), 120)
+
+	h.send(tea.WindowSizeMsg{Width: testWidth, Height: testHeight}, "resize back while hidden")
+	h.assertMaxLineWidth(h.render(), testWidth)
+
+	h.press("f")
+	h.assertMaxLineWidth(h.render(), testWidth)
+	h.send(tea.WindowSizeMsg{Width: 120, Height: testHeight}, "resize 120 while shown")
+	h.assertMaxLineWidth(h.render(), 120)
+}
+
+func TestModelCompanyShortcutsLoadFiles(t *testing.T) {
+	h := newRenderHarness(t)
+
+	h.press("C", "enter")
+	view := stripANSI(h.render())
+	if !strings.Contains(view, "clerky-work") || strings.Contains(view, "project-alpha") {
+		t.Errorf("expected only Clerky files after C:\n%s", view)
+	}
+
+	h.press("esc", "L", "enter")
+	view = stripANSI(h.render())
+	if !strings.Contains(view, "project-alpha") || strings.Contains(view, "clerky-work") {
+		t.Errorf("expected only Lifeplus files after L:\n%s", view)
 	}
 }
 

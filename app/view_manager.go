@@ -76,8 +76,15 @@ const (
 
 func (vm *ViewManager) SetWidth(width int) {
 	vm.Width = width
-	vm.DetailsViewWidth = width - vm.SidebarWidth - detailsWidthOffset
 	vm.NavbarWidth = width - navbarWidthOffset
+	vm.updateDetailsViewWidth()
+}
+
+func (vm *ViewManager) updateDetailsViewWidth() {
+	vm.DetailsViewWidth = vm.Width - detailsWidthOffset
+	if !vm.HideSidebar {
+		vm.DetailsViewWidth -= vm.SidebarWidth
+	}
 }
 
 func (vm *ViewManager) SetHeight(height int) {
@@ -139,11 +146,11 @@ func (vm *ViewManager) Select(fm *FileManager, dm *DirectoryManager, tm *TaskMan
 func (vm *ViewManager) ToggleHideSidebar() {
 	vm.HideSidebar = !vm.HideSidebar
 
+	vm.updateDetailsViewWidth()
+
 	if vm.HideSidebar {
-		vm.DetailsViewWidth += vm.SidebarWidth
 		vm.ItemDetailsFocus = true
 	} else {
-		vm.DetailsViewWidth -= vm.SidebarWidth
 		vm.ItemDetailsFocus = false
 		vm.TaskDetailsFocus = false
 	}

@@ -194,6 +194,10 @@ func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
 
 	// Build final task files list after processing all files
 	if m.DirectoryManager.SelectedCategory == "tasks" {
+		if hiddenSidebar {
+			return "", itemDetails
+		}
+
 		activeTitle := taskFileTitleStyle.Render("Active")
 		inactiveTitle := inactiveTitleStyle().Render("Inactive")
 		completeTitle := completedTitleStyle().Render("Complete")

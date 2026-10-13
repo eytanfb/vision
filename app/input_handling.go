@@ -132,7 +132,7 @@ func (ih InputHandling) HandleEscape(m *Model) tea.Cmd {
 // StartFilter activates filter mode
 func (ih InputHandling) StartFilter(m *Model) tea.Cmd {
 	m.ViewManager.IsFilterView = true
-	return nil
+	return m.FilterInput.Focus()
 }
 
 // ShowTasks shows the tasks view

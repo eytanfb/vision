@@ -67,20 +67,17 @@ func (vc ViewControl) CopyWeeklySummary(m *Model) tea.Cmd {
 
 // GoToClerky switches to the Clerky company
 func (vc ViewControl) GoToClerky(m *Model) tea.Cmd {
-	m.GoToCompany("clerky")
-	return nil
+	return m.GoToCompany("clerky")
 }
 
 // GoToQvest switches to the Qvest company
 func (vc ViewControl) GoToQvest(m *Model) tea.Cmd {
-	m.GoToCompany("qvest.us")
-	return nil
+	return m.GoToCompany("qvest.us")
 }
 
 // GoToLifeplus switches to the Lifeplus company
 func (vc ViewControl) GoToLifeplus(m *Model) tea.Cmd {
-	m.GoToCompany("lifeplus")
-	return nil
+	return m.GoToCompany("lifeplus")
 }
 
 // NextDay moves to the next day or week
