@@ -388,26 +388,29 @@ func renderTasks(m *Model) string {
 		return contentContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight).Render(tempViewport.View())
 	}
 
-	date := m.TaskManager.DailySummaryDate
-
-	tasks := m.TaskManager.TaskCollection.GetTasks(m.FileManager.currentFileName())
-
-	tasksView := BuildTasksForFileView(m, tasks, date, m.TaskManager.TasksCursor)
-
-	renderedTasksView := taskItemDetailsContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight).Render(tasksView)
+	renderedTasksView := taskItemDetailsContainerStyle(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight).Render(m.TasksViewport.View())
 
 	return joinVertical(renderedTasksView)
 }
 
+const defaultMarkdownWrapWidth = 120
+
 func renderMarkdown(content string) string {
+	return renderMarkdownWithWidth(content, defaultMarkdownWrapWidth)
+}
+
+func renderMarkdownWithWidth(content string, width int) string {
 	out, err := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
-		glamour.WithWordWrap(120),
+		glamour.WithWordWrap(width),
 	)
+	if err != nil {
+		return content
+	}
 
 	markdown, err := out.Render(content)
 	if err != nil {
-		return ""
+		return content
 	}
 
 	return markdown

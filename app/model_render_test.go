@@ -197,6 +197,9 @@ func (h *renderHarness) render() string {
 	if h.m.ViewManager.Width > 0 {
 		h.assertMaxLineWidth(view, h.m.ViewManager.Width)
 	}
+	if h.m.ViewManager.Height > 0 {
+		h.assertMaxLineCount(view, h.m.ViewManager.Height)
+	}
 	return view
 }
 
@@ -217,6 +220,37 @@ func (h *renderHarness) assertMaxLineWidth(view string, max int) {
 			h.t.Errorf("line %d is %d cells wide, exceeding %d, after keys %v", i, w, max, h.trail)
 		}
 	}
+}
+
+func (h *renderHarness) assertMaxLineCount(view string, max int) {
+	h.t.Helper()
+	if n := len(strings.Split(strings.TrimSuffix(view, "\n"), "\n")); n > max {
+		h.t.Errorf("view is %d lines tall, exceeding %d, after keys %v", n, max, h.trail)
+	}
+}
+
+func longTasksFile(taskCount int) string {
+	var b strings.Builder
+	b.WriteString("# Long Project\n\n")
+	for i := 1; i <= taskCount; i++ {
+		fmt.Fprintf(&b, "- [ ] Task number %03d with a deliberately long description that keeps going well past the width of the details pane so that it has to wrap onto further lines\n", i)
+	}
+	return b.String()
+}
+
+func openLongFile(t *testing.T, taskCount int) *renderHarness {
+	t.Helper()
+	h := newRenderHarness(t)
+	writeNotesFile(t, filepath.Join(os.Getenv("HOME"), "Notes", "lifeplus", "tasks", "long-project.md"), longTasksFile(taskCount))
+
+	h.press("L", "enter")
+	for i := 0; i < 20 && h.m.FileManager.SelectedFile.Name != "long-project.md"; i++ {
+		h.press("j")
+	}
+	if h.m.FileManager.SelectedFile.Name != "long-project.md" {
+		t.Fatalf("could not select long-project.md, selected %q", h.m.FileManager.SelectedFile.Name)
+	}
+	return h
 }
 
 func TestModelLoadsTaskFilesFromNotesDirectory(t *testing.T) {
@@ -424,6 +458,103 @@ func TestModelSurvivesResizeAcrossViews(t *testing.T) {
 			h.send(size, fmt.Sprintf("resize %dx%d", size.Width, size.Height))
 		}
 	}
+}
+
+func TestModelKeepsLongFileDetailsWithinWindowHeight(t *testing.T) {
+	h := openLongFile(t, 120)
+
+	view := stripANSI(h.render())
+	if lines := len(strings.Split(strings.TrimSuffix(view, "\n"), "\n")); lines > testHeight {
+		t.Errorf("expected at most %d lines, got %d", testHeight, lines)
+	}
+	if !strings.Contains(view, "Task number 001") {
+		t.Errorf("expected the top of the file in the details pane:\n%s", view)
+	}
+
+	h.press("f")
+	view = stripANSI(h.render())
+	if lines := len(strings.Split(strings.TrimSuffix(view, "\n"), "\n")); lines > testHeight {
+		t.Errorf("expected at most %d lines with hidden sidebar, got %d", testHeight, lines)
+	}
+}
+
+func TestModelScrollsLongFileDetailsWithJAndK(t *testing.T) {
+	h := openLongFile(t, 120)
+	h.press("f")
+
+	top := stripANSI(h.render())
+	if h.m.Viewport.YOffset != 0 {
+		t.Fatalf("expected viewport at top, got offset %d", h.m.Viewport.YOffset)
+	}
+
+	h.press("j", "j", "j")
+	scrolled := h.m.Viewport.YOffset
+	if scrolled <= 0 {
+		t.Fatalf("expected j to scroll the viewport, got offset %d", scrolled)
+	}
+	moved := stripANSI(h.render())
+	if moved == top {
+		t.Error("expected the rendered pane to change after scrolling")
+	}
+
+	h.press("k")
+	if h.m.Viewport.YOffset >= scrolled {
+		t.Errorf("expected k to scroll back up from %d, got %d", scrolled, h.m.Viewport.YOffset)
+	}
+
+	h.press("k", "k", "k")
+	if h.m.Viewport.YOffset != 0 {
+		t.Errorf("expected viewport back at top, got offset %d", h.m.Viewport.YOffset)
+	}
+	if stripANSI(h.render()) != top {
+		t.Error("expected the pane to match the original top view")
+	}
+}
+
+func TestModelKeepsTaskCursorVisibleInTasksFocus(t *testing.T) {
+	h := openLongFile(t, 120)
+	h.press("f", "t")
+
+	for i := 0; i < 60; i++ {
+		h.press("j")
+		cursor := h.m.TaskManager.TasksCursor
+		want := fmt.Sprintf("Task number %03d", cursor+1)
+		view := stripANSI(h.render())
+		if !strings.Contains(view, want) {
+			t.Fatalf("expected %q to be visible with cursor %d (offset %d):\n%s", want, cursor, h.m.TasksViewport.YOffset, view)
+		}
+	}
+
+	if h.m.TaskManager.TasksCursor != 59 {
+		t.Fatalf("expected cursor at 59, got %d", h.m.TaskManager.TasksCursor)
+	}
+	if h.m.TasksViewport.YOffset == 0 {
+		t.Error("expected the tasks viewport to follow the cursor")
+	}
+
+	for i := 0; i < 60; i++ {
+		h.press("k")
+		want := fmt.Sprintf("Task number %03d", h.m.TaskManager.TasksCursor+1)
+		if view := stripANSI(h.render()); !strings.Contains(view, want) {
+			t.Fatalf("expected %q to be visible moving up (offset %d):\n%s", want, h.m.TasksViewport.YOffset, view)
+		}
+	}
+}
+
+func TestModelKeepsLongFileWithinWindowAcrossResizes(t *testing.T) {
+	h := openLongFile(t, 120)
+	h.press("f", "j", "j", "j", "j")
+
+	for _, size := range []tea.WindowSizeMsg{{Width: 200, Height: 70}, {Width: 100, Height: 30}, {Width: testWidth, Height: testHeight}} {
+		h.send(size, fmt.Sprintf("resize %dx%d", size.Width, size.Height))
+		if h.m.Viewport.Width != h.m.ViewManager.DetailsViewWidth || h.m.Viewport.Height != h.m.ViewManager.DetailsViewHeight {
+			t.Errorf("expected viewport to match details size after resize")
+		}
+	}
+
+	h.press("t", "j", "j", "j", "j", "j", "j", "j", "j", "j", "j", "j", "j")
+	h.send(tea.WindowSizeMsg{Width: 100, Height: 30}, "resize 100x30 in tasks focus")
+	h.send(tea.WindowSizeMsg{Width: testWidth, Height: testHeight}, "resize back in tasks focus")
 }
 
 func TestModelFitsDetailsViewWithHiddenSidebarInWindow(t *testing.T) {

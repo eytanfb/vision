@@ -154,13 +154,31 @@ func renderKanbanTask(task Task, boardWidth int, date string, selected bool, wee
 }
 
 func BuildTasksForFileView(m *Model, tasks []Task, date string, cursor int) string {
-	view := ""
+	content, _, _ := buildTaskRowsForFileView(m, tasks, date, cursor)
+	return content
+}
+
+func buildTaskRowsForFileView(m *Model, tasks []Task, date string, cursor int) (string, int, int) {
+	rows := []string{""}
+	line := 1
+	cursorStart, cursorEnd := -1, -1
 
 	for index, task := range tasks {
-		view = buildTaskForFileView(m, task, date, view, cursor, index)
+		row := renderTaskForFileView(m, task, date, cursor, index)
+		if row == "" {
+			continue
+		}
+
+		height := lipgloss.Height(row)
+		if index == cursor {
+			cursorStart, cursorEnd = line, line+height
+		}
+
+		rows = append(rows, row)
+		line += height
 	}
 
-	return view
+	return joinVertical(rows...), cursorStart, cursorEnd
 }
 
 func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
@@ -175,8 +193,6 @@ func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
 
 		if index == m.FileManager.FilesCursor {
 			style = highlightedTextStyle
-			itemDetails = file.Content
-			// SelectedFile is set in Update(), not here
 		}
 
 		line := file.FileNameWithoutExtension(m.FileManager.FileExtension)
@@ -195,7 +211,7 @@ func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
 	// Build final task files list after processing all files
 	if m.DirectoryManager.SelectedCategory == "tasks" {
 		if hiddenSidebar {
-			return "", itemDetails
+			return "", m.Viewport.View()
 		}
 
 		activeTitle := taskFileTitleStyle.Render("Active")
@@ -207,7 +223,7 @@ func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
 		renderedCompletedList := renderedCompletedListStyle().Render(completedList)
 
 		list := joinVertical(activeTitle, renderedActiveList, inactiveTitle, renderedInactiveList, completeTitle, renderedCompletedList)
-		return list, itemDetails
+		return list, m.Viewport.View()
 	}
 
 	list := ""
@@ -259,14 +275,7 @@ func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
 			}
 		}
 	} else {
-		markdown := renderMarkdown(itemDetails)
-		// Create temporary viewport for rendering - don't mutate model state
-		tempViewport := viewport.Model{
-			Width:  m.Viewport.Width,
-			Height: m.Viewport.Height,
-		}
-		tempViewport.SetContent(markdown)
-		itemDetails = tempViewport.View()
+		itemDetails = m.Viewport.View()
 	}
 
 	return list, itemDetails
@@ -331,7 +340,7 @@ func buildTaskView(m *Model, task Task, date string, tasksView string) string {
 	return joinVertical(tasksView, tasksString)
 }
 
-func buildTaskForFileView(m *Model, task Task, date string, view string, cursor int, index int) string {
+func renderTaskForFileView(m *Model, task Task, date string, cursor int, index int) string {
 	width := m.ViewManager.DetailsViewWidth - 15
 
 	if task.IsScheduledForFuture(m.TaskManager.DailySummaryDate) {
@@ -352,12 +361,9 @@ func buildTaskForFileView(m *Model, task Task, date string, view string, cursor 
 
 		tasksString = joinVertical(tasksString, "\n", datesContainerStyle(width).Render(datesString))
 		tasksString = tasksStringStyle(width).Render(tasksString)
-		// SelectedTask and SelectedFile are set in Update(), not here
 	}
 
-	view = joinVertical(view, tasksString)
-
-	return view
+	return tasksString
 }
 
 func buildTaskFilesView(m *Model, line string, index int, file FileInfo, style lipgloss.Style, activeList string, completedList string, inactiveList string) (string, string, string, string) {

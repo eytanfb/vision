@@ -24,17 +24,20 @@ type ViewCache struct {
 }
 
 type Model struct {
-	DirectoryManager  DirectoryManager
-	TaskManager       TaskManager
-	FileManager       FileManager
-	ViewManager       ViewManager
-	MindMapUpdater    mindmap.MindMapUpdaterInterface
-	Viewport          viewport.Model
-	NewTaskInput      textinput.Model
-	FilterInput       textinput.Model
-	Errors         []string
-	IsLoadingTasks bool
-	IsLoadingFiles bool
+	DirectoryManager DirectoryManager
+	TaskManager      TaskManager
+	FileManager      FileManager
+	ViewManager      ViewManager
+	MindMapUpdater   mindmap.MindMapUpdaterInterface
+	Viewport         viewport.Model
+	TasksViewport    viewport.Model
+	detailsSync      detailsSyncState
+	tasksSync        tasksSyncState
+	NewTaskInput     textinput.Model
+	FilterInput      textinput.Model
+	Errors           []string
+	IsLoadingTasks   bool
+	IsLoadingFiles   bool
 	// ViewCache is accessed from both Update() and View().
 	// This is safe because Bubble Tea's event loop is single-threaded -
 	// Update() and View() never execute concurrently.
