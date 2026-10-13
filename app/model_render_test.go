@@ -610,6 +610,29 @@ func TestRenderMarkdownProducesStyledOutput(t *testing.T) {
 	}
 }
 
+func TestMarkdownStyleIsStandardName(t *testing.T) {
+	if got := markdownStyle(); got != "dark" && got != "light" {
+		t.Errorf("expected dark or light, got %q", got)
+	}
+}
+
+func TestRenderMarkdownWithWidthWrapsAtNarrowerWidth(t *testing.T) {
+	doc := strings.Repeat("word ", 60)
+
+	narrow := stripANSI(renderMarkdownWithWidth(doc, 40))
+	wide := stripANSI(renderMarkdownWithWidth(doc, 120))
+
+	if strings.TrimSpace(narrow) == "" || strings.TrimSpace(wide) == "" {
+		t.Fatal("expected non-empty output at both widths")
+	}
+	if got := maxLineWidth(narrow); got > 40 {
+		t.Errorf("expected lines within 40 cells, got %d:\n%s", got, narrow)
+	}
+	if strings.Count(narrow, "\n") <= strings.Count(wide, "\n") {
+		t.Errorf("expected narrower width to produce more lines")
+	}
+}
+
 func TestStyleHelpersRenderInputText(t *testing.T) {
 	const text = "vision"
 	styles := map[string]lipgloss.Style{

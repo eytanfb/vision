@@ -6,6 +6,7 @@ import (
 	"vision/config"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 )
 
@@ -21,6 +22,9 @@ func main() {
 
 	args := os.Args[1:]
 	initialModel := app.InitialModel(cfg, args) // Pass cmdline args to the model
+
+	// Detect the terminal background before Bubble Tea takes over stdin; later queries would wait on a reply that never arrives
+	lipgloss.HasDarkBackground()
 
 	p := tea.NewProgram(initialModel, tea.WithMouseCellMotion(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {

@@ -5,6 +5,7 @@ import (
 	"hash/fnv"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -399,13 +400,33 @@ func renderMarkdown(content string) string {
 	return renderMarkdownWithWidth(content, defaultMarkdownWrapWidth)
 }
 
+var markdownStyle = sync.OnceValue(func() string {
+	if lipgloss.HasDarkBackground() {
+		return "dark"
+	}
+	return "light"
+})
+
+var markdownRenderers = struct {
+	sync.Mutex
+	byWidth map[int]*glamour.TermRenderer
+}{byWidth: map[int]*glamour.TermRenderer{}}
+
 func renderMarkdownWithWidth(content string, width int) string {
-	out, err := glamour.NewTermRenderer(
-		glamour.WithAutoStyle(),
-		glamour.WithWordWrap(width),
-	)
-	if err != nil {
-		return content
+	markdownRenderers.Lock()
+	defer markdownRenderers.Unlock()
+
+	out, ok := markdownRenderers.byWidth[width]
+	if !ok {
+		var err error
+		out, err = glamour.NewTermRenderer(
+			glamour.WithStandardStyle(markdownStyle()),
+			glamour.WithWordWrap(width),
+		)
+		if err != nil {
+			return content
+		}
+		markdownRenderers.byWidth[width] = out
 	}
 
 	markdown, err := out.Render(content)
