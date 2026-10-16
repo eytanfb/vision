@@ -84,7 +84,7 @@ func (m *Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !m.ViewManager.Ready {
 			m.Viewport = viewport.New(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight)
 			m.TasksViewport = viewport.New(m.ViewManager.DetailsViewWidth, m.ViewManager.DetailsViewHeight)
-			m.FilesViewport = viewport.New(max(m.ViewManager.SidebarWidth-sidebarFrameSize, 0), max(m.ViewManager.SidebarHeight-sidebarFrameSize, 0))
+			m.FilesViewport = viewport.New(m.ViewManager.sidebarContentSize())
 			m.ViewManager.Ready = true
 		} else {
 			m.Viewport.Width = m.ViewManager.DetailsViewWidth
@@ -127,16 +127,7 @@ func (m *Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.AddError("Error loading files: " + msg.Err.Error())
 			return m, nil
 		}
-		m.FileManager.filesMu.Lock()
-		m.FileManager.Files = msg.Files
-		if len(msg.Files) == 0 {
-			m.FileManager.FilesCursor = 0
-			m.FileManager.SelectedFile = FileInfo{}
-		} else {
-			m.FileManager.FilesCursor = min(max(m.FileManager.FilesCursor, 0), len(msg.Files)-1)
-			m.FileManager.SelectedFile = msg.Files[m.FileManager.FilesCursor]
-		}
-		m.FileManager.filesMu.Unlock()
+		m.FileManager.SetFiles(msg.Files)
 		// Mark files dirty when files are loaded
 		m.ViewManager.MarkDirty("files")
 		return m, nil

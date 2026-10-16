@@ -94,6 +94,11 @@ func (vm *ViewManager) SetHeight(height int) {
 	vm.DetailsViewHeight = height - heightOffset
 }
 
+func (vm ViewManager) sidebarContentSize() (width, height int) {
+	s := sidebarStyle(vm.SidebarWidth, vm.SidebarHeight)
+	return max(vm.SidebarWidth-s.GetHorizontalPadding(), 0), max(vm.SidebarHeight-s.GetVerticalPadding(), 0)
+}
+
 func (vm ViewManager) IsCompanyView() bool {
 	return vm.CurrentView == CompaniesView
 }

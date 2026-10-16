@@ -215,6 +215,19 @@ func (fm *FileManager) getOrCalculateProgress(file *FileInfo, tm *TaskManager) P
 	return progress
 }
 
+func (fm *FileManager) SetFiles(files []FileInfo) {
+	fm.filesMu.Lock()
+	defer fm.filesMu.Unlock()
+	fm.Files = files
+	if len(files) == 0 {
+		fm.FilesCursor = 0
+		fm.SelectedFile = FileInfo{}
+		return
+	}
+	fm.FilesCursor = min(max(fm.FilesCursor, 0), len(files)-1)
+	fm.SelectedFile = files[fm.FilesCursor]
+}
+
 // InvalidateProgressCache clears progress cache for a specific file
 func (fm *FileManager) InvalidateProgressCache(filename string) {
 	fm.filesMu.Lock()

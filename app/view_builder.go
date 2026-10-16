@@ -158,27 +158,45 @@ func BuildTasksForFileView(m *Model, tasks []Task, date string, cursor int) stri
 	return content
 }
 
-func buildTaskRowsForFileView(m *Model, tasks []Task, date string, cursor int) (string, int, int) {
-	rows := []string{""}
-	line := 1
-	cursorStart, cursorEnd := -1, -1
+type rowAccumulator struct {
+	rows  []string
+	line  int
+	start int
+	end   int
+}
 
+func newRowAccumulator(leading ...string) *rowAccumulator {
+	acc := &rowAccumulator{start: -1, end: -1}
+	for _, row := range leading {
+		acc.add(row, false)
+	}
+	return acc
+}
+
+func (acc *rowAccumulator) add(row string, isCursor bool) {
+	height := lipgloss.Height(row)
+	if isCursor {
+		acc.start, acc.end = acc.line, acc.line+height
+	}
+	acc.rows = append(acc.rows, row)
+	acc.line += height
+}
+
+func (acc *rowAccumulator) content() string {
+	return joinVertical(acc.rows...)
+}
+
+func buildTaskRowsForFileView(m *Model, tasks []Task, date string, cursor int) (string, int, int) {
+	acc := newRowAccumulator("")
 	for index, task := range tasks {
 		row := renderTaskForFileView(m, task, date, cursor, index)
 		if row == "" {
 			continue
 		}
-
-		height := lipgloss.Height(row)
-		if index == cursor {
-			cursorStart, cursorEnd = line, line+height
-		}
-
-		rows = append(rows, row)
-		line += height
+		acc.add(row, index == cursor)
 	}
 
-	return joinVertical(rows...), cursorStart, cursorEnd
+	return acc.content(), acc.start, acc.end
 }
 
 func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
@@ -335,39 +353,41 @@ func buildSidebarFilesContent(m *Model, width int) (string, int, int) {
 		return buildTaskSidebarContent(m, files, cursor, wrap)
 	}
 
-	rows := make([]string, 0, len(files))
-	line, start, end := 0, -1, -1
+	acc := newRowAccumulator()
 	for index, file := range files {
 		style := defaultTextStyle
 		if index == cursor {
 			style = highlightedTextStyle
 		}
 
-		row := wrap.Render(style.Render(file.FileNameWithoutExtension(m.FileManager.FileExtension)))
-		height := lipgloss.Height(row)
-		if index == cursor {
-			start, end = line, line+height
-		}
-		rows = append(rows, row)
-		line += height
+		acc.add(wrap.Render(style.Render(file.FileNameWithoutExtension(m.FileManager.FileExtension))), index == cursor)
 	}
 
-	return joinVertical(rows...), start, end
+	return acc.content(), acc.start, acc.end
 }
 
 type taskSidebarSection struct {
 	title string
 	frame lipgloss.Style
-	rows  []string
+	rows  *rowAccumulator
 }
+
+func newTaskSidebarSection(title string, frame lipgloss.Style) *taskSidebarSection {
+	return &taskSidebarSection{title: title, frame: frame, rows: newRowAccumulator("")}
+}
+
+const (
+	activeSection = iota
+	inactiveSection
+	completedSection
+)
 
 func buildTaskSidebarContent(m *Model, files []FileInfo, cursor int, wrap lipgloss.Style) (string, int, int) {
 	sections := []*taskSidebarSection{
-		{title: taskFileTitleStyle.Render("Active"), frame: renderedActiveListStyle(), rows: []string{""}},
-		{title: inactiveTitleStyle().Render("Inactive"), frame: renderedInactiveListStyle(), rows: []string{""}},
-		{title: completedTitleStyle().Render("Complete"), frame: renderedCompletedListStyle(), rows: []string{""}},
+		activeSection:    newTaskSidebarSection(taskFileTitleStyle.Render("Active"), renderedActiveListStyle()),
+		inactiveSection:  newTaskSidebarSection(inactiveTitleStyle().Render("Inactive"), renderedInactiveListStyle()),
+		completedSection: newTaskSidebarSection(completedTitleStyle().Render("Complete"), renderedCompletedListStyle()),
 	}
-	cursorSection, cursorRow := -1, -1
 
 	for index, file := range files {
 		style := defaultTextStyle
@@ -378,15 +398,15 @@ func buildTaskSidebarContent(m *Model, files []FileInfo, cursor int, wrap lipglo
 		line := file.FileNameWithoutExtension(m.FileManager.FileExtension)
 		completed, total := m.TaskManager.TaskCollection.Progress(file.Name)
 
-		target := 0
+		target := activeSection
 		switch {
 		case total > 0 && completed == total:
-			target = 2
+			target = completedSection
 			if index != cursor {
 				style = completedFileStyle
 			}
 		case m.TaskManager.TaskCollection.IsInactive(file.Name):
-			target = 1
+			target = inactiveSection
 			if index != cursor {
 				style = inactiveFileStyle
 			}
@@ -394,25 +414,18 @@ func buildTaskSidebarContent(m *Model, files []FileInfo, cursor int, wrap lipglo
 			line = fmt.Sprintf("[%d/%d] ", completed, total) + line
 		}
 
-		section := sections[target]
-		if index == cursor {
-			cursorSection, cursorRow = target, len(section.rows)
-		}
-		section.rows = append(section.rows, wrap.Render(style.Render(line)))
+		sections[target].rows.add(wrap.Render(style.Render(line)), index == cursor)
 	}
 
 	blocks := make([]string, 0, len(sections)*2)
 	line, start, end := 0, -1, -1
-	for sectionIndex, section := range sections {
+	for _, section := range sections {
 		titleHeight := lipgloss.Height(section.title)
-		rendered := section.frame.Render(joinVertical(section.rows...))
+		rendered := section.frame.Render(section.rows.content())
 
-		if sectionIndex == cursorSection {
+		if section.rows.start >= 0 {
 			offset := line + titleHeight + section.frame.GetMarginTop()
-			for _, row := range section.rows[:cursorRow] {
-				offset += lipgloss.Height(row)
-			}
-			start, end = offset, offset+lipgloss.Height(section.rows[cursorRow])
+			start, end = offset+section.rows.start, offset+section.rows.end
 		}
 
 		blocks = append(blocks, section.title, rendered)

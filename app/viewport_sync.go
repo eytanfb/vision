@@ -1,6 +1,6 @@
 package app
 
-const sidebarFrameSize = 2
+import "github.com/charmbracelet/bubbles/viewport"
 
 type detailsSyncState struct {
 	fileName string
@@ -42,8 +42,7 @@ func (m *Model) resizeViewports() {
 	m.Viewport.Height = m.ViewManager.DetailsViewHeight
 	m.TasksViewport.Width = m.ViewManager.DetailsViewWidth
 	m.TasksViewport.Height = m.ViewManager.DetailsViewHeight
-	m.FilesViewport.Width = max(m.ViewManager.SidebarWidth-sidebarFrameSize, 0)
-	m.FilesViewport.Height = max(m.ViewManager.SidebarHeight-sidebarFrameSize, 0)
+	m.FilesViewport.Width, m.FilesViewport.Height = m.ViewManager.sidebarContentSize()
 }
 
 func (m *Model) syncFilesViewport() {
@@ -64,13 +63,7 @@ func (m *Model) syncFilesViewport() {
 		return
 	}
 
-	height := m.FilesViewport.Height
-	switch {
-	case start < m.FilesViewport.YOffset:
-		m.FilesViewport.SetYOffset(start)
-	case end > m.FilesViewport.YOffset+height:
-		m.FilesViewport.SetYOffset(min(end-height, start))
-	}
+	scrollIntoView(&m.FilesViewport, start, end)
 }
 
 func (m *Model) syncDetailsViewport() {
@@ -128,11 +121,15 @@ func (m *Model) syncTasksViewport() {
 		return
 	}
 
-	height := m.TasksViewport.Height
+	scrollIntoView(&m.TasksViewport, start, end)
+}
+
+func scrollIntoView(vp *viewport.Model, start, end int) {
+	height := vp.Height
 	switch {
-	case start < m.TasksViewport.YOffset:
-		m.TasksViewport.SetYOffset(start)
-	case end > m.TasksViewport.YOffset+height:
-		m.TasksViewport.SetYOffset(min(end-height, start))
+	case start < vp.YOffset:
+		vp.SetYOffset(start)
+	case end > vp.YOffset+height:
+		vp.SetYOffset(min(end-height, start))
 	}
 }
