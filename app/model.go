@@ -31,8 +31,10 @@ type Model struct {
 	MindMapUpdater   mindmap.MindMapUpdaterInterface
 	Viewport         viewport.Model
 	TasksViewport    viewport.Model
+	FilesViewport    viewport.Model
 	detailsSync      detailsSyncState
 	tasksSync        tasksSyncState
+	filesSync        filesSyncState
 	NewTaskInput     textinput.Model
 	FilterInput      textinput.Model
 	Errors           []string

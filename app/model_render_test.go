@@ -770,3 +770,98 @@ func TestDerivedStylesLeaveBaseStylesUnchanged(t *testing.T) {
 		t.Error("expected unfocused list container to have a distinct border color from focused")
 	}
 }
+
+func writeManyMeetingFiles(t *testing.T, count int) {
+	t.Helper()
+	dir := filepath.Join(os.Getenv("HOME"), "Notes", "lifeplus", "meetings")
+	for i := 1; i <= count; i++ {
+		writeNotesFile(t, filepath.Join(dir, fmt.Sprintf("meeting-%03d.md", i)), fmt.Sprintf("# Meeting %d\n\n- Notes\n", i))
+	}
+}
+
+func openManyMeetings(t *testing.T, count int) *renderHarness {
+	t.Helper()
+	h := newRenderHarness(t)
+	writeManyMeetingFiles(t, count)
+	h.press("L", "j", "enter")
+	return h
+}
+
+func selectedDisplayName(h *renderHarness) string {
+	return h.m.FileManager.SelectedFile.FileNameWithoutExtension(h.m.FileManager.FileExtension)
+}
+
+func sidebarShows(h *renderHarness, view, name string) bool {
+	for _, line := range strings.Split(view, "\n") {
+		runes := []rune(line)
+		if n := h.m.ViewManager.SidebarWidth; len(runes) > n {
+			runes = runes[:n]
+		}
+		if strings.Contains(string(runes), name) {
+			return true
+		}
+	}
+	return false
+}
+
+func TestModelKeepsManyFilesSidebarWithinWindow(t *testing.T) {
+	h := openManyMeetings(t, 80)
+
+	if got := len(h.m.FileManager.Files); got != 81 {
+		t.Fatalf("expected 81 meeting files, got %d", got)
+	}
+	h.render()
+}
+
+func TestModelKeepsFileCursorVisibleInSidebar(t *testing.T) {
+	h := openManyMeetings(t, 80)
+
+	for i := 0; i < 60; i++ {
+		h.press("j")
+		name := selectedDisplayName(h)
+		if view := stripANSI(h.render()); !sidebarShows(h, view, name) {
+			t.Fatalf("selected file %q not visible after %d presses of j:\n%s", name, i+1, view)
+		}
+	}
+	for i := 0; i < 60; i++ {
+		h.press("k")
+		name := selectedDisplayName(h)
+		if view := stripANSI(h.render()); !sidebarShows(h, view, name) {
+			t.Fatalf("selected file %q not visible after %d presses of k:\n%s", name, i+1, view)
+		}
+	}
+}
+
+func TestModelListsAllTaskFilesInSidebar(t *testing.T) {
+	h := newRenderHarness(t)
+	dir := filepath.Join(os.Getenv("HOME"), "Notes", "lifeplus", "tasks")
+	for i := 1; i <= 25; i++ {
+		writeNotesFile(t, filepath.Join(dir, fmt.Sprintf("extra-%02d.md", i)), fmt.Sprintf("# Extra %d\n\n- [ ] Item\n", i))
+	}
+	h.press("L", "enter")
+
+	total := len(h.m.FileManager.Files)
+	if total != 27 {
+		t.Fatalf("expected 27 task files, got %d", total)
+	}
+	for i := 0; i < total-1; i++ {
+		h.press("j")
+	}
+
+	name := selectedDisplayName(h)
+	if view := stripANSI(h.render()); !sidebarShows(h, view, name) {
+		t.Fatalf("last task file %q not visible:\n%s", name, view)
+	}
+}
+
+func TestModelSelectsFirstFileWhenCategoryLoads(t *testing.T) {
+	h := newRenderHarness(t)
+	h.press("j", "l")
+
+	if got := h.m.FileManager.SelectedFile.Name; got != "2024-01-15.md" {
+		t.Fatalf("expected 2024-01-15.md selected, got %q", got)
+	}
+	if view := stripANSI(h.render()); !strings.Contains(view, "meetings > 2024-01-15") {
+		t.Fatalf("navbar does not show the selected file:\n%s", view)
+	}
+}

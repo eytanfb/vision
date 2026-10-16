@@ -182,57 +182,14 @@ func buildTaskRowsForFileView(m *Model, tasks []Task, date string, cursor int) (
 }
 
 func BuildFilesView(m *Model, hiddenSidebar bool) (string, string) {
-	var listItems []string
 	itemDetails := ""
-	completedList := ""
-	activeList := ""
-	inactiveList := ""
-
-	for index, file := range m.FileManager.Files {
-		style := defaultTextStyle
-
-		if index == m.FileManager.FilesCursor {
-			style = highlightedTextStyle
-		}
-
-		line := file.FileNameWithoutExtension(m.FileManager.FileExtension)
-
-		if m.DirectoryManager.SelectedCategory == "tasks" {
-			if index > 15 {
-				break
-			}
-			// Accumulate files into the active/inactive/completed lists
-			_, activeList, completedList, inactiveList = buildTaskFilesView(m, line, index, file, style, activeList, completedList, inactiveList)
-		} else {
-			listItems = append(listItems, style.Render(line))
-		}
-	}
-
-	// Build final task files list after processing all files
-	if m.DirectoryManager.SelectedCategory == "tasks" {
-		if hiddenSidebar {
-			return "", m.Viewport.View()
-		}
-
-		activeTitle := taskFileTitleStyle.Render("Active")
-		inactiveTitle := inactiveTitleStyle().Render("Inactive")
-		completeTitle := completedTitleStyle().Render("Complete")
-
-		renderedActiveList := renderedActiveListStyle().Render(activeList)
-		renderedInactiveList := renderedInactiveListStyle().Render(inactiveList)
-		renderedCompletedList := renderedCompletedListStyle().Render(completedList)
-
-		list := joinVertical(activeTitle, renderedActiveList, inactiveTitle, renderedInactiveList, completeTitle, renderedCompletedList)
-		return list, m.Viewport.View()
-	}
-
 	list := ""
-	if len(listItems) > 0 {
-		list = joinVertical(listItems...)
+	if !hiddenSidebar {
+		list = m.FilesViewport.View()
 	}
 
-	if hiddenSidebar {
-		list = ""
+	if m.DirectoryManager.SelectedCategory == "tasks" {
+		return list, m.Viewport.View()
 	}
 
 	if m.IsAddTaskView() || m.IsAddSubTaskView() {
@@ -366,35 +323,103 @@ func renderTaskForFileView(m *Model, task Task, date string, cursor int, index i
 	return tasksString
 }
 
-func buildTaskFilesView(m *Model, line string, index int, file FileInfo, style lipgloss.Style, activeList string, completedList string, inactiveList string) (string, string, string, string) {
-	isInactive := m.TaskManager.TaskCollection.IsInactive(file.Name)
-	completed, total := m.TaskManager.TaskCollection.Progress(file.Name)
+func buildSidebarFilesContent(m *Model, width int) (string, int, int) {
+	m.FileManager.filesMu.RLock()
+	files := m.FileManager.Files
+	m.FileManager.filesMu.RUnlock()
 
-	if total > 0 && completed == total {
-		if index != m.FileManager.FilesCursor {
-			style = completedFileStyle
-		}
-		completedList = joinVertical(completedList, style.Render(line))
-	} else if isInactive {
-		if index != m.FileManager.FilesCursor {
-			style = inactiveFileStyle
-		}
-		inactiveList = joinVertical(inactiveList, style.Render(line))
-	} else {
-		text := fmt.Sprintf("%d/%d", completed, total)
-		line = "[" + text + "] " + line
-		activeList = joinVertical(activeList, style.Render(line))
+	cursor := m.FileManager.FilesCursor
+	wrap := lipgloss.NewStyle().Width(max(width, 1))
+
+	if m.DirectoryManager.SelectedCategory == "tasks" {
+		return buildTaskSidebarContent(m, files, cursor, wrap)
 	}
 
-	activeTitle := taskFileTitleStyle.Render("Active")
-	inactiveTitle := inactiveTitleStyle().Render("Inactive")
-	completeTitle := completedTitleStyle().Render("Complete")
+	rows := make([]string, 0, len(files))
+	line, start, end := 0, -1, -1
+	for index, file := range files {
+		style := defaultTextStyle
+		if index == cursor {
+			style = highlightedTextStyle
+		}
 
-	renderedActiveList := renderedActiveListStyle().Render(activeList)
-	renderedInactiveList := renderedInactiveListStyle().Render(inactiveList)
-	renderedCompletedList := renderedCompletedListStyle().Render(completedList)
+		row := wrap.Render(style.Render(file.FileNameWithoutExtension(m.FileManager.FileExtension)))
+		height := lipgloss.Height(row)
+		if index == cursor {
+			start, end = line, line+height
+		}
+		rows = append(rows, row)
+		line += height
+	}
 
-	return joinVertical(activeTitle, renderedActiveList, inactiveTitle, renderedInactiveList, completeTitle, renderedCompletedList), activeList, completedList, inactiveList
+	return joinVertical(rows...), start, end
+}
+
+type taskSidebarSection struct {
+	title string
+	frame lipgloss.Style
+	rows  []string
+}
+
+func buildTaskSidebarContent(m *Model, files []FileInfo, cursor int, wrap lipgloss.Style) (string, int, int) {
+	sections := []*taskSidebarSection{
+		{title: taskFileTitleStyle.Render("Active"), frame: renderedActiveListStyle(), rows: []string{""}},
+		{title: inactiveTitleStyle().Render("Inactive"), frame: renderedInactiveListStyle(), rows: []string{""}},
+		{title: completedTitleStyle().Render("Complete"), frame: renderedCompletedListStyle(), rows: []string{""}},
+	}
+	cursorSection, cursorRow := -1, -1
+
+	for index, file := range files {
+		style := defaultTextStyle
+		if index == cursor {
+			style = highlightedTextStyle
+		}
+
+		line := file.FileNameWithoutExtension(m.FileManager.FileExtension)
+		completed, total := m.TaskManager.TaskCollection.Progress(file.Name)
+
+		target := 0
+		switch {
+		case total > 0 && completed == total:
+			target = 2
+			if index != cursor {
+				style = completedFileStyle
+			}
+		case m.TaskManager.TaskCollection.IsInactive(file.Name):
+			target = 1
+			if index != cursor {
+				style = inactiveFileStyle
+			}
+		default:
+			line = fmt.Sprintf("[%d/%d] ", completed, total) + line
+		}
+
+		section := sections[target]
+		if index == cursor {
+			cursorSection, cursorRow = target, len(section.rows)
+		}
+		section.rows = append(section.rows, wrap.Render(style.Render(line)))
+	}
+
+	blocks := make([]string, 0, len(sections)*2)
+	line, start, end := 0, -1, -1
+	for sectionIndex, section := range sections {
+		titleHeight := lipgloss.Height(section.title)
+		rendered := section.frame.Render(joinVertical(section.rows...))
+
+		if sectionIndex == cursorSection {
+			offset := line + titleHeight + section.frame.GetMarginTop()
+			for _, row := range section.rows[:cursorRow] {
+				offset += lipgloss.Height(row)
+			}
+			start, end = offset, offset+lipgloss.Height(section.rows[cursorRow])
+		}
+
+		blocks = append(blocks, section.title, rendered)
+		line += titleHeight + lipgloss.Height(rendered)
+	}
+
+	return joinVertical(blocks...), start, end
 }
 
 func progressBar(completed, total int) string {
