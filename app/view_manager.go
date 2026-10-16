@@ -132,15 +132,16 @@ func (vm *ViewManager) GoToNextView(fm *FileManager, dm *DirectoryManager, tm *T
 	return needsFileLoad
 }
 
-func (vm *ViewManager) Select(fm *FileManager, dm *DirectoryManager, tm *TaskManager) {
-	if !vm.HideSidebar {
-		if vm.IsCompanyView() {
-			dm.AssignCompany()
-		} else if vm.IsCategoryView() {
-			dm.AssignCategory()
-		}
-		vm.GoToNextView(fm, dm, tm)
+func (vm *ViewManager) Select(fm *FileManager, dm *DirectoryManager, tm *TaskManager) bool {
+	if vm.HideSidebar {
+		return false
 	}
+	if vm.IsCompanyView() {
+		dm.AssignCompany()
+	} else if vm.IsCategoryView() {
+		dm.AssignCategory()
+	}
+	return vm.GoToNextView(fm, dm, tm)
 }
 
 func (vm *ViewManager) ToggleHideSidebar() {

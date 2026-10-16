@@ -385,8 +385,11 @@ func (m *Model) GoToPreviousView() {
 	m.ViewManager.GoToPreviousView()
 }
 
-func (m *Model) Select() {
-	m.ViewManager.Select(&m.FileManager, &m.DirectoryManager, &m.TaskManager)
+func (m *Model) Select() tea.Cmd {
+	if m.ViewManager.Select(&m.FileManager, &m.DirectoryManager, &m.TaskManager) {
+		return m.loadFilesCmd()
+	}
+	return nil
 }
 
 func (m *Model) SelectTask(task Task) {

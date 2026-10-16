@@ -20,11 +20,6 @@ type (
 		Company Company
 	}
 
-	// CategorySelectedMsg indicates a category was selected (tasks, meetings, etc.)
-	CategorySelectedMsg struct {
-		Category string
-	}
-
 	// SidebarToggledMsg indicates the sidebar was toggled
 	SidebarToggledMsg struct {
 		Hidden bool

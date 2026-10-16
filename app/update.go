@@ -213,10 +213,6 @@ func (m *Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.ViewManager.MarkDirty("tasks")
 		return m, nil
 
-	case CategorySelectedMsg:
-		m.ViewManager.MarkDirty("all")
-		return m, m.loadFilesCmd()
-
 	case CompanySelectedMsg:
 		m.ViewManager.MarkDirty("all")
 		return m, m.loadFilesCmd()

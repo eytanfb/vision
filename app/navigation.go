@@ -119,8 +119,7 @@ func (nc NavigationCommands) MoveRight(m *Model) tea.Cmd {
 	if m.IsCategoryView() && m.ViewManager.HideSidebar {
 		return m.navigateKanbanCmd("right")
 	}
-	nc.goForward(m)
-	return nil
+	return nc.goForward(m)
 }
 
 // OpenGitHubDash handles g key - opens GitHub dashboard using non-blocking tea.ExecProcess
@@ -165,11 +164,12 @@ func (nc NavigationCommands) goBack(m *Model) {
 	}
 }
 
-func (nc NavigationCommands) goForward(m *Model) {
+func (nc NavigationCommands) goForward(m *Model) tea.Cmd {
 	// Enter key behavior - select current item
-	if !m.ViewManager.HideSidebar {
-		m.Select()
+	if m.ViewManager.HideSidebar {
+		return nil
 	}
+	return m.Select()
 }
 
 // Command implementations for registry

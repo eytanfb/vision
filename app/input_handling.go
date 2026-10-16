@@ -83,9 +83,7 @@ func (ih InputHandling) HandleEnter(m *Model) tea.Cmd {
 		return nil
 	}
 
-	m.Select()
-
-	return nil
+	return m.Select()
 }
 
 // HandleEscape processes the escape key

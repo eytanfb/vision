@@ -591,6 +591,64 @@ func TestModelCompanyShortcutsLoadFiles(t *testing.T) {
 	}
 }
 
+func loadedFileDirs(h *renderHarness) []string {
+	h.m.FileManager.filesMu.RLock()
+	defer h.m.FileManager.filesMu.RUnlock()
+	dirs := make([]string, 0, len(h.m.FileManager.Files))
+	for _, f := range h.m.FileManager.Files {
+		dirs = append(dirs, filepath.Base(filepath.Dir(f.FullPath)))
+	}
+	return dirs
+}
+
+func assertLoadedFiles(h *renderHarness, category string, count int) {
+	h.t.Helper()
+	dirs := loadedFileDirs(h)
+	if len(dirs) != count {
+		h.t.Fatalf("expected %d %s files, got %d: %v", count, category, len(dirs), dirs)
+	}
+	for _, d := range dirs {
+		if d != category {
+			h.t.Fatalf("expected only %s files, got %v", category, dirs)
+		}
+	}
+}
+
+func TestModelLKeyLoadsFilesForSelectedCategory(t *testing.T) {
+	h := newRenderHarness(t)
+
+	h.press("j", "l")
+
+	if h.m.DirectoryManager.SelectedCategory != "meetings" {
+		t.Fatalf("expected meetings category, got %q", h.m.DirectoryManager.SelectedCategory)
+	}
+	assertLoadedFiles(h, "meetings", 1)
+}
+
+func TestModelEnterLoadsFilesForSelectedCategory(t *testing.T) {
+	h := newRenderHarness(t)
+
+	h.press("j", "enter")
+
+	if h.m.DirectoryManager.SelectedCategory != "meetings" {
+		t.Fatalf("expected meetings category, got %q", h.m.DirectoryManager.SelectedCategory)
+	}
+	assertLoadedFiles(h, "meetings", 1)
+}
+
+func TestModelReloadsFilesWhenSwitchingCategoriesBack(t *testing.T) {
+	h := newRenderHarness(t)
+
+	h.press("j", "l")
+	assertLoadedFiles(h, "meetings", 1)
+
+	h.press("h", "k", "l")
+	if h.m.DirectoryManager.SelectedCategory != "tasks" {
+		t.Fatalf("expected tasks category, got %q", h.m.DirectoryManager.SelectedCategory)
+	}
+	assertLoadedFiles(h, "tasks", 2)
+}
+
 func TestRenderMarkdownProducesStyledOutput(t *testing.T) {
 	doc := "# Heading\n\nSome **bold** text and a list:\n\n- one\n- two\n\n```go\nfmt.Println(\"hi\")\n```\n"
 
